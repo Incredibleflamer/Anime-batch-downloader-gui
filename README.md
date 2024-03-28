@@ -2,5 +2,5 @@
 <p align="center">A gui to download anime in batches , and auto track to my anime list &amp; its fast :3</p>
 
 <div align="center"> 
-![image]()
+   <img src="https://github.com/Incredibleflamer/Anime-batch-downloader-gui/blob/main/assets/soon.png" alt="Soon" />
 </div>
