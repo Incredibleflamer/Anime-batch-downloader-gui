@@ -33,6 +33,14 @@ This is a Node.js-based anime downloader that allows you to download anime episo
 5. Open the "Anime" folder where you will find your downloaded anime.
 
 ## Video
+# How to download animedownloader.exe?
+https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/662413b3-cf34-49d1-a99d-4c5e42330d05
+
+# how to download anime from animedownloader.exe?
+https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/24c68567-aaf5-4953-bda7-8fcec50e193c
+
+
+
 
 ## Configuration⚙️ 
 1. connect your mal via authorization
