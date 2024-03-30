@@ -1,6 +1,6 @@
 <h6 align="right">💻 Support Windows Only For Now</h6>
 <h1 align="center">
-  <img src="https://capsule-render.vercel.app/api?type=soft&fontColor=703ee5&text=Incredibleflamer/anime-batch-downloader&height=150&fontSize=40&desc=Ridiculously%20efficient,%20fast%20and%20light-weight.&descAlignY=75&descAlign=50&color=00000000&animation=twinkling">
+  <img src="https://capsule-render.vercel.app/api?type=soft&fontColor=703ee5&text=Anime-batch-downloader-gui&height=150&fontSize=40&desc=Ridiculously%20efficient,%20fast%20and%20light-weight.&descAlignY=75&descAlign=50&color=00000000&animation=twinkling">
 </h1>
 
 ## Overview 🌐
