@@ -25,7 +25,7 @@ This is a Node.js-based anime downloader that allows you to download anime episo
 ## Usage 📘
 
 1. Run `animedownloader.exe`.
-2. search throw anime list download anime which you like..
+2. search through anime list download anime which you like..
 3. see progress in downloads
 4. it will be downloader where you have store animedownloader.exe 
 5. Open the "Anime" folder where you will find your downloaded anime.
