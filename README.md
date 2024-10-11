@@ -20,7 +20,7 @@ This is a Node.js-based anime downloader that allows you to download anime episo
 
 ## Installation 🚀
 
-1. Go to https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/tag/v1.0.0.0
+1. Go to https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/tag/v1.0.0.2
 2. Download animedownloader.exe
 3. Run it and enjoy
 
