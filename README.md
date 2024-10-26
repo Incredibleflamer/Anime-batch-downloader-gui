@@ -21,7 +21,7 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 
 ## Installation 🚀
 
-1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/tag/v2.0.0.1) 
+1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/tag/v2.0.0.2) 
 2. Download `animedownloader.exe`
 3. Run it and enjoy
 
@@ -44,3 +44,13 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 1. Connect your MyAnimeList account via authorization.
 2. Select what you want to do with new anime or manga (e.g., add to plan-to-watch or plan-to-read).
 3. Select custom quality.
+
+## Uninstalling the Application
+
+To delete the application, navigate to the following directory:
+
+```
+C:\Users\USERNAME\AppData\Local\Programs\animedownloader
+```
+
+Then, run `Uninstall animedownloader.exe`.
