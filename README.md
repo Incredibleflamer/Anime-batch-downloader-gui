@@ -21,7 +21,7 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 
 ## Installation 🚀
 
-1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/tag/v2.0.0.2) 
+1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases) 
 2. Download `animedownloader.exe`
 3. Run it and enjoy
 
