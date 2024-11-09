@@ -44,6 +44,8 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 1. Connect your MyAnimeList account via authorization.
 2. Select what you want to do with new anime or manga (e.g., add to plan-to-watch or plan-to-read).
 3. Select custom quality.
+4. Provider Options: Gogo & Zoro
+- Zoro Subtitle Downloads: Zoro supports subtitle downloads, and users can select to download subtitles in a folder or merge them with video.
 
 ## Uninstalling the Application
 
