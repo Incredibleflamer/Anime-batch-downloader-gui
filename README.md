@@ -1,8 +1,3 @@
-<div align="center">
-<h1>⚠️ Gogo Provider Not Adding New Episodes & Zoro Extractor Broken At This Moment</h1>
-<h1>Making App Useless At This Moment</h1>
-</div>
-
 <h6 align="right">💻 Support Windows Only For Now</h6>
 <h1 align="center">
   <img src="https://capsule-render.vercel.app/api?type=soft&fontColor=703ee5&text=Anime-Manga-batch-downloader-gui&height=150&fontSize=40&desc=Ridiculously%20efficient,%20fast%20and%20light-weight.&descAlignY=75&descAlign=50&color=00000000&animation=twinkling">
