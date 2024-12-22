@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anime Downloader</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+      crossorigin="anonymous"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron&display=swap");
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background-color: #212121;
+        color: #ccc;
+        font-family: sans-serif;
+        font-size: 18px;
+        margin: 0;
+        padding: 0;
+      }
+      .message {
+        color: #999;
+        font-style: italic;
+      }
+      #queue {
+        margin-top: 20px;
+        max-height: auto;
+        overflow-y: auto;
+      }
+      .queue-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        padding: 5px;
+        background-color: #444;
+        border-radius: 4px;
+      }
+      .caption {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .queue-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+      }
+      .queue-title {
+        flex-grow: 1;
+        text-align: center;
+      }
+      .queue-buttons {
+        display: flex;
+        gap: 10px;
+      }
+      .queue-buttons button {
+        padding: 5px 10px;
+      }
+      .remove-icon {
+        cursor: pointer;
+        color: red;
+      }
+      .progress-bar-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        flex-direction: column;
+        margin-top: 70px;
+        position: relative;
+      }
+    </style>
+    <link rel="stylesheet" href="./loading-bar/loading-bar.css" />
+  </head>
+  <body>
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarTogglerDemo01"
+        aria-controls="navbarTogglerDemo01"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+        <a class="navbar-brand" href="/">Anime Downloader</a>
+        <a class="navbar-brand" href="/manga">Manga Downloader</a>
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/log">logs</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/downloads">Downloads</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/setting">Setting</a>
+          </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+          <input
+            class="form-control mr-sm-2"
+            type="search"
+            id="searchInput"
+            placeholder="Search for Anime"
+            aria-label="Search"
+          />
+          <button
+            class="btn btn-outline-info"
+            type="submit"
+            onclick="search(event)"
+          >
+            Search
+          </button>
+          <button
+            onclick="goBack()"
+            class="btn btn-outline-info"
+            style="margin-left: 5px"
+          >
+            Back
+          </button>
+        </form>
+      </div>
+    </nav>
+    <br /><br /><br />
+    <div class="caption">
+      <div id="caption">Nothing to Download</div>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="myBar" id="myBar" style="width: 80%; height: 50px"></div>
+    </div>
+
+    <!-- Queue below progress bar -->
+    <div id="queue" class="container mt-4">
+      <div class="queue-header">
+        <div class="queue-title">
+          <div class="caption">In Queue</div>
+        </div>
+        <div class="queue-buttons">
+          <button onclick="removeAllFromQueue()" class="btn btn-outline-danger">
+            Remove All
+          </button>
+        </div>
+      </div>
+      <!-- Queue items will be injected here -->
+    </div>
+
+    <script src="./loading-bar/loading-bar.js"></script>
+    <script src="search.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var bar = new ldBar(".myBar", {
+          max: 100,
+          preset: "rainbow",
+          value: 0,
+        });
+
+        var barvar = document.getElementById("myBar");
+        barvar.style.display = "none";
+        function fetchProgressAndUpdateProgressBar() {
+          fetch("/api/download/progress")
+            .then((response) => response.json())
+            .then((data) => {
+              var captionElement = document.getElementById("caption");
+              if (data && data.caption) {
+                captionElement.innerHTML = data.caption;
+              } else {
+                captionElement.innerHTML = "";
+              }
+
+              if (data?.currentSegments || data?.totalSegments) {
+                var ratio =
+                  data.currentSegments && data.totalSegments
+                    ? Math.floor(
+                        (data.currentSegments / data.totalSegments) * 100
+                      )
+                    : 0;
+
+                if (ratio < 100 && ratio > 0) {
+                  barvar.style.display = "block";
+                  bar.set(ratio);
+                } else {
+                  captionElement.innerHTML = "Nothing to Download";
+                  bar.set(0);
+                  barvar.style.display = "none";
+                }
+              } else {
+                captionElement.innerHTML = "Nothing to Download";
+                bar.set(0);
+                barvar.style.display = "none";
+              }
+
+              var queueContainer = document.getElementById("queue");
+              if (queueContainer) {
+                queueContainer.innerHTML = "";
+                if (data.queue && data.queue.length > 0) {
+                  queueContainer.innerHTML = `
+                        <div class="queue-header">
+                          <div class="queue-title">
+                            <div class="caption">In Queue</div>
+                          </div>
+                          <div class="queue-buttons">
+                            <button onclick="removeAllFromQueue()" class="btn btn-outline-danger">Remove All</button>
+                          </div>
+                        </div>`;
+                  data.queue.forEach((item) => {
+                    var queueItem = document.createElement("div");
+                    queueItem.classList.add("queue-item");
+                    queueItem.innerHTML = `
+                          <span>${item.Title} - ${item.EpNum}</span>
+                          <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epdownload}')">🗑️</span>`;
+                    queueContainer.appendChild(queueItem);
+                  });
+                }
+              }
+            })
+            .catch((err) => {
+              console.log("Error fetching progress:", err);
+            });
+        }
+
+        fetchProgressAndUpdateProgressBar();
+        setInterval(fetchProgressAndUpdateProgressBar, 1000);
+      });
+
+      function removeAllFromQueue() {
+        fetch("/api/download/remove/all", {
+          method: "GET",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            swal(`Removed Everything From Queue!`, "success");
+          })
+          .catch((err) => {
+            swal("Something Went Wrong..", "error");
+          });
+      }
+
+      function removeFromQueue(Title, startep, epdownload) {
+        fetch(
+          `/api/download/remove/?Title=${Title}&EpNum=${startep}&AnimeEpId=${epdownload}`,
+          {
+            method: "GET",
+          }
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            swal(`Removed: ${Title} || ${startep} From Queue!`, "success");
+          })
+          .catch((err) => {
+            swal("Something Went Wrong..", "error");
+          });
+      }
+
+      function goBack() {
+        window.history.back();
+      }
+    </script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

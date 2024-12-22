@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manga Downloader</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="mangainfo.css" />
+  </head>
+  <body>
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarTogglerDemo01"
+        aria-controls="navbarTogglerDemo01"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+        <a class="navbar-brand" href="/">Anime Downloader</a>
+        <a class="navbar-brand" href="/manga">Manga Downloader</a>
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/log">logs</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/downloads">Downloads</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/setting">Setting</a>
+          </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+          <input
+            class="form-control mr-sm-2"
+            type="search"
+            id="searchInput"
+            placeholder="Search for Manga"
+            aria-label="Search"
+          />
+          <button
+            class="btn btn-outline-info"
+            type="submit"
+            onclick="search(event)"
+          >
+            Search
+          </button>
+          <button
+            onclick="goBack()"
+            class="btn btn-outline-info"
+            style="margin-left: 5px"
+          >
+            Back
+          </button>
+        </form>
+      </div>
+    </nav>
+
+    <div
+      class="modal fade"
+      id="downloadModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="downloadModalLabel"
+      aria-hidden="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        role="document"
+        style="color: black"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="downloadModalLabel">
+              Download Chapter
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="download-form">
+              <div class="form-group">
+                <label for="start-episode">Starting Chapter:</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="start-episode"
+                  name="start-episode"
+                  min="1"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="end-episode">End Chapter:</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="end-episode"
+                  name="end-episode"
+                  min="1"
+                  max="<%= data.chapters.length %>"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">Download</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- End Modal -->
+
+    <div class="container-fluid">
+      <div class="media">
+        <img
+          class="anime-image"
+          src="<%= data.image %>"
+          alt="<%= data.title %>"
+        />
+        <div class="media-body">
+          <div class="anime-info">
+            <div class="anime-title font"><%= data.title %></div>
+            <div class="description"><%= data.description %></div>
+            <div class="genres">
+              <% data.genres.forEach(genre => { %>
+              <button
+                type="button"
+                class="btn btn-outline-warning round btn-sm"
+              >
+                <%= genre %>
+              </button>
+              <% }); %>
+            </div>
+            <div class="episodes">
+              <h2>Download Options</h2>
+            </div>
+            <div class="genres">
+              <button
+                id="download-form-button"
+                data-ep="<%= data.id %>"
+                data-total-episodes="<%= data.chapters.length %>"
+                class="btn btn-outline-secondary round"
+              >
+                Download From Specific Chapter
+              </button>
+              <button
+                id="downloadall"
+                type="button"
+                class="btn btn-outline-secondary round"
+                onclick="download('<%= data.id %>', 1, <%= data.chapters.length %>)"
+              >
+                Download All Chapters
+              </button>
+            </div>
+            <div id="modal-root"></div>
+            <div class="episodes">
+              <h2>Chapters List</h2>
+            </div>
+            <div class="d-grid gap-2 episode-container scrollable-ele">
+              <% let i = 1 %> <% data.chapters.forEach(ep => { %>
+              <button
+                class="btn btn-success round"
+                type="button"
+                onclick="download('<%= data.id %>', <%= i %> )"
+              >
+                <%= ep.title %>
+              </button>
+              <% i++; }); %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // search
+      function search(event) {
+        event.preventDefault();
+        const searchInput = document.getElementById("searchInput").value.trim();
+        if (!searchInput) {
+          return swal(
+            "Invalid Search",
+            `Please enter some text to search`,
+            "error"
+          );
+        }
+        redirectToSearch(searchInput);
+      }
+
+      document.querySelector("form").addEventListener("submit", search);
+
+      function redirectToSearch(query) {
+        window.location.href = `/search?mangatosearch=${query}`;
+      }
+
+      // go back script
+      function goBack() {
+        window.history.back();
+      }
+
+      // download
+      async function download(ep, start, end) {
+        try {
+          const response = await fetch("/api/mangadownload", {
+            method: "POST",
+            body: JSON.stringify({
+              ep: ep,
+              start: start,
+              end: end,
+            }),
+            headers: {
+              "Content-type": "application/json; charset=UTF-8",
+            },
+          });
+          const responseData = await response.json();
+          if (response.status === 400) {
+            swal("Something Went Wrong..", `${responseData.message}`, "error");
+          } else if (!response.ok) {
+            swal(
+              "Request Failed",
+              `There are ${responseData.queue} Anime in Queue. 
+        Error: ${responseData.message}`,
+              "error"
+            );
+          } else {
+            swal(
+              `Added To Queue Current Queue Size : ${responseData.queue}!`,
+              `${responseData.message}`,
+              "success"
+            );
+          }
+        } catch (err) {
+          console.log(err);
+          swal("Couldnt add to queue...", `Error: ${err}`, "error");
+        }
+      }
+
+      // modal
+      document.addEventListener("DOMContentLoaded", function () {
+        const downloadFormButton = document.getElementById(
+          "download-form-button"
+        );
+        const totalEpisodes = downloadFormButton.dataset.totalEpisodes;
+        const epdata = downloadFormButton.dataset.ep;
+
+        function showModal() {
+          $("#downloadModal").modal("toggle");
+        }
+
+        downloadFormButton.addEventListener("click", showModal);
+
+        const downloadForm = document.getElementById("download-form");
+        downloadForm.addEventListener("submit", async function (event) {
+          event.preventDefault();
+          const startEpisode = parseInt(
+            document.getElementById("start-episode").value
+          );
+          const endEpisode = parseInt(
+            document.getElementById("end-episode").value
+          );
+          if (
+            startEpisode > endEpisode ||
+            startEpisode < 1 ||
+            endEpisode > totalEpisodes ||
+            startEpisode === 0 ||
+            endEpisode === 0
+          ) {
+            alert("Invalid episode range. Please enter a valid range.");
+            return;
+          }
+          await download(epdata, startEpisode, endEpisode);
+          $("#downloadModal").modal("toggle");
+        });
+      });
+    </script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

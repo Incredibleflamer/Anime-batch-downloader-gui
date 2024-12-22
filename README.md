@@ -3,11 +3,29 @@
   <img src="https://capsule-render.vercel.app/api?type=soft&fontColor=703ee5&text=Anime-Manga-batch-downloader-gui&height=150&fontSize=40&desc=Ridiculously%20efficient,%20fast%20and%20light-weight.&descAlignY=75&descAlign=50&color=00000000&animation=twinkling">
 </h1>
 
-## Overview 🌐
+## Table of Contents 📖
+
+- [Overview](#overview)
+- [Features](#features)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Videos](#videos)
+  - [Download Guide](#how-to-download-animedownloaderexe)
+  - [Anime Download Guide](#how-to-download-anime-from-animedownloaderexe)
+- [Configuration](#configuration)
+- [Uninstalling the Application](#uninstalling-the-application)
+- [Build the Application](#Build-the-Application)
+  - [Prerequisites](#prerequisites)
+  - [Steps to Build](#steps-to-build)
+
+---
+
+## Overview
 
 This is a Node.js-based anime & manga downloader that allows you to download anime episodes in bulk, quickly, and from the gogo source. Additionally, it has the functionality to automatically add the downloaded anime to your MyAnimeList plan-to-watch list. The downloader supports both dubbed (dub) and subtitled (sub) versions for anime. For manga, it downloads chapters from Mangasee123 and saves them in PDF format.
 
-### Features ✨
+### Features
 
 - **Bulk Downloading:** Download multiple anime episodes and manga chapters in one go.
 - **Fast and Efficient:** Enjoy a ridiculously efficient, fast, and light-weight downloader.
@@ -15,17 +33,17 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 - **MyAnimeList Integration:** Automatically add downloaded anime to your MyAnimeList plan-to-watch list.
 - **Manga Downloading:** Download manga chapters from Mangasee123 in PDF format.
 
-## System Requirements ⚙️
+## System Requirements
 
 - **Operating System:** Windows (Support for other platforms coming soon)
 
-## Installation 🚀
+## Installation
 
-1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases) 
+1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases)
 2. Download `animedownloader.exe`
 3. Run it and enjoy
 
-## Usage 📘
+## Usage
 
 1. Run `animedownloader.exe`.
 2. Search through the anime or manga list and download what you like.
@@ -33,18 +51,23 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 4. Anime episodes will be downloaded in the folder where you have stored `animedownloader.exe`.
 5. Manga chapters will be saved as PDF files in the designated folder.
 
-## Video
+## Videos
+
 ### How to download `animedownloader.exe`?
+
 [Download Guide Video](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/662413b3-cf34-49d1-a99d-4c5e42330d05)
 
 ### How to download anime from `animedownloader.exe`?
+
 [Anime Download Guide Video](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/24c68567-aaf5-4953-bda7-8fcec50e193c)
 
-## Configuration ⚙️
+## Configuration
+
 1. Connect your MyAnimeList account via authorization.
 2. Select what you want to do with new anime or manga (e.g., add to plan-to-watch or plan-to-read).
 3. Select custom quality.
 4. Provider Options: Gogo & Zoro
+
 - Zoro Subtitle Downloads: Zoro supports subtitle downloads, and users can select to download subtitles in a folder or merge them with video.
 
 ## Uninstalling the Application
@@ -56,3 +79,56 @@ C:\Users\USERNAME\AppData\Local\Programs\animedownloader
 ```
 
 Then, run `Uninstall animedownloader.exe`.
+
+---
+
+# Build the Application
+
+Follow these steps to build application:
+
+## Prerequisites
+
+1. **Download and install Node.js**:
+
+   - [Node.js Download](https://nodejs.org/)
+
+2. **Download and install Git**:
+   - [Git Download](https://git-scm.com/)
+
+## Steps to Build
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/Incredibleflamer/Anime-batch-downloader-gui.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd Anime-batch-downloader-gui/src
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. For Building the application:
+
+   ```bash
+   npm run package
+   ```
+
+5. Run the application for testing:
+   ```bash
+   npm run start
+   ```
+
+## Notes
+
+- Build: Creates an executable .exe file for Windows.
+- Start: Runs the app locally in the Electron environment without building an executable.
+- Ensure that your system has the latest versions of Node.js and Git installed for compatibility.
+- If you encounter any issues, refer to the documentation or open an issue.

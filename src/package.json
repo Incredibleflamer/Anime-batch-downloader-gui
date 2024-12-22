@@ -1,0 +1,81 @@
+{
+  "name": "animedownloader",
+  "version": "2.6.0",
+  "description": "Download anime in batches & its fast :3",
+  "main": "gui.js",
+  "scripts": {
+    "start": "electron . --trace-warnings",
+    "package": "electron-builder",
+    "start:prod": "cross-env NODE_ENV=production electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Incredibleflamer/Anime-batch-downloader-gui.git"
+  },
+  "build": {
+    "appId": "com.animebatchdownloader.gui",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "animedownloader.Setup.${version}.exe",
+      "icon": "assets/luffy.ico"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Incredibleflamer",
+      "repo": "Anime-batch-downloader-gui",
+      "private": false
+    },
+    "nsis": {
+      "deleteAppDataOnUninstall": true
+    },
+    "icon": "assets/luffy.ico",
+    "compression": "maximum",
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*",
+      "assets/**/*"
+    ]
+  },
+  "keywords": [
+    "anime",
+    "animedownloader",
+    "animebatchdownloader"
+  ],
+  "author": {
+    "name": "Incredibleflamer",
+    "email": "bloodeygamer1@gmail.com",
+    "url": "https://github.com/Incredibleflamer"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "axios-cookiejar-support": "^5.0.3",
+    "body-parser": "^1.20.2",
+    "cheerio": "^1.0.0",
+    "crypto-js": "^4.2.0",
+    "ejs": "^3.1.9",
+    "electron-updater": "^6.3.9",
+    "express": "^4.19.1",
+    "ffmpeg-static": "^5.2.0",
+    "fs-extra": "^10.0.0",
+    "image-pixels": "^2.2.2",
+    "node-hls-downloader": "^2.2.0",
+    "node-myanimelist": "^4.1.2",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.15.0",
+    "pkce-challenge": "^4.1.0",
+    "progress": "^2.0.3",
+    "puppeteer": "^23.11.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "simpl.db": "^2.13.0",
+    "tough-cookie": "^5.0.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^29.4.6",
+    "electron-builder": "^25.1.8"
+  }
+}

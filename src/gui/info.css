@@ -1,0 +1,191 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap");
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #222;
+  color: #fff;
+}
+
+.font {
+  font-family: "Poppins", sans-serif;
+  font-style: normal;
+}
+
+.container-fluid {
+  margin-top: 70px;
+}
+
+.anime-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.anime-info-left {
+  flex: 1;
+  max-width: 300px;
+  margin-right: 20px;
+  text-align: center;
+}
+
+.anime-info-right {
+  flex: 2;
+  margin-left: 20px;
+}
+
+.anime-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.anime-type {
+  text-transform: capitalize;
+  font-weight: inherit;
+  font-size: 1rem;
+}
+
+.anime-details {
+  display: flex;
+  align-items: flex-start;
+}
+
+.anime-image {
+  max-width: 200px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.description {
+  margin-bottom: 20px;
+}
+
+.genres {
+  display: flex;
+  padding: 0;
+  margin: 0;
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  width: 100%;
+}
+
+.episode-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.episode-container::-webkit-scrollbar {
+  width: 12px;
+}
+
+.episode-container::-webkit-scrollbar-track {
+  background: #333;
+}
+
+.episode-container::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 20px;
+}
+
+.round {
+  align-items: center;
+  border-radius: 50px;
+  margin-bottom: 15px;
+}
+
+.episodes {
+  margin-top: 20px;
+}
+
+.episode {
+  margin-bottom: 10px;
+}
+
+.video-player {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#vid1 {
+  width: 100%;
+  height: auto;
+  min-height: 400px;
+  max-width: 100%;
+}
+
+.description {
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.episode {
+  background-color: #1e88e5;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  text-align: center;
+  transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
+}
+
+.episode:hover {
+  background-color: #1565c0;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.episode:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+  .episode {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+}
+
+.toggle-container {
+  display: flex;
+  justify-content: flex-start; /* Align buttons to the start */
+  gap: 10px; /* Add space between buttons */
+  flex-wrap: wrap; /* Allow buttons to wrap to the next line if needed */
+  margin-bottom: 10px; /* Add some bottom margin for spacing */
+}
+
+.toggle-container button {
+  margin: 5px; /* Add some margin around buttons for spacing */
+  padding: 10px 15px; /* Increase button padding for better spacing */
+  font-size: 14px; /* Optional: Adjust font size */
+  border-radius: 5px; /* Optional: Give buttons rounded corners */
+  transition: background-color 0.3s ease; /* Smooth transition for background color */
+}
+
+.toggle-container button:hover {
+  background-color: #007bff; /* Change background color on hover */
+  color: white; /* Change text color on hover */
+}
