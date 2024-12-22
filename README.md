@@ -131,4 +131,4 @@ Follow these steps to build application:
 - Build: Creates an executable .exe file for Windows.
 - Start: Runs the app locally in the Electron environment without building an executable.
 - Ensure that your system has the latest versions of Node.js and Git installed for compatibility.
-- If you encounter any issues, refer to the documentation or open an issue.
+- If you encounter any issues open an issue.
