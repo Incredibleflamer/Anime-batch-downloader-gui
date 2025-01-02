@@ -126,7 +126,6 @@ async function settingfetch() {
     try {
       await ensureDirectoryExists(config?.CustomDownloadLocation);
     } catch (error) {
-      console.log(error);
       config.CustomDownloadLocation = getDownloadsFolder();
       changes = true;
     }
