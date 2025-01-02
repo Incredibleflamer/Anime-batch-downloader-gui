@@ -25,7 +25,6 @@ autoUpdater.setFeedURL({
   owner: "Incredibleflamer",
   repo: "Anime-batch-downloader-gui",
 });
-console.log(app.getPath("temp"));
 // downloading functions
 const { ensureDirectoryExists } = require("./backend/utils/DirectoryMaker");
 const { downloadfunction, MangaDownloadMain } = require("./backend/download");
@@ -113,9 +112,10 @@ appExpress.post("/api/settings", async (req, res) => {
     if (autotrack !== "on" && autotrack !== "off" && status !== null)
       return res.status(400).json({ error: "Enter on / off in autotracking." });
 
+    console.log(CustomDownloadLocation);
     if (CustomDownloadLocation !== null)
       await ensureDirectoryExists(CustomDownloadLocation);
-
+    console.log(CustomDownloadLocation);
     await settingupdate(
       quality,
       null,

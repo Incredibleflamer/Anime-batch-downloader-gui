@@ -124,8 +124,9 @@ async function settingfetch() {
   // if downloads folder exists check if its can be access
   if (config?.CustomDownloadLocation) {
     try {
-      await ensureDirectoryExists(CustomDownloadLocation);
+      await ensureDirectoryExists(config?.CustomDownloadLocation);
     } catch (error) {
+      console.log(error);
       config.CustomDownloadLocation = getDownloadsFolder();
       changes = true;
     }
