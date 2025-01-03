@@ -146,16 +146,6 @@
 
     <!-- Queue below progress bar -->
     <div id="queue" class="container mt-4">
-      <div class="queue-header">
-        <div class="queue-title">
-          <div class="caption">In Queue</div>
-        </div>
-        <div class="queue-buttons">
-          <button onclick="removeAllFromQueue()" class="btn btn-outline-danger">
-            Remove All
-          </button>
-        </div>
-      </div>
       <!-- Queue items will be injected here -->
     </div>
 
@@ -222,7 +212,7 @@
                     queueItem.classList.add("queue-item");
                     queueItem.innerHTML = `
                           <span>${item.Title} - ${item.EpNum}</span>
-                          <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epdownload}')">🗑️</span>`;
+                          <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epid}')">🗑️</span>`;
                     queueContainer.appendChild(queueItem);
                   });
                 }
@@ -251,12 +241,9 @@
       }
 
       function removeFromQueue(Title, startep, epdownload) {
-        fetch(
-          `/api/download/remove/?Title=${Title}&EpNum=${startep}&AnimeEpId=${epdownload}`,
-          {
-            method: "GET",
-          }
-        )
+        fetch(`/api/download/remove/?AnimeEpId=${epdownload}`, {
+          method: "GET",
+        })
           .then((response) => response.json())
           .then((data) => {
             swal(`Removed: ${Title} || ${startep} From Queue!`, "success");

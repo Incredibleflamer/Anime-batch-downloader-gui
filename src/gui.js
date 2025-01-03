@@ -231,26 +231,23 @@ appExpress.post("/api/findmanga", async (req, res) => {
 appExpress.post("/api/download", async (req, res) => {
   const { ep, start, end } = req.body;
   try {
-    let queue;
     const { errors, info, Success } = await downloadfunction(ep, start, end);
     if (downloadProgress) {
       dataqueue = await getQueue(downloadProgress.epid);
-      queue = dataqueue.length;
     } else {
       dataqueue = await getQueue();
-      queue = dataqueue.length;
     }
     if (errors.length > 0) {
       res.status(400).json({
         message: `Error : \n${errors.join("\n")}\nInfo: \n${info.join(
           "\n"
         )}\nLogs: \n${Success.join("\n")}`,
-        queue: queue,
+        queue: dataqueue.length,
       });
     } else {
       res.status(200).json({
         message: `INFO: \n${info.join("\n")}\nLogs: \n${Success.join("\n")}`,
-        queue: queue,
+        queue: dataqueue.length,
       });
     }
   } catch (err) {
@@ -337,10 +334,7 @@ appExpress.get("/api/download/progress", async (req, res) => {
 // remove from queue
 appExpress.get("/api/download/remove/", async (req, res) => {
   try {
-    const title = req.query.Title.trim();
-    const epNum = parseInt(req.query.EpNum.trim());
-    const animeEpId = req.query.AnimeEpId.trim();
-    await removeQueue(title, epNum, animeEpId);
+    await removeQueue(req.query.AnimeEpId);
     res.json({ message: "Item removed" });
   } catch (err) {
     // logging
@@ -361,7 +355,7 @@ appExpress.get("/api/download/remove/all", async (req, res) => {
       queue = await getQueue();
     }
     for (const anime of queue) {
-      await removeQueue(anime.Title, anime.startep, anime.epdownload);
+      await removeQueue(anime.epid);
     }
     res.json({ message: "All items removed" });
   } catch (err) {

@@ -226,8 +226,8 @@
                 const episodeBtn = document.createElement('button');
                 episodeBtn.classList.add('episode');
                 episodeBtn.type = 'button';
-                episodeBtn.textContent = `Download Episode ${i} (${type.toUpperCase()})`;
-                episodeBtn.setAttribute('onclick', `download('${id.replace('-both', `-${type}`)}', ${i})`);
+                episodeBtn.textContent = `Download Episode ${i + 1} (${type.toUpperCase()})`;
+                episodeBtn.setAttribute('onclick', `download('${id.replace('-both', `-${type}`)}', ${i + 1})`);
                 episodeContainer.appendChild(episodeBtn);
               }
 
@@ -297,8 +297,8 @@
                 type="button"
                 onclick="download('<%= data.id %>', '<%= data.episodes[i].number %>')"
               >
-                Download Episode <%= data.episodes[i].number %> <%=
-                data?.subOrDub ? data.subOrDub.toUpperCase() : "" %>
+                Download Episode <%= i + 1 %> <%= data?.subOrDub ?
+                data.subOrDub.toUpperCase() : "" %>
               </button>
               <% } %>
             </div>
