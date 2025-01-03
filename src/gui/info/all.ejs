@@ -1,0 +1,201 @@
+<div class="container-fluid">
+  <div class="anime-info">
+    <div class="anime-info-left">
+      <img
+        class="anime-image"
+        src="<%= data.image %>"
+        alt="<%= data.title %>"
+      />
+
+      <div class="additional-info">
+        Type : <%= data.type %> ( <%= data.subOrDub ? data.subOrDub : "UNKNOWN"
+        %> )
+        <br />
+        Total Episodes: <%= data?.totalEpisodes %>
+        <br />
+        <%= data?.status ? `Status: ${data?.status}` : "" %> <% if
+        (data?.status) { %>
+        <br />
+        <% } %> <%= data?.subs > 0 ? `Subs Episodes: ${data.subs}` : "" %> <% if
+        (data?.subs > 0) { %>
+        <br />
+        <% } %> <%= data?.dubs > 0 ? `Dubs Episodes: ${data.dubs}` : "" %> <% if
+        (data?.dubs > 0) { %>
+        <br />
+        <% } %>
+      </div>
+    </div>
+    <div class="anime-info-right">
+      <div class="anime-title font"><%= data.title %></div>
+      <div class="description"><%= data.description %></div>
+      <div class="genres">
+        <% data?.genres?.forEach(genre => { %>
+        <button type="button" class="btn btn-outline-warning round btn-sm">
+          <%= genre %>
+        </button>
+        <% }); %>
+      </div>
+      <div class="episodes">
+        <h2>Download Options</h2>
+      </div>
+
+      <% if (data.id.includes('-both')) { %>
+      <!-- Toggle Button -->
+      <div class="toggle-container" id="toggle-container">
+        <button id="toggleDownloadOptions" class="btn btn-outline-info">
+          Show Dub 🎥
+        </button>
+      </div>
+
+      <!-- Download Options (hidden initially) -->
+      <div class="genres downloadOptions">
+        <div class="subOptions" id="subOptions"></div>
+        <div class="dubOptions" id="dubOptions" style="display: none"></div>
+      </div>
+
+      <script>
+        // Function to create a download button for a given type (sub or dub)
+        function createDownloadButton(type, episodes, id) {
+          const togglecontainer = document.getElementById("toggle-container")
+          // Create "Download from specific episodes" button
+          const specificEpisodesBtn = document.createElement('button');
+          specificEpisodesBtn.classList.add('btn', 'btn-outline-info', `${type}Options`);
+          if (type === 'dub') {
+            specificEpisodesBtn.style.display = 'none';
+          }
+          specificEpisodesBtn.textContent = `Download From Specific Episodes (${type.toUpperCase()})`;
+          specificEpisodesBtn.setAttribute('data-ep', JSON.stringify(id.replace('-both', `-${type}`)));
+          specificEpisodesBtn.setAttribute('data-total-episodes', episodes);
+          togglecontainer.appendChild(specificEpisodesBtn)
+
+           // Create "Download All Episodes" button
+          const downloadAllBtn = document.createElement('button');
+          downloadAllBtn.classList.add('btn', 'btn-outline-info', `${type}Options`);
+          if (type === 'dub') {
+            downloadAllBtn.style.display = 'none';
+          }
+          downloadAllBtn.type = 'button';
+          downloadAllBtn.textContent = `Download All Episodes (${type.toUpperCase()})`;
+          downloadAllBtn.setAttribute('onclick', `download('${id.replace('-both', `-${type}`)}', 1, ${episodes})`);
+          togglecontainer.appendChild(downloadAllBtn);
+
+          const container = document.getElementById(`${type}Options`);
+
+          // Create episode-specific download buttons
+          const episodeWrapper = document.createElement('div');
+          episodeWrapper.classList.add('wrapper');
+          const episodeContainer = document.createElement('div');
+          episodeContainer.classList.add('episode-container');
+
+          // Generate individual episode download buttons
+          for (let i = episodes - 1; i >= 0; i--) {
+            const episodeBtn = document.createElement('button');
+            episodeBtn.classList.add('episode');
+            episodeBtn.type = 'button';
+            episodeBtn.textContent = `Download Episode ${i + 1} (${type.toUpperCase()})`;
+            episodeBtn.setAttribute('onclick', `download('${id.replace('-both', `-${type}`)}', ${i + 1})`);
+            episodeContainer.appendChild(episodeBtn);
+          }
+
+          episodeWrapper.appendChild(episodeContainer);
+          container.appendChild(episodeWrapper);
+        }
+
+        // Call function to generate sub and dub options if data is available
+        <% if (data?.subs > 0) { %>
+          createDownloadButton('sub', <%= data?.subs %>, '<%= data.id %>');
+        <% } %>
+        <% if (data?.dubs > 0) { %>
+          createDownloadButton('dub', <%= data?.dubs %>, '<%= data.id %>');
+        <% } %>
+
+        // Toggle functionality
+        document.getElementById("toggleDownloadOptions").addEventListener("click", function () {
+          const dubOptions = document.getElementsByClassName("dubOptions");
+          const subOptions = document.getElementsByClassName("subOptions");
+          const button = document.getElementById("toggleDownloadOptions");
+
+          if (subOptions[0].style.display === "none") {
+            // Show subs and hide dubs
+            for (let i = 0; i < subOptions.length; i++) {
+              subOptions[i].style.display = "block";
+            }
+            for (let i = 0; i < dubOptions.length; i++) {
+              dubOptions[i].style.display = "none";
+            }
+            button.textContent = "Show Dub 🎥";
+          } else {
+            // Show dubs and hide subs
+            for (let i = 0; i < subOptions.length; i++) {
+              subOptions[i].style.display = "none";
+            }
+            for (let i = 0; i < dubOptions.length; i++) {
+              dubOptions[i].style.display = "block";
+            }
+            button.textContent = "Show Sub 🎭";
+          }
+        });
+      </script>
+      <% } else { %>
+      <div class="genres">
+        <button
+          data-ep="<%= data.id %>"
+          data-total-episodes="<%= data.totalEpisodes %>"
+          class="btn btn-outline-secondary round download-form-button"
+        >
+          Download From Specific Episodes
+        </button>
+        <button
+          id="downloadall"
+          type="button"
+          class="btn btn-outline-secondary round"
+          onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+        >
+          Download All Episodes
+        </button>
+      </div>
+      <div id="modal-root"></div>
+      <div class="wrapper">
+        <div class="episode-container">
+          <% for (let i = data.episodes.length - 1; i >= 0; i--) { %>
+          <button
+            class="episode"
+            type="button"
+            onclick="download('<%= data.id %>', '<%= data.episodes[i].number %>')"
+          >
+            Download Episode <%= i + 1 %> <%= data?.subOrDub ?
+            data.subOrDub.toUpperCase() : "" %>
+          </button>
+          <% } %>
+        </div>
+      </div>
+      <% } %>
+      <!-- Watch online 
+          <br />
+          <div class="video-player">
+            <div class="description" id="now_playing" hidden>
+              Now Playing :
+            </div>
+            <video
+              id="vid1"
+              class="video-js vjs-default-skin"
+              controls
+            ></video>
+            <br />
+             select video 
+            <h4>Click on ep from list to start playing</h4>
+            <div class="d-grid gap-2 episode-container scrollable-ele">
+              <% let j = 1 %> <% data.episodes.forEach(ep => { %>
+              <button
+                class="btn btn-success round"
+                type="button"
+                onclick="Videoplay('<%= data.id %>', <%= j %>)"
+              >
+                Watch ep <%= j %>
+              </button>
+              <% j++; }); %>
+            </div>
+          </div> -->
+    </div>
+  </div>
+</div>

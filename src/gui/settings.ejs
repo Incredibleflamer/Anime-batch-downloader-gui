@@ -104,7 +104,16 @@
           >
             <option value="gogo" <% if (settings.provider === "gogo") { %> selected <% } %>>Gogo</option>
             <option value="zoro" <% if (settings.provider === "zoro") { %> selected <% } %>>Zoro</option>
-            <!-- <option value="pahe" <% if (settings.provider === "pahe") { %> selected <% } %>>AnimePahe</option> -->
+            <option value="pahe" <% if (settings.provider === "pahe") { %> selected <% } %>>Pahe</option>
+          </select>
+        </div>
+
+        <!-- SubDub Option ( visible for Pahe provider only ) -->
+         <div class="mb-3" id="subDubOption" style="display: none;">
+          <label for="subDub" class="form-label">SubDub Option</label>
+          <select class="form-select" id="subDub">
+            <option value="sub" <% if (settings.subDub === "sub" || !settings.subDub) { %> selected <% } %>>Sub</option>
+            <option value="dub" <% if (settings.subDub === "dub") { %> selected <% } %>>Dub</option>
           </select>
         </div>
 
@@ -182,6 +191,7 @@
         const providerElement = document.getElementById("providerSelect");
         const mergeSubtitlesElement = document.getElementById("mergeSubtitles");
         const subtitleFormatElement = document.getElementById("subtitleFormat");
+        const subDubElement = document.getElementById("subDub");  
 
         const data = {
           status: statusElement ? statusElement.value : null,
@@ -200,6 +210,7 @@
           concurrentDownloads: concurrentDownloadsElement
             ? concurrentDownloadsElement.value
             : null,
+          subDub: subDubElement ? subDubElement.value : null, 
         };
 
         showLoadingAnimation();
@@ -241,12 +252,18 @@
         const mergeSubtitlesElement = document.getElementById("mergeSubtitles");
         const subtitleOptionElement = document.getElementById("subtitleOption");
         const subtitleFormatOptionElement = document.getElementById("subtitleFormatOption");
+        const subDubOptionElement = document.getElementById("subDubOption");
+
+
         subtitleOptionElement.style.display = providerElement.value === "zoro" ? "block" : "none";
+        
         if (providerElement.value === "zoro" && mergeSubtitlesElement.value === "off") {
           subtitleFormatOptionElement.style.display = "block";
         } else {
           subtitleFormatOptionElement.style.display = "none";
         }
+
+        subDubOptionElement.style.display = providerElement.value === "pahe" ? "block" : "none";
       }
       document.getElementById("mergeSubtitles")?.addEventListener("change", toggleSubtitleOption);
       document.addEventListener("DOMContentLoaded", toggleSubtitleOption);

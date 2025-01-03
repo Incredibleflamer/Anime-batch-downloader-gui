@@ -17,7 +17,7 @@ let config = [];
 const providers = {
   gogo: require("../Scrappers/gogo"),
   zoro: require("../Scrappers/zoro"),
-  // pahe: require("../Scrappers/animepahe"),
+  pahe: require("../Scrappers/animepahe"),
   // anivibe: require("../Scrappers/anivibe"),
 };
 
@@ -33,7 +33,8 @@ async function settingupdate(
   mergeSubtitles = null,
   subtitleFormat = null,
   Pagination = null,
-  concurrentDownloads = null
+  concurrentDownloads = null,
+  subDub = null
 ) {
   const currentSettings = settings.get("config");
   // quality
@@ -74,6 +75,9 @@ async function settingupdate(
   }
   if (subtitleFormat === null)
     subtitleFormat = currentSettings?.subtitleFormat || "ttv";
+
+  if (subDub === null) subDub = currentSettings?.subDub || "sub";
+
   // quality
   config.quality = quality;
   // mal on off
@@ -96,6 +100,8 @@ async function settingupdate(
   config.concurrentDownloads = concurrentDownloads;
   // subtitleFormat
   config.subtitleFormat = subtitleFormat;
+  // subDub
+  config.subDub = subDub;
 
   await settingSave();
   // return config
@@ -109,97 +115,118 @@ async function settingupdate(
     Pagination,
     concurrentDownloads,
     subtitleFormat,
+    subDub,
   };
 }
 
 // returns valid settings
 async function settingfetch() {
-  let changes = false;
-  // making sure download folder exists
-  if (!config?.CustomDownloadLocation) {
-    config.CustomDownloadLocation = getDownloadsFolder();
-    changes = true;
-  }
-
-  // if downloads folder exists check if its can be access
-  if (config?.CustomDownloadLocation) {
-    try {
-      await ensureDirectoryExists(config?.CustomDownloadLocation);
-    } catch (error) {
+  try {
+    let changes = false;
+    // making sure download folder exists
+    if (!config?.CustomDownloadLocation) {
       config.CustomDownloadLocation = getDownloadsFolder();
       changes = true;
     }
-  }
-  // checking provider is valid
-  if (!config?.provider || !providers.hasOwnProperty(config?.provider)) {
-    config.provider = "gogo";
-    changes = true;
-  }
-  // checking quality
-  if (
-    !config?.quality ||
-    !["1080p", "720p", "360p"].includes(config?.quality)
-  ) {
-    config.quality = "1080p";
-    changes = true;
-  }
 
-  // checking mergeSubtitles
-  if (
-    !config?.mergeSubtitles ||
-    !["on", "off"].includes(config?.mergeSubtitles)
-  ) {
-    config.mergeSubtitles = "on";
-    changes = true;
-  }
+    // if downloads folder exists check if its can be access
+    if (config?.CustomDownloadLocation) {
+      try {
+        await ensureDirectoryExists(config?.CustomDownloadLocation);
+      } catch (error) {
+        config.CustomDownloadLocation = getDownloadsFolder();
+        changes = true;
+      }
+    }
+    // checking provider is valid
+    if (!config?.provider || !providers.hasOwnProperty(config?.provider)) {
+      config.provider = "gogo";
+      changes = true;
+    }
+    // checking quality
+    if (
+      !config?.quality ||
+      !["1080p", "720p", "360p"].includes(config?.quality)
+    ) {
+      config.quality = "1080p";
+      changes = true;
+    }
 
-  // checking subtitle format
-  if (
-    !config?.subtitleFormat ||
-    !["ttv", "srt"].includes(config?.subtitleFormat)
-  ) {
-    config.subtitleFormat = "ttv";
-    changes = true;
-  }
+    // checking mergeSubtitles
+    if (
+      !config?.mergeSubtitles ||
+      !["on", "off"].includes(config?.mergeSubtitles)
+    ) {
+      config.mergeSubtitles = "on";
+      changes = true;
+    }
 
-  if (changes) {
-    await settingSave();
-  }
+    // checking subtitle format
+    if (
+      !config?.subtitleFormat ||
+      !["ttv", "srt"].includes(config?.subtitleFormat)
+    ) {
+      config.subtitleFormat = "ttv";
+      changes = true;
+    }
 
-  return config;
+    if (!config?.subDub) {
+      config.subDub = "sub";
+      changes = true;
+    }
+
+    if (changes) {
+      await settingSave();
+    }
+
+    return config;
+  } catch (err) {
+    console.log(err);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+  }
 }
 
 // load settings
 async function SettingsLoad() {
-  const storedConfig = await settings.get("config");
-  config =
-    storedConfig && typeof storedConfig === "object"
-      ? storedConfig
-      : {
-          quality: "1080p",
-          mal_on_off: false,
-          status: "plan_to_watch",
-          malToken: null,
-          CustomDownloadLocation: getDownloadsFolder(),
-          provider: "gogo",
-          mergeSubtitles: "on",
-          subtitleFormat: "ttv",
-          Pagination: "off",
-          concurrentDownloads: 5,
-        };
+  try {
+    const storedConfig = await settings.get("config");
+    config =
+      storedConfig && typeof storedConfig === "object"
+        ? storedConfig
+        : {
+            quality: "1080p",
+            mal_on_off: false,
+            status: "plan_to_watch",
+            malToken: null,
+            CustomDownloadLocation: getDownloadsFolder(),
+            provider: "zoro",
+            mergeSubtitles: "on",
+            subtitleFormat: "ttv",
+            Pagination: "off",
+            concurrentDownloads: 5,
+            subDub: "sub",
+          };
 
-  if (config.malToken != null) {
-    await refresh_token(config.malToken);
-    await MalLogin(token);
+    if (config.malToken != null) {
+      await refresh_token(config.malToken);
+      await MalLogin(token);
+    }
+    await settingSave();
+  } catch (err) {
+    console.log(err);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
   }
-  await settingSave();
 }
 
 // fetch which provider
 async function providerFetch(provider = config.provider) {
-  return provider && providers[provider]
-    ? providers[config?.provider]
-    : providers["gogo"];
+  return {
+    provider_name: provider,
+    provider:
+      provider && providers[provider] ? providers[provider] : providers["zoro"],
+  };
 }
 
 // sync the config with database

@@ -89,6 +89,7 @@ appExpress.post("/api/settings", async (req, res) => {
     Pagination,
     concurrentDownloads,
     subtitleFormat,
+    subDub,
   } = req.body;
   try {
     if (
@@ -126,7 +127,8 @@ appExpress.post("/api/settings", async (req, res) => {
       mergeSubtitles,
       subtitleFormat,
       Pagination,
-      concurrentDownloads
+      concurrentDownloads,
+      subDub
     );
 
     const data = await settingfetch();
@@ -152,6 +154,10 @@ appExpress.post("/api/settings", async (req, res) => {
     // Pagination & concurrentDownloads
     message += `\nPagination : ${data.Pagination}\nConcurrent Downloads: ${data.concurrentDownloads}`;
 
+    if (data.provider === "pahe") {
+      message += `\nsubDub : ${data.subDub}`;
+    }
+
     res.status(200).json({ message: message });
   } catch (err) {
     const errorMessage = err.message.split("\n")[0];
@@ -168,7 +174,7 @@ appExpress.post("/api/latest", async (req, res) => {
   const { page } = req.body;
   try {
     const provider = await providerFetch();
-    const resentep = await latestAnime(provider, page);
+    const resentep = await latestAnime(provider.provider, page);
     res.status(200).json(resentep);
   } catch (err) {
     console.log(err);
@@ -200,7 +206,7 @@ appExpress.post("/api/findanime", async (req, res) => {
   title = title.replace("Results For", "");
   try {
     const provider = await providerFetch();
-    const animefound = await animesearch(provider, title, page);
+    const animefound = await animesearch(provider.provider, title, page);
     res.status(200).json(animefound);
   } catch (err) {
     console.log(err);
@@ -383,7 +389,7 @@ appExpress.post("/api/watch", async (req, res) => {
   const { ep, epNum } = req.body;
   try {
     const provider = await providerFetch();
-    const animedata = await animeinfo(provider, ep);
+    const animedata = await animeinfo(provider.provider, ep);
     let AnimeEpId = animedata.episodes[parseInt(epNum) - 1];
     const sourcesArray = await fetchEpisodeSources(provider, AnimeEpId?.id)
       .sources;
@@ -402,7 +408,7 @@ appExpress.post("/api/watch", async (req, res) => {
 // home page
 appExpress.get("/", async (req, res) => {
   const provider = await providerFetch();
-  const resentep = await latestAnime(provider, 1);
+  const resentep = await latestAnime(provider.provider, 1);
   const config = await settingfetch();
   res.render("index.ejs", {
     data: resentep,
@@ -477,7 +483,7 @@ appExpress.get("/search", async (req, res) => {
   } else if (animeToSearch) {
     try {
       const provider = await providerFetch();
-      const data = await animesearch(provider, animeToSearch);
+      const data = await animesearch(provider.provider, animeToSearch);
       res.render("index.ejs", {
         data: data,
         catagorie: `Results For ${animeToSearch}`,
@@ -505,8 +511,9 @@ appExpress.get("/log", async (req, res) => {
 appExpress.get("/info", async (req, res) => {
   const animeId = req.query.animeid.trim();
   const provider = await providerFetch();
-  const data = await animeinfo(provider, animeId);
-  res.render("info.ejs", { data: data });
+  const data = await animeinfo(provider.provider, animeId);
+  const setting = await settingfetch();
+  res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
 });
 // manga info page
 appExpress.get("/mangainfo", async (req, res) => {
@@ -546,14 +553,10 @@ appExpress.get("/proxy/image", async (req, res) => {
 
   try {
     const response = await ddosGuardRequest(imageUrl, {
-      responseType: "stream",
+      responseType: "arraybuffer",
     });
-
-    const contentType =
-      response.headers["content-type"] || "application/octet-stream";
-    res.set("Content-Type", contentType);
-
-    response.data.pipe(res);
+    res.set("Content-Type", response.headers["content-type"]);
+    res.send(response.data);
   } catch (error) {
     console.error("Error fetching image:", error);
     res.status(500).send("Internal server error.");

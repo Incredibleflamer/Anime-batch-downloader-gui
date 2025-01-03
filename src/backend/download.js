@@ -15,60 +15,144 @@ async function downloadfunction(animeid, startep, endep) {
   if (!startep || !animeid) throw new Error("Something seems to be missing..");
   if (!(startep > 0)) throw new Error("Start ep is 0");
   const provider = await providerFetch();
-  const animedata = await animeinfo(provider, animeid);
-  if (!animedata) throw new Error("no anime found with this id");
+  const config = await settingfetch();
 
-  let Title = animedata.title;
   let info = [];
   let errors = [];
   let Success = [];
-  let TryToDownload = [];
 
-  const config = await settingfetch();
+  if (provider.provider_name !== "pahe") {
+    let TryToDownload = [];
+    const animedata = await animeinfo(provider.provider, animeid);
+    if (!animedata) throw new Error("no anime found with this id");
+    let Title = animedata.title;
 
-  if (!endep) {
-    TryToDownload.push(startep - 1);
+    if (!endep) {
+      TryToDownload.push(startep - 1);
+    } else {
+      if (startep > endep) throw new Error("Start ep is greater than End ep");
+      for (let i = startep; i <= endep; i++) {
+        TryToDownload.push(i - 1);
+      }
+    }
+
+    // checking if ep are ther in sources
+    for (let i = 0; i < TryToDownload.length; i++) {
+      let epid = animedata.episodes[TryToDownload[i]].id;
+      if (!epid) {
+        return errors.push(
+          `${Title} | ${TryToDownload[i] + 1} Not Found [ skiped ]`
+        );
+      }
+
+      let true_false = await checkEpisodeDownload(epid);
+
+      if (true_false) {
+        errors.push(
+          `${Title} | ${TryToDownload[i] + 1} Already In Queue [ skiped ]`
+        );
+      } else {
+        await addToQueue({
+          Type: "Anime",
+          EpNum: TryToDownload[i] + 1,
+          Title: animedata.title,
+          config: {
+            provider: config?.provider,
+            quality: config?.quality,
+            mergeSubtitles: config?.mergeSubtitles,
+            subtitleFormat: config?.subtitleFormat,
+            CustomDownloadLocation: config?.CustomDownloadLocation,
+          },
+          epid: epid,
+          totalSegments: 0,
+          currentSegments: 0,
+        });
+        Success.push(`${Title} | ${TryToDownload[i] + 1} Added To queue`);
+      }
+    }
   } else {
-    if (startep > endep) throw new Error("Start ep is greater than End ep");
-    for (let i = startep; i <= endep; i++) {
-      TryToDownload.push(i - 1);
-    }
-  }
-
-  // checking if ep are ther in sources
-  for (let i = 0; i < TryToDownload.length; i++) {
-    let epid = animedata.episodes[TryToDownload[i]].id;
-    if (!epid) {
-      return errors.push(
-        `${Title} | ${TryToDownload[i] + 1} Not Found [ skiped ]`
-      );
-    }
-
-    let true_false = await checkEpisodeDownload(epid);
-
-    if (true_false) {
-      errors.push(
-        `${Title} | ${TryToDownload[i] + 1} Already In Queue [ skiped ]`
-      );
-    }
-
-    await addToQueue({
-      Type: "Anime",
-      EpNum: TryToDownload[i] + 1,
-      Title: animedata.title,
-      config: {
-        provider: config?.provider,
-        quality: config?.quality,
-        mergeSubtitles: config?.mergeSubtitles,
-        subtitleFormat: config?.subtitleFormat,
-        CustomDownloadLocation: config?.CustomDownloadLocation,
-      },
-      epid: epid,
-      totalSegments: 0,
-      currentSegments: 0,
+    let currentPage = Math.ceil(startep / 30);
+    let animedata = await animeinfo(provider.provider, animeid, {
+      dub: config?.subDub === "dub" ? true : false,
+      fetch_info: true,
+      page: currentPage,
     });
+    if (!animedata) throw new Error("no anime found with this id");
+    let Title = animedata.title;
 
-    Success.push(`${Title} | ${TryToDownload[i] + 1} Added To queue`);
+    let allEpisodes = [...animedata.episodes];
+    if (!endep) {
+      const episode = animedata.episodes.find((ep) => ep.number === startep);
+      if (episode) {
+        allEpisodes = [episode];
+      } else {
+        allEpisodes = [];
+        errors.push(`${Title} | ${startep} Not Found [skipped]`);
+      }
+    } else {
+      // finding more ep if needed
+      if (endep && endep > startep) {
+        let lastFetchedEp = Math.max(...allEpisodes.map((ep) => ep.number));
+        let nextPage = currentPage + 1;
+        while (lastFetchedEp < endep) {
+          const datanew = await animeinfo(provider.provider, animeid, {
+            dub: config?.subDub === "dub" ? true : false,
+            fetch_info: false,
+            page: nextPage,
+          });
+          if (!datanew || !datanew.episodes || datanew.episodes.length === 0) {
+            break;
+          }
+          allEpisodes = [...allEpisodes, ...datanew.episodes];
+          lastFetchedEp = Math.max(...allEpisodes.map((ep) => ep.number));
+          nextPage++;
+        }
+      }
+      // filtering ep
+      allEpisodes = allEpisodes
+        .filter((ep) => ep.number >= startep && ep.number <= endep)
+        .sort((a, b) => a.number - b.number);
+    }
+
+    // doing a foreach
+    if (allEpisodes.length > 0) {
+      for (let i = 0; i < allEpisodes.length; i++) {
+        let epid = allEpisodes[i].id;
+
+        if (!epid) {
+          return errors.push(
+            `${Title} | ${allEpisodes[i].number} Not Found [skipped]`
+          );
+        }
+
+        let true_false = await checkEpisodeDownload(epid);
+
+        if (true_false) {
+          errors.push(
+            `${Title} | ${allEpisodes[i].number} Already In Queue [ skiped ]`
+          );
+        } else {
+          await addToQueue({
+            Type: "Anime",
+            EpNum: allEpisodes[i].number,
+            Title: animedata.title,
+            config: {
+              provider: config?.provider,
+              quality: config?.quality,
+              mergeSubtitles: config?.mergeSubtitles,
+              subtitleFormat: config?.subtitleFormat,
+              CustomDownloadLocation: config?.CustomDownloadLocation,
+            },
+            epid: `${epid}${
+              config?.subDub && config?.subDub === "dub" ? "$dub" : ""
+            }`,
+            totalSegments: 0,
+            currentSegments: 0,
+          });
+          Success.push(`${Title} | ${allEpisodes[i].number} Added To queue`);
+        }
+      }
+    }
   }
 
   await saveQueue();

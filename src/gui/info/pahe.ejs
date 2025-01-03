@@ -1,0 +1,90 @@
+<div class="container-fluid">
+  <div class="anime-info">
+    <div class="anime-info-left">
+      <img
+        class="anime-image"
+        src="<%= data.image %>"
+        alt="<%= data.title %>"
+      />
+
+      <div class="additional-info">
+        Type : <%= data.type %> ( <%= subDub %> )
+        <br />
+        Total Episodes: <%= data?.totalEpisodes %>
+        <br />
+        <%= data?.status ? `Status: ${data?.status}` : "" %>
+      </div>
+    </div>
+    <div class="anime-info-right">
+      <div class="anime-title font"><%= data.title %></div>
+      <div class="description"><%= data.description %></div>
+      <div class="genres">
+        <% data?.genres?.forEach(genre => { %>
+        <button type="button" class="btn btn-outline-warning round btn-sm">
+          <%= genre %>
+        </button>
+        <% }); %>
+      </div>
+      <div class="episodes">
+        <h2>Download Options</h2>
+      </div>
+      <div class="genres">
+        <button
+          data-ep="<%= data.id %>"
+          data-total-episodes="<%= data.totalEpisodes %>"
+          class="btn btn-outline-secondary round download-form-button"
+        >
+          Download From Specific Episodes
+        </button>
+        <button
+          id="downloadall"
+          type="button"
+          class="btn btn-outline-secondary round"
+          onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+        >
+          Download All Episodes
+        </button>
+      </div>
+      <div id="modal-root"></div>
+      <div class="wrapper">
+        <div class="episode-container">
+          <% for (let i = data.totalEpisodes - 1; i >= 0; i--) { %>
+          <button
+            class="episode"
+            type="button"
+            onclick="download('<%= data.id %>', '<%= i + 1 %>')"
+          >
+            Download Episode <%= i + 1 %>
+          </button>
+          <% } %>
+        </div>
+      </div>
+      <!-- Watch online 
+            <br />
+            <div class="video-player">
+              <div class="description" id="now_playing" hidden>
+                Now Playing :
+              </div>
+              <video
+                id="vid1"
+                class="video-js vjs-default-skin"
+                controls
+              ></video>
+              <br />
+               select video 
+              <h4>Click on ep from list to start playing</h4>
+              <div class="d-grid gap-2 episode-container scrollable-ele">
+                <% let j = 1 %> <% data.episodes.forEach(ep => { %>
+                <button
+                  class="btn btn-success round"
+                  type="button"
+                  onclick="Videoplay('<%= data.id %>', <%= j %>)"
+                >
+                  Watch ep <%= j %>
+                </button>
+                <% j++; }); %>
+              </div>
+            </div> -->
+    </div>
+  </div>
+</div>

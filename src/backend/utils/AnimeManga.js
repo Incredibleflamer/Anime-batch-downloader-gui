@@ -59,8 +59,8 @@ async function findanime(provider, Anime_NAME, page) {
     };
 }
 // anime info
-async function animeinfo(provider, animeId) {
-  const data = await provider.AnimeInfo(animeId);
+async function animeinfo(provider, animeId, ExtraParameters = {}) {
+  const data = await provider.AnimeInfo(animeId, ExtraParameters);
   return data;
 }
 // fetch m3u8 links

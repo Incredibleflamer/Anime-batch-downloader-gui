@@ -6,7 +6,6 @@ const cheerio = require("cheerio");
 const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
-
 // variables
 const baseUrl = "https://animepahe.ru";
 const userDataPath = app.getPath("userData");
@@ -71,59 +70,66 @@ async function fetchRecentEpisodes(page = 1) {
 }
 
 // Animeinfo
-async function AnimeInfo(id) {
+async function AnimeInfo(
+  id,
+  { dub = false, fetch_info = true, page = 1 } = {}
+) {
   const animeInfo = {
     id: id,
     title: "",
   };
 
   try {
-    const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
+    if (fetch_info) {
+      const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
 
-    const $ = (0, cheerio.load)(response.data);
+      const $ = (0, cheerio.load)(response.data);
 
-    animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
-    animeInfo.image =
-      `/proxy/image?url=` + $("div.anime-poster a").attr("href");
-    animeInfo.cover =
-      `/proxy/image?url=` + `https:${$("div.anime-cover").attr("data-src")}`;
-    animeInfo.description = $("div.anime-summary").text();
-    animeInfo.genres = $("div.anime-genre ul li")
-      .map((i, el) => $(el).find("a").attr("title"))
-      .get();
-    switch (
-      $('div.col-sm-4.anime-info p:icontains("Status:") a').text().trim()
-    ) {
-      case "Currently Airing":
-        animeInfo.status = "Ongoing";
-        break;
-      case "Finished Airing":
-        animeInfo.status = "Completed";
-        break;
-      default:
-        animeInfo.status = "Unknown";
+      animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
+      animeInfo.image =
+        `/proxy/image?url=` + $("div.anime-poster a").attr("href");
+      animeInfo.cover =
+        `/proxy/image?url=` + `https:${$("div.anime-cover").attr("data-src")}`;
+      animeInfo.description = $("div.anime-summary").text();
+      animeInfo.genres = $("div.anime-genre ul li")
+        .map((i, el) => $(el).find("a").attr("title"))
+        .get();
+      switch (
+        $('div.col-sm-4.anime-info p:icontains("Status:") a').text().trim()
+      ) {
+        case "Currently Airing":
+          animeInfo.status = "Ongoing";
+          break;
+        case "Finished Airing":
+          animeInfo.status = "Completed";
+          break;
+        default:
+          animeInfo.status = "Unknown";
+      }
+
+      animeInfo.type = $('div.col-sm-4.anime-info p:icontains("Type") a')
+        .text()
+        .trim()
+        .toUpperCase();
+
+      animeInfo.aired = $('div.col-sm-4.anime-info p:icontains("Aired")')
+        .text()
+        .replace("Aired:", "")
+        .replaceAll("\n", " ")
+        .replaceAll("  ", "")
+        .trim();
     }
-
-    animeInfo.type = $('div.col-sm-4.anime-info p:icontains("Type") a')
-      .text()
-      .trim()
-      .toUpperCase();
-
-    animeInfo.aired = $('div.col-sm-4.anime-info p:icontains("Aired")')
-      .text()
-      .replace("Aired:", "")
-      .replaceAll("\n", " ")
-      .replaceAll("  ", "")
-      .trim();
 
     const { episodes, last_page, total_episodes } = await fetchEpisodesPages(
       id,
-      1
+      page,
+      dub
     );
 
-    animeInfo.total_episodes = total_episodes;
+    animeInfo.totalEpisodes = total_episodes;
     animeInfo.last_page = last_page;
     animeInfo.episodes = episodes;
+    animeInfo.provider = "pahe";
 
     return animeInfo;
   } catch (error) {
@@ -133,25 +139,37 @@ async function AnimeInfo(id) {
 }
 
 // Fetching Episodes Pages
-async function fetchEpisodesPages(id, page = 1) {
+async function fetchEpisodesPages(id, page, dub) {
   try {
     let episodes = [];
 
     const {
       data: { last_page, data, total },
     } = await ddosGuardRequest(
-      `${baseUrl}/api?m=release&id=${id}&sort=episode_desc&page=${page}`
+      `${baseUrl}/api?m=release&id=${id}&sort=episode_asc&page=${page}`
     );
 
-    episodes.push(
-      ...data.map((item) => ({
-        id: `${id}/${item.session}`,
-        number: item.episode,
-        title: item.title,
-        duration: item.duration,
-        // dub: item.audio && item.audio === "jpn" ? false : true,
-      }))
-    );
+    if (dub) {
+      episodes.push(
+        ...data
+          .filter((item) => item?.audio && item?.audio?.toLowerCase() === "eng")
+          .map((item) => ({
+            id: `${id}/${item.session}`,
+            number: item.episode,
+            title: item.title,
+            duration: item.duration,
+          }))
+      );
+    } else {
+      episodes.push(
+        ...data.map((item) => ({
+          id: `${id}/${item.session}`,
+          number: item.episode,
+          title: item.title,
+          duration: item.duration,
+        }))
+      );
+    }
 
     return {
       episodes: episodes,
@@ -164,62 +182,12 @@ async function fetchEpisodesPages(id, page = 1) {
   }
 }
 
-// Find Episode
-async function FindEpisodeByNumber(id, TotalEpisodes, EpisodeNumber) {
-  try {
-    if (
-      TotalEpisodes &&
-      (TotalEpisodes < EpisodeNumber || TotalEpisodes <= 0 || !EpisodeNumber)
-    ) {
-      throw new Error("No Episode Found");
-    }
-
-    let page = Math.ceil((TotalEpisodes - EpisodeNumber) / 30) + 1;
-
-    let episode;
-    let data;
-
-    const fetchPage = async (pageNum) => {
-      const response = await ddosGuardRequest(
-        `${baseUrl}/api?m=release&id=${id}&sort=episode_desc&page=${pageNum}`
-      );
-      data = response.data.data;
-    };
-
-    await fetchPage(page);
-
-    episode = data.find((item) => item.episode === EpisodeNumber);
-
-    if (!episode) {
-      if (data && data[0] && data[0]?.episode > EpisodeNumber) {
-        console.log(
-          `Episode not found on page ${page}. Fetching page ${page - 1}...`
-        );
-        await fetchPage(page - 1);
-        episode = data.find((item) => item.episode === EpisodeNumber);
-      } else if (data && data[data.length - 1]?.episode < EpisodeNumber) {
-        console.log(
-          `Episode not found on page ${page}. Fetching page ${page + 1}...`
-        );
-        await fetchPage(page + 1);
-        episode = data.find((item) => item.episode === EpisodeNumber);
-      }
-    }
-
-    if (episode) {
-      return await fetchAnimeEpisodeServer(`${id}/${episode.session}`);
-    } else {
-      throw new Error("Episode not found after checking adjacent pages.");
-    }
-  } catch (err) {
-    console.log("Error:", err.message);
-    return { results: [] };
-  }
-}
-
 // fetching Episodes Download Links
 async function fetchEpisodeSources(episodeId) {
   try {
+    let dub = episodeId.endsWith("$dub");
+    episodeId = episodeId.replace("$dub", "");
+
     const response = await ddosGuardRequest(`${baseUrl}/play/${episodeId}`, {
       headers: {
         Referer: `${baseUrl}`,
@@ -236,16 +204,23 @@ async function fetchEpisodeSources(episodeId) {
     const iSource = {
       sources: [],
     };
+
     for (const link of links) {
       const res = await extract(new URL(link.url));
       res[0].quality = link.quality;
       res[0].isDub = link.audio === "eng";
-      iSource.sources.push(res[0]);
+      if (dub && res[0].isDub) {
+        iSource.sources.push(res[0]);
+      } else if (!dub && !res[0].isDub) {
+        iSource.sources.push(res[0]);
+      } else {
+        continue;
+      }
     }
     return iSource;
   } catch (err) {
     console.error("Error fetching data from AnimePahe:", err);
-    return { results: [] };
+    return { sources: [] };
   }
 }
 
@@ -338,7 +313,6 @@ module.exports = {
   AnimeInfo,
   fetchEpisodeSources,
   fetchEpisodesPages,
-  FindEpisodeByNumber,
   fetchRecentEpisodes,
   ddosGuardRequest,
 };
