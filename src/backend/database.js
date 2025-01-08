@@ -40,10 +40,8 @@ async function continuousExecution() {
 
       for (let i = 0; i < AnimeQueue.length; i++) {
         try {
-          const currentTask = AnimeQueue[i];
+          const currentTask = AnimeQueue[0];
           if (!currentTask) {
-            AnimeQueue.splice(i, 1);
-            await SaveQueueData(AnimeQueue);
             break;
           }
 
@@ -180,11 +178,7 @@ async function downloadEpisodeByQuality(
             episodeNumber
           );
 
-          console.log(downloadedPaths);
-          console.log(config);
-          console.log(config?.mergeSubtitles);
           if (config?.mergeSubtitles === "on" || !config?.mergeSubtitles) {
-            console.log("merging!");
             const outputFile = path.join(
               directoryName,
               `${episodeNumber}Ep.mp4`
@@ -298,8 +292,6 @@ async function downloadSubtitle(subtitles, dir, episodeNumber) {
         });
 
         downloadedPaths.push(subtitlePath);
-
-        console.log(`downlaoded! lang : ${lang} : ${url}`);
       }
       return { downloadedPaths, episodeDir };
     }
@@ -329,7 +321,6 @@ async function mergeSubtitleWithVideo(
   const metadata = subtitleFiles
     .map((filePath, index) => {
       const lang = path.basename(filePath, path.extname(filePath));
-      console.log(lang);
       return `-metadata:s:s:${index} language=${lang.split("_")}`;
     })
     .join(" ");
