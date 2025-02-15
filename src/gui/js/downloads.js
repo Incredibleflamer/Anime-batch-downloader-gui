@@ -12,12 +12,17 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         var captionElement = document.getElementById("caption");
-        captionElement.innerHTML = data?.caption || "Nothing to Download";
 
         var ratio =
           data.currentSegments && data.totalSegments
             ? Math.floor((data.currentSegments / data.totalSegments) * 100)
             : 0;
+
+        if (ratio >= 100 && (!data.queue || data.queue.length === 0)) {
+          captionElement.innerHTML = "Nothing to Download";
+        } else {
+          captionElement.innerHTML = data?.caption || "Nothing to Download";
+        }
 
         var barvar = document.getElementById("myBar");
         if (ratio < 100 && ratio > 0) {
