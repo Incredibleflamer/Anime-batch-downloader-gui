@@ -78,7 +78,7 @@ async function continuousExecution() {
             break;
           }
           await saveQueue();
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (err) {
           console.log("Error executing task:", err);
           logger.error(`Error message: ${err.message}`);

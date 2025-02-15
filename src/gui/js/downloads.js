@@ -12,54 +12,54 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         var captionElement = document.getElementById("caption");
-        if (data && data.caption) {
-          captionElement.innerHTML = data.caption;
-        } else {
-          captionElement.innerHTML = "";
-        }
+        captionElement.innerHTML = data?.caption || "Nothing to Download";
 
-        if (data?.currentSegments || data?.totalSegments) {
-          var ratio =
-            data.currentSegments && data.totalSegments
-              ? Math.floor((data.currentSegments / data.totalSegments) * 100)
-              : 0;
+        var ratio =
+          data.currentSegments && data.totalSegments
+            ? Math.floor((data.currentSegments / data.totalSegments) * 100)
+            : 0;
 
-          if (ratio < 100 && ratio > 0) {
-            barvar.style.display = "block";
-            bar.set(ratio);
-          } else {
-            captionElement.innerHTML = "Nothing to Download";
-            bar.set(0);
-            barvar.style.display = "none";
-          }
+        var barvar = document.getElementById("myBar");
+        if (ratio < 100 && ratio > 0) {
+          barvar.style.display = "block";
+          bar.set(ratio);
         } else {
-          captionElement.innerHTML = "Nothing to Download";
           bar.set(0);
           barvar.style.display = "none";
         }
 
         var queueContainer = document.getElementById("queue");
-        if (queueContainer) {
-          queueContainer.innerHTML = "";
-          if (data.queue && data.queue.length > 0) {
-            queueContainer.innerHTML = `
-                    <div class="queue-header">
-                      <div class="queue-title">
-                        <div class="caption">In Queue</div>
-                      </div>
-                      <div class="queue-buttons">
-                        <button onclick="removeAllFromQueue()" class="btn btn-outline-danger">Remove All</button>
-                      </div>
-                    </div>`;
-            data.queue.forEach((item) => {
-              var queueItem = document.createElement("div");
-              queueItem.classList.add("queue-item");
-              queueItem.innerHTML = `
-                      <span>${item.Title} - ${item.EpNum}</span>
-                      <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epid}')">🗑️</span>`;
-              queueContainer.appendChild(queueItem);
-            });
-          }
+        var queueItemsContainer = document.getElementById("queue-items");
+
+        if (!queueItemsContainer) {
+          queueItemsContainer = document.createElement("div");
+          queueItemsContainer.id = "queue-items";
+          queueContainer.appendChild(queueItemsContainer);
+        }
+
+        queueItemsContainer.innerHTML = "";
+
+        if (data.queue && data.queue.length > 0) {
+          queueContainer.innerHTML = `
+            <div class="queue-header">
+              <div class="queue-title">
+                <div class="caption">In Queue</div>
+              </div>
+              <div class="queue-buttons">
+                <button onclick="removeAllFromQueue()" class="btn btn-outline-danger">Remove All</button>
+              </div>
+            </div>`;
+
+          queueContainer.appendChild(queueItemsContainer);
+
+          data.queue.forEach((item) => {
+            var queueItem = document.createElement("div");
+            queueItem.classList.add("queue-item");
+            queueItem.innerHTML = `
+              <span>${item.Title} - ${item.EpNum}</span>
+              <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epid}')">🗑️</span>`;
+            queueItemsContainer.appendChild(queueItem);
+          });
         }
       })
       .catch((err) => {
