@@ -5,73 +5,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anime Downloader</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" href="info.css" />
-    <link rel="stylesheet" href="./video_player/video-js.css" />
-    <link href="video_player/quality.css" rel="stylesheet" />
-    <style>
-      .vjs-icon-placeholder {
-        font-size: 10px;
-      }
-    </style>
+    <link rel="stylesheet" href="/css/libs/bootstrap.css" />
+    <link rel="stylesheet" href="/css/info.css" />
+    <link rel="stylesheet" href="/css/libs/video-js.css" />
+    <link rel="stylesheet" href="/css/libs/video-js-quality.css" />
   </head>
   <body>
-    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarTogglerDemo01"
-        aria-controls="navbarTogglerDemo01"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-        <a class="navbar-brand" href="/">Anime Downloader</a>
-        <a class="navbar-brand" href="/manga">Manga Downloader</a>
-        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="/log">logs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/downloads">Downloads</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/setting">Setting</a>
-          </li>
-        </ul>
-        <form class="form-inline my-2 my-lg-0">
-          <input
-            class="form-control mr-sm-2"
-            type="search"
-            id="searchInput"
-            placeholder="Search for Anime"
-            aria-label="Search"
-          />
-          <button
-            class="btn btn-outline-info"
-            type="submit"
-            onclick="search(event)"
-          >
-            Search
-          </button>
-          <button
-            onclick="goBack()"
-            class="btn btn-outline-info"
-            style="margin-left: 5px"
-          >
-            Back
-          </button>
-        </form>
-      </div>
-    </nav>
+    <!-- navbar -->
+    <%- include("components/navbar") %>
 
     <!-- Modal -->
     <div
@@ -132,31 +73,115 @@
         </div>
       </div>
     </div>
-    <!-- End Modal -->
-    <% if (data?.provider && data.provider === "pahe") { %> <%-
-    include("info/pahe.ejs") %> <% } else { %> <%- include("info/all.ejs") %> <%
-    } %>
-    <!--  -->
-    <script src="https://cdn.jsdelivr.net/npm/videojs-http-source-selector@latest/dist/videojs-http-source-selector.min.js"></script>
-    <script src="./video_player/video.min.js"></script>
-    <script src="./video_player/videojs-contrib-quality-levels.min.js"></script>
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
-      crossorigin="anonymous"
-    ></script>
 
-    <script src="download.js"></script>
-    <script src="search.js"></script>
-    <script src="info.js"></script>
-    <!-- <script src="video_player/quality.js"></script> -->
-    <!-- <script src="video_player/play.js"></script> -->
+    <!-- info of anime -->
+    <div class="container-fluids">
+      <div class="anime-info">
+        <div class="anime-info-left">
+          <img
+            class="anime-image"
+            src="<%= data.image %>"
+            alt="<%= data.title %>"
+          />
+
+          <div class="additional-info">
+            Type: <%= data.type %> (<%= data.subOrDub || "UNKNOWN" %>)
+            <br />
+            Total Episodes: <%= data?.totalEpisodes %>
+            <br />
+            <%= data?.status ? `Status: ${data?.status}` : "" %> <% if
+            (data?.subs > 0) { %><br />Subs Episodes: <%= data.subs %><% } %> <%
+            if (data?.dubs > 0) { %><br />Dubs Episodes: <%= data.dubs %><% } %>
+          </div>
+        </div>
+        <div class="anime-info-right">
+          <div class="anime-title font"><%= data.title %></div>
+          <div class="description"><%= data.description %></div>
+          <div class="genres">
+            <% data?.genres?.forEach(genre => { %>
+            <button type="button" class="btn btn-outline-warning round btn-sm">
+              <%= genre %>
+            </button>
+            <% }); %>
+          </div>
+          <div class="episodes">
+            <h2>Download Options</h2>
+          </div>
+
+          <% if (data.id.includes('-both')) { %>
+          <!-- Toggle Button -->
+          <div class="toggle-container" id="toggle-container">
+            <button
+              id="toggleDownloadOptions"
+              class="btn btn-outline-info"
+              onclick="toggleDownloadOptions()"
+            >
+              Show Dub 🎥
+            </button>
+          </div>
+
+          <!-- Download Options (hidden initially) -->
+          <div class="genres downloadOptions">
+            <div class="subOptions" id="subOptions"></div>
+            <div class="dubOptions" id="dubOptions" style="display: none"></div>
+          </div>
+          <% } else { %>
+          <div class="genres">
+            <button
+              data-ep="<%= data.id %>"
+              data-total-episodes="<%= data.totalEpisodes %>"
+              class="btn btn-outline-secondary round download-form-button"
+            >
+              Download From Specific Episodes
+            </button>
+            <button
+              id="downloadall"
+              type="button"
+              class="btn btn-outline-secondary round"
+              onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+            >
+              Download All Episodes
+            </button>
+          </div>
+
+          <div id="modal-root"></div>
+          <div class="wrapper">
+            <div class="episode-container">
+              <% for (let i = data.totalEpisodes - 1; i >= 0; i--) { %>
+              <button
+                class="episode"
+                type="button"
+                onclick="download('<%= data.id %>', '<%= i + 1 %>')"
+              >
+                Download Episode <%= i + 1 %>
+              </button>
+              <% } %>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- imports -->
+    <script src="/js/libs/jquery.js"></script>
+    <script src="/js/libs/bootstrap.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/info.js"></script>
+    <!-- <script src="/js/libs/videojs-http-source-selector.js"></script>
+    <script src="/js/libs/video.js"></script>
+    <script src="/js/libs/videojs-contrib-quality-levels.js"></script> -->
+    <!-- <script src="/js/player/quality.js"></script> -->
+    <!-- <script src="/js/player/play.js"></script> -->
+
+    <!-- creating buttons -->
+    <script>
+      <% if (data?.subs > 0) { %>
+        createDownloadButton('sub', <%= data?.subs %>, '<%= data.id %>');
+      <% } %>
+      <% if (data?.dubs > 0) { %>
+        createDownloadButton('dub', <%= data?.dubs %>, '<%= data.id %>');
+      <% } %>
+    </script>
   </body>
 </html>

@@ -15,8 +15,7 @@ const settings = new SimplDB({ dataFile: DatabaseFilePath });
 let config = [];
 
 const providers = {
-  gogo: require("../Scrappers/gogo"),
-  zoro: require("../Scrappers/zoro"),
+  hianime: require("../Scrappers/hianime"),
   pahe: require("../Scrappers/animepahe"),
   // anivibe: require("../Scrappers/anivibe"),
 };
@@ -61,7 +60,7 @@ async function settingupdate(
   // status
   if (status === null) status = currentSettings?.status || "plan_to_watch";
   // provider
-  if (provider === null) provider = currentSettings?.provider || "zoro";
+  if (provider === null) provider = currentSettings?.provider || "hianime";
   // mergeSubtitles
   if (mergeSubtitles === null)
     mergeSubtitles = currentSettings?.mergeSubtitles || "on";
@@ -140,7 +139,7 @@ async function settingfetch() {
     }
     // checking provider is valid
     if (!config?.provider || !providers.hasOwnProperty(config?.provider)) {
-      config.provider = "gogo";
+      config.provider = "hianime";
       changes = true;
     }
     // checking quality
@@ -200,7 +199,7 @@ async function SettingsLoad() {
             status: "plan_to_watch",
             malToken: null,
             CustomDownloadLocation: getDownloadsFolder(),
-            provider: "zoro",
+            provider: "hianime",
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
@@ -225,7 +224,9 @@ async function providerFetch(provider = config.provider) {
   return {
     provider_name: provider,
     provider:
-      provider && providers[provider] ? providers[provider] : providers["zoro"],
+      provider && providers[provider]
+        ? providers[provider]
+        : providers["hianime"],
   };
 }
 

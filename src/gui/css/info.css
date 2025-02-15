@@ -1,11 +1,18 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap");
 
-body {
-  font-family: Arial, sans-serif;
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
   background-color: #222;
   color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .font {
@@ -13,8 +20,11 @@ body {
   font-style: normal;
 }
 
-.container-fluid {
+.container-fluids {
   margin-top: 70px;
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 50px;
 }
 
 .anime-info {
@@ -62,7 +72,11 @@ body {
 }
 
 .description {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  max-height: 100px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: #fff;
 }
 
 .genres {
@@ -88,19 +102,6 @@ body {
   overflow-x: hidden;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.episode-container::-webkit-scrollbar {
-  width: 12px;
-}
-
-.episode-container::-webkit-scrollbar-track {
-  background: #333;
-}
-
-.episode-container::-webkit-scrollbar-thumb {
-  background-color: #555;
-  border-radius: 20px;
 }
 
 .round {
@@ -129,11 +130,6 @@ body {
   height: auto;
   min-height: 400px;
   max-width: 100%;
-}
-
-.description {
-  margin-bottom: 10px;
-  color: #fff;
 }
 
 .episode {
@@ -171,21 +167,37 @@ body {
 
 .toggle-container {
   display: flex;
-  justify-content: flex-start; /* Align buttons to the start */
-  gap: 10px; /* Add space between buttons */
-  flex-wrap: wrap; /* Allow buttons to wrap to the next line if needed */
-  margin-bottom: 10px; /* Add some bottom margin for spacing */
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
 }
 
 .toggle-container button {
-  margin: 5px; /* Add some margin around buttons for spacing */
-  padding: 10px 15px; /* Increase button padding for better spacing */
-  font-size: 14px; /* Optional: Adjust font size */
-  border-radius: 5px; /* Optional: Give buttons rounded corners */
-  transition: background-color 0.3s ease; /* Smooth transition for background color */
+  margin: 5px;
+  padding: 10px 15px;
+  font-size: 14px;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
 }
 
 .toggle-container button:hover {
-  background-color: #007bff; /* Change background color on hover */
-  color: white; /* Change text color on hover */
+  background-color: #007bff;
+  color: white;
+}
+
+.description::-webkit-scrollbar,
+.episode-container::-webkit-scrollbar {
+  width: 12px;
+}
+
+.episode-container::-webkit-scrollbar-track,
+.description::-webkit-scrollbar-track {
+  background: #333;
+}
+
+.episode-container::-webkit-scrollbar-thumb,
+.description::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 20px;
 }

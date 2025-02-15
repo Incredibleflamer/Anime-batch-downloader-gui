@@ -40,7 +40,7 @@ async function continuousExecution() {
 
       for (let i = 0; i < AnimeQueue.length; i++) {
         try {
-          const currentTask = AnimeQueue[i];
+          const currentTask = AnimeQueue[0];
           if (!currentTask) {
             AnimeQueue.splice(i, 1);
             await SaveQueueData(AnimeQueue);

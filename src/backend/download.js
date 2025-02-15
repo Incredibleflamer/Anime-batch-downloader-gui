@@ -6,7 +6,7 @@ const {
   saveQueue,
   checkEpisodeDownload,
 } = require("./utils/queue");
-const { MalAddToList, MalGogo } = require("./utils/mal");
+// const { MalAddToList, MalGogo } = require("./utils/mal");
 
 // main download function
 async function downloadfunction(animeid, startep, endep) {
@@ -157,21 +157,21 @@ async function downloadfunction(animeid, startep, endep) {
 
   await saveQueue();
 
-  // add to mal?
-  if (config.mal_on_off == true && config.provider === "gogo") {
-    try {
-      let malid = await MalGogo(animeid);
-      const true_false_added = await MalAddToList(malid, config.status);
-      if (true_false_added === true) {
-        Success.push(`Added ${Title} To ${config.status}.`);
-      } else {
-        info.push(`Couldnt Update ${Title} To ${config.status}`);
-      }
-    } catch (err) {
-      console.log(err);
-      info.push(`Couldnt Add ${Title} To Mal [ Logout and Login Again. ]`);
-    }
-  }
+  // add to mal? TODO : FIX FOR ALL PROVIDERS
+  // if (config.mal_on_off == true && config.provider === "") {
+  //   try {
+  //     let malid = await MalGogo(animeid);
+  //     const true_false_added = await MalAddToList(malid, config.status);
+  //     if (true_false_added === true) {
+  //       Success.push(`Added ${Title} To ${config.status}.`);
+  //     } else {
+  //       info.push(`Couldnt Update ${Title} To ${config.status}`);
+  //     }
+  //   } catch (err) {
+  //     console.log(err);
+  //     info.push(`Couldnt Add ${Title} To Mal [ Logout and Login Again. ]`);
+  //   }
+  // }
   return { errors, info, Success };
 }
 

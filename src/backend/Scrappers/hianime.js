@@ -96,7 +96,7 @@ async function fetchRecentEpisodes(page = 1) {
 async function fetchEpisodeSources(episodeId) {
   if (episodeId?.startsWith("http")) {
     return {
-      ...(await ZoroExtract(episodeId)),
+      ...(await hianimeExtract(episodeId)),
     };
   }
   if (!episodeId.includes("$episode$")) throw new Error("Invalid episode id");
@@ -250,7 +250,7 @@ function retrieveServerId($, index, subOrDub) {
     .attr("data-id");
 }
 
-async function ZoroExtract(videoUrl) {
+async function hianimeExtract(videoUrl) {
   try {
     const result = {
       sources: [],

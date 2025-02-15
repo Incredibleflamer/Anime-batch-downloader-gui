@@ -23,7 +23,7 @@
 
 ## Overview
 
-This is a Node.js-based anime & manga downloader that allows you to download anime episodes in bulk, quickly, and from the gogo source. Additionally, it has the functionality to automatically add the downloaded anime to your MyAnimeList plan-to-watch list. The downloader supports both dubbed (dub) and subtitled (sub) versions for anime. For manga, it downloads chapters from Mangasee123 and saves them in PDF format.
+This is a Node.js-based anime & manga downloader that allows you to download anime episodes in bulk, quickly, and from the multiple sources. Additionally, it has the functionality to automatically add the downloaded anime to your MyAnimeList plan-to-watch list. The downloader supports both dubbed (dub) and subtitled (sub) versions for anime. For manga, it downloads chapters from Mangasee123 and saves them in PDF format.
 
 ### Features
 
@@ -66,9 +66,9 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 1. Connect your MyAnimeList account via authorization.
 2. Select what you want to do with new anime or manga (e.g., add to plan-to-watch or plan-to-read).
 3. Select custom quality.
-4. Provider Options: Gogo & Zoro
+4. Provider Options: Hianime & AnimePahe
 
-- Zoro Subtitle Downloads: Zoro supports subtitle downloads, and users can select to download subtitles in a folder or merge them with video.
+- Hianime Subtitle Downloads: Hianime supports subtitle downloads, and users can select to download subtitles in a folder or merge them with video.
 
 ## Uninstalling the Application
 

@@ -144,8 +144,8 @@ appExpress.post("/api/settings", async (req, res) => {
     // add download location
     message += `\nDownload Location: ${data.CustomDownloadLocation}\nProvider : ${data.provider}`;
 
-    // if provider is zoro add mergeSubtitles
-    if (data.provider === "zoro") {
+    // if provider is hianime add mergeSubtitles
+    if (data.provider === "hianime") {
       message += `\nMerge Subtitles: ${data.mergeSubtitles}`;
       if (data.mergeSubtitles === "off") {
         message += `\nSubtitle Format: ${data.subtitleFormat}`;
@@ -406,7 +406,7 @@ appExpress.post("/api/watch", async (req, res) => {
 
 // ===================== routes =====================
 // home page
-appExpress.get("/", async (req, res) => {
+appExpress.get(["/", "/anime"], async (req, res) => {
   const provider = await providerFetch();
   const resentep = await latestAnime(provider.provider, 1);
   const config = await settingfetch();
@@ -577,6 +577,8 @@ const createWindow = () => {
       backgroundThrottling: false,
     },
     icon: path.join(__dirname, "./assets/luffy.ico"),
+    minWidth: 1000,
+    minHeight: 750,
   });
   app.commandLine.appendSwitch("disable-http-cache");
   app.commandLine.appendSwitch("disable-renderer-backgrounding");

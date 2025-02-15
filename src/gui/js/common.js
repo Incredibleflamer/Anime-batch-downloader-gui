@@ -1,3 +1,7 @@
+function goBack() {
+  window.history.back();
+}
+
 async function download(ep, start, end) {
   try {
     const response = await fetch("/api/download", {
@@ -18,7 +22,7 @@ async function download(ep, start, end) {
       swal(
         "Request Failed",
         `There are ${responseData.queue} Anime in Queue. 
-        Error: ${responseData.message}`,
+          Error: ${responseData.message}`,
         "error"
       );
     } else {

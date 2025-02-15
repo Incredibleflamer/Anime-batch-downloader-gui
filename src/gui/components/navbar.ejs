@@ -1,0 +1,132 @@
+<aside class="sidebar collapsed">
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+  />
+  <header class="sidebar-header">
+    <a href="/" class="header-logo">
+      <img src="/images/logo.webp" alt="profile-logo" />
+      <link rel="stylesheet" href="/css/navbar.css" />
+    </a>
+    <button class="toggler sidebar-toggler">
+      <span class="material-symbols-rounded">Menu</span>
+    </button>
+  </header>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-list primary-nav">
+      <li class="nav-item">
+        <div class="sidebar-search">
+          <span class="nav-icon material-symbols-rounded left">search</span>
+          <input
+            type="text"
+            id="sidebar-search-input"
+            placeholder="Search..."
+            class="search-input"
+          />
+        </div>
+      </li>
+      <li class="nav-item">
+        <a href="/anime" class="nav-link">
+          <span class="nav-icon material-symbols-rounded">movie</span>
+          <span class="nav-label">Anime</span>
+        </a>
+        <span class="nav-tooltip">Anime</span>
+      </li>
+      <li class="nav-item" hidden>
+        <a href="#" class="nav-link">
+          <span class="nav-icon material-symbols-rounded">menu_book</span>
+          <span class="nav-label">Manga</span>
+        </a>
+        <span class="nav-tooltip">Manga</span>
+      </li>
+      <li class="nav-item">
+        <a href="/downloads" class="nav-link">
+          <span class="nav-icon material-symbols-rounded">download</span>
+          <span class="nav-label">Downloads</span>
+        </a>
+        <span class="nav-tooltip">Downloads</span>
+      </li>
+      <li class="nav-item">
+        <a href="/log" class="nav-link">
+          <span class="nav-icon material-symbols-rounded">history</span>
+          <span class="nav-label">Logs</span>
+        </a>
+        <span class="nav-tooltip">Logs</span>
+      </li>
+      <li class="nav-item">
+        <a href="/setting" class="nav-link">
+          <span class="nav-icon material-symbols-rounded">settings</span>
+          <span class="nav-label">Settings</span>
+        </a>
+        <span class="nav-tooltip">Settings</span>
+      </li>
+    </ul>
+  </nav>
+</aside>
+<script src="/js/libs/sweetalert.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarToggler = document.querySelector(".sidebar-toggler");
+    const sidebarSearch = document.querySelector(".sidebar-search");
+    const searchIcon = document.querySelector(".nav-icon.left");
+    const inputField = document.getElementById("sidebar-search-input");
+
+    sidebarToggler.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleSidebar();
+    });
+
+    searchIcon.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (sidebar.classList.contains("collapsed")) {
+        sidebar.classList.remove("collapsed");
+        sidebarSearch.classList.add("show-input");
+        inputField.focus();
+      } else {
+        performSearch();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        !sidebar.contains(event.target) &&
+        !sidebarToggler.contains(event.target) &&
+        !sidebarSearch.contains(event.target)
+      ) {
+        sidebar.classList.add("collapsed");
+        sidebarSearch.classList.remove("show-input");
+        inputField.value = "";
+      }
+    });
+
+    inputField.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        performSearch();
+      }
+    });
+
+    function toggleSidebar() {
+      sidebar.classList.toggle("collapsed");
+      if (sidebar.classList.contains("collapsed")) {
+        sidebarSearch.classList.remove("show-input");
+        inputField.value = "";
+      } else {
+        sidebarSearch.classList.add("show-input");
+      }
+    }
+
+    function performSearch() {
+      const query = inputField.value.trim();
+      if (!query) {
+        swal("Invalid Search", "Please enter some text to search", "error");
+        return;
+      }
+      window.location.href = `/search?animetosearch=${encodeURIComponent(
+        query
+      )}`;
+    }
+  });
+</script>

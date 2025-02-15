@@ -25,3 +25,7 @@
   visibility: visible;
   opacity: 1;
 }
+
+.vjs-icon-placeholder {
+  font-size: 10px;
+}

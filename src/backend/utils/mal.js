@@ -65,19 +65,19 @@ async function MalAddToList(malid, status) {
   }
 }
 
-// gogo to mal
-async function MalGogo(AnimeID) {
-  const { data } = await axios.get(
-    `https://api.malsync.moe/page/Gogoanime/${AnimeID}`
-  );
-  return data.malId;
-}
+// // gogo to mal
+// async function MalGogo(AnimeID) {
+//   const { data } = await axios.get(
+//     `https://api.malsync.moe/page/Gogoanime/${AnimeID}`
+//   );
+//   return data.malId;
+// }
 
 module.exports = {
   MalCreateUrl,
   MalVerifyToken,
   MalRefreshTokenGen,
   MalLogin,
-  MalGogo,
+  // MalGogo,
   MalAddToList,
 };

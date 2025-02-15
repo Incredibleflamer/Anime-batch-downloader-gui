@@ -27,14 +27,11 @@ async function loadQueue() {
 
 // remove anime from queue
 async function removeQueue(AnimeEpId) {
-  console.log(`id : ${AnimeEpId}`);
-  console.log(`before : ${AnimeQueue.toString()}`);
   const indexToRemove = AnimeQueue.findIndex((item) => item.epid === AnimeEpId);
   if (indexToRemove !== -1) {
     AnimeQueue.splice(indexToRemove, 1);
     await saveQueue();
   }
-  console.log(`after : ${AnimeQueue.toString()}`);
 }
 
 // Remove With Index

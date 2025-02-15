@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+  <head>    <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anime Downloader - Settings</title>
@@ -9,37 +9,11 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="settings.css" />
+    <link rel="stylesheet" href="/css/settings.css" />
   </head>
   <body>
-    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarTogglerDemo01"
-        aria-controls="navbarTogglerDemo01"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-        <a class="navbar-brand" href="/">Anime Downloader</a>
-        <a class="navbar-brand" href="/manga">Manga Downloader</a>
-        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="/log">logs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/downloads">Downloads</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/setting">Setting</a>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <%- include("components/navbar") %>
+    <main>
     <div id="overlay" class="overlay" style="display: none"></div>
     <div class="container">
       <h1>Settings</h1>
@@ -102,8 +76,7 @@
             id="providerSelect"
             onchange="toggleSubtitleOption()"
           >
-            <option value="gogo" <% if (settings.provider === "gogo") { %> selected <% } %>>Gogo</option>
-            <option value="zoro" <% if (settings.provider === "zoro") { %> selected <% } %>>Zoro</option>
+            <option value="hianime" <% if (settings.provider === "hianime") { %> selected <% } %>>hianime</option>
             <option value="pahe" <% if (settings.provider === "pahe") { %> selected <% } %>>Pahe</option>
           </select>
         </div>
@@ -117,7 +90,7 @@
           </select>
         </div>
 
-        <!-- Subtitle Merge option (visible for Zoro provider only) -->
+        <!-- Subtitle Merge option (visible for hianime provider only) -->
         <div class="mb-3" id="subtitleOption" style="display: none">
           <label for="mergeSubtitles" class="form-label"
             >Merge Subtitles</label
@@ -128,7 +101,7 @@
           </select>
         </div>
 
-        <!-- Subtitle Format option (visible for Zoro provider and Merge Subtitles = OFF only) -->
+        <!-- Subtitle Format option (visible for hianime provider and Merge Subtitles = OFF only) -->
          <div class="mb-3" id="subtitleFormatOption" style="display: none">
           <label for="subtitleFormat" class="form-label">Subtitles Format</label>
           <select class="form-select" id="subtitleFormat">
@@ -170,11 +143,6 @@
       src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
       crossorigin="anonymous"
     ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
     <script>
       function submitSettings(event) {
         event.preventDefault();
@@ -202,10 +170,10 @@
             : null,
           provider: providerElement ? providerElement.value : null,
           mergeSubtitles:
-            providerElement.value === "zoro" && mergeSubtitlesElement
+            providerElement.value === "hianime" && mergeSubtitlesElement
               ? mergeSubtitlesElement.value
               : null,
-          subtitleFormat: providerElement.value === "zoro" && mergeSubtitlesElement.value === "off" && subtitleFormatElement ? subtitleFormatElement.value : null,
+          subtitleFormat: providerElement.value === "hianime" && mergeSubtitlesElement.value === "off" && subtitleFormatElement ? subtitleFormatElement.value : null,
           Pagination: Pagination ? Pagination.value : null,
           concurrentDownloads: concurrentDownloadsElement
             ? concurrentDownloadsElement.value
@@ -255,9 +223,9 @@
         const subDubOptionElement = document.getElementById("subDubOption");
 
 
-        subtitleOptionElement.style.display = providerElement.value === "zoro" ? "block" : "none";
+        subtitleOptionElement.style.display = providerElement.value === "hianime" ? "block" : "none";
         
-        if (providerElement.value === "zoro" && mergeSubtitlesElement.value === "off") {
+        if (providerElement.value === "hianime" && mergeSubtitlesElement.value === "off") {
           subtitleFormatOptionElement.style.display = "block";
         } else {
           subtitleFormatOptionElement.style.display = "none";
@@ -268,5 +236,6 @@
       document.getElementById("mergeSubtitles")?.addEventListener("change", toggleSubtitleOption);
       document.addEventListener("DOMContentLoaded", toggleSubtitleOption);
     </script>
+    </main>
   </body>
 </html>

@@ -1,75 +1,20 @@
 <html>
   <head>
+    <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>logs</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" type="text/css" href="./index.css" />
-    <style>
-      .log-container {
-        overflow: auto;
-        border: 1px solid blanchedalmond;
-        padding: 10px;
-        margin-top: 20px;
-        height: 89%;
-      }
-      pre {
-        color: white;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="/css/logs.css" />
   </head>
   <body>
-    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarTogglerDemo01"
-        aria-controls="navbarTogglerDemo01"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-        <a class="navbar-brand" href="/">Anime Downloader</a>
-        <a class="navbar-brand" href="/manga">Manga Downloader</a>
-        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="/log">logs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/downloads">Downloads</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/setting">Setting</a>
-          </li>
-        </ul>
-      </div>
-    </nav>
-    <!--  -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
-      crossorigin="anonymous"
-    ></script>
-    <!--  -->
-    <h2>Application Logs</h2>
+    <%- include("components/navbar") %>
 
-    <div class="log-container">
-      <pre><%= logs %></pre>
-    </div>
+    <main>
+      <h2>Application Logs</h2>
+
+      <div class="log-container">
+        <pre><%= logs %></pre>
+      </div>
+    </main>
   </body>
 </html>
