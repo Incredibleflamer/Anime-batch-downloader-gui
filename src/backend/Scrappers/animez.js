@@ -122,12 +122,12 @@ async function ExtractCardsData($, page = 1) {
   return searchResult;
 }
 
-(async () => {
-  try {
-    // const data = await SearchAnime("one piece", 2);
-    const data = await AnimeInfo("one-piece-7096");
-    console.log(data);
-  } catch (err) {
-    console.log(err);
-  }
-})();
+// (async () => {
+//   try {
+//     // const data = await SearchAnime("one piece", 2);
+//     const data = await AnimeInfo("one-piece-7096");
+//     console.log(data);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// })();

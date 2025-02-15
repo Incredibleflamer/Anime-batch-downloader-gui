@@ -14,7 +14,7 @@ async function fetchRecentEpisodes(page = 1) {
     const { data } = await axios.get(`${baseurl}/newest?page=${page}`);
 
     const $ = cheerio.load(data);
-    console.log($);
+    // console.log($);
 
     const results = [];
 
