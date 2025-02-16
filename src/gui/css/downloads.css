@@ -42,7 +42,7 @@ body {
 }
 
 #queue-items::-webkit-scrollbar {
-  width: 6px;
+  width: 1rem;
 }
 
 #queue-items::-webkit-scrollbar-track {

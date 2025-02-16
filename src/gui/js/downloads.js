@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
           queueContainer.appendChild(queueItemsContainer);
         }
 
+        const scrollTop = queueItemsContainer.scrollTop;
         queueItemsContainer.innerHTML = "";
 
         if (data.queue && data.queue.length > 0) {
@@ -66,6 +67,8 @@ document.addEventListener("DOMContentLoaded", function () {
             queueItemsContainer.appendChild(queueItem);
           });
         }
+
+        queueItemsContainer.scrollTop = scrollTop;
       })
       .catch((err) => {
         console.log("Error fetching progress:", err);
