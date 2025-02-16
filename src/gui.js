@@ -37,7 +37,6 @@ const {
   animesearch,
   fetchEpisodeSources,
 } = require("./backend/utils/AnimeManga");
-const { MangaSeeJsonFetch } = require("./backend/Scrappers/MangaSee");
 const { ddosGuardRequest } = require("./backend/Scrappers/animepahe");
 const { logger, getLogs } = require("./backend/utils/AppLogger");
 const {
@@ -70,9 +69,10 @@ appExpress.get("/mal/callback", async (req, res) => {
   res.redirect("https://myanimelist.net/");
   win.webContents.reload();
 });
+
 // mal logout
 appExpress.get("/mal/logout", async (req, res) => {
-  await settingupdate(null, "logout", null, null);
+  await settingupdate({ mal_on_off: "logout", status: null, malToken: null });
   res.redirect("/setting");
 });
 // ===================== apis =====================
@@ -80,11 +80,12 @@ appExpress.get("/mal/logout", async (req, res) => {
 // setting api
 appExpress.post("/api/settings", async (req, res) => {
   const {
-    status,
+    // status,
     quality,
-    autotrack,
+    // autotrack,
     CustomDownloadLocation,
-    provider,
+    Animeprovider,
+    Mangaprovider,
     mergeSubtitles,
     Pagination,
     concurrentDownloads,
@@ -92,44 +93,41 @@ appExpress.post("/api/settings", async (req, res) => {
     subDub,
   } = req.body;
   try {
-    if (
-      status !== "watching" &&
-      status !== "dropped" &&
-      status !== "completed" &&
-      status !== "on_hold" &&
-      status !== "plan_to_watch" &&
-      status !== null
-    )
-      return res.status(400).json({ error: "Enter a valid status." });
+    // if (
+    //   status !== "watching" &&
+    //   status !== "dropped" &&
+    //   status !== "completed" &&
+    //   status !== "on_hold" &&
+    //   status !== "plan_to_watch" &&
+    //   status !== null
+    // )
+    //   return res.status(400).json({ error: "Enter a valid status." });
 
     if (
       quality !== "1080p" &&
       quality !== "720p" &&
-      quality !== "360p" &&
-      status !== null
+      quality !== "360p"
+      // && status !== null
     )
       return res.status(400).json({ error: "Enter a valid quality." });
 
-    if (autotrack !== "on" && autotrack !== "off" && status !== null)
-      return res.status(400).json({ error: "Enter on / off in autotracking." });
+    // if (autotrack !== "on" && autotrack !== "off" && status !== null)
+    //   return res.status(400).json({ error: "Enter on / off in autotracking." });
 
     if (CustomDownloadLocation !== null)
       await ensureDirectoryExists(CustomDownloadLocation);
 
-    await settingupdate(
-      quality,
-      null,
-      status,
-      null,
-      autotrack,
-      CustomDownloadLocation,
-      provider,
-      mergeSubtitles,
-      subtitleFormat,
-      Pagination,
-      concurrentDownloads,
-      subDub
-    );
+    await settingupdate({
+      quality: quality,
+      CustomDownloadLocation: CustomDownloadLocation,
+      Animeprovider: Animeprovider,
+      Mangaprovider: Mangaprovider,
+      mergeSubtitles: mergeSubtitles,
+      subtitleFormat: subtitleFormat,
+      Pagination: Pagination,
+      concurrentDownloads: concurrentDownloads,
+      subDub: subDub,
+    });
 
     const data = await settingfetch();
 
@@ -137,24 +135,27 @@ appExpress.post("/api/settings", async (req, res) => {
     message = `Quality: ${data.quality}`;
 
     // mal on then add status and autotrack
-    if (data.mal_on_off === true) {
-      message += `\nAuto Add To: ${data.status}\nAuto Track Ep: ${data.autotrack}`;
-    }
+    // if (data.mal_on_off === true) {
+    //   message += `\nAuto Add To: ${data.status}\nAuto Track Ep: ${data.autotrack}`;
+    // }
 
     // add download location
-    message += `\nDownload Location: ${data.CustomDownloadLocation}\nProvider : ${data.provider}`;
+    message += `\nDownload Location: ${data.CustomDownloadLocation}\nAnime Provider : ${data.Animeprovider}`;
 
     // if provider is hianime add mergeSubtitles
-    if (data.provider === "hianime") {
+    if (data.Animeprovider === "hianime") {
       message += `\nMerge Subtitles: ${data.mergeSubtitles}`;
       if (data.mergeSubtitles === "off") {
         message += `\nSubtitle Format: ${data.subtitleFormat}`;
       }
     }
+
+    message += `\nManga Provider : ${data?.Mangaprovider}`;
+
     // Pagination & concurrentDownloads
     message += `\nPagination : ${data.Pagination}\nConcurrent Downloads: ${data.concurrentDownloads}`;
 
-    if (data.provider === "pahe") {
+    if (data.Animeprovider === "pahe") {
       message += `\nsubDub : ${data.subDub}`;
     }
 
@@ -173,7 +174,7 @@ appExpress.post("/api/settings", async (req, res) => {
 appExpress.post("/api/latest", async (req, res) => {
   const { page } = req.body;
   try {
-    const provider = await providerFetch();
+    const provider = await providerFetch("Anime");
     const resentep = await latestAnime(provider.provider, page);
     res.status(200).json(resentep);
   } catch (err) {
@@ -189,7 +190,8 @@ appExpress.post("/api/latest", async (req, res) => {
 appExpress.post("/api/manga/latest", async (req, res) => {
   const { page } = req.body;
   try {
-    const resentep = await latestMangas(page);
+    const provider = await providerFetch("Manga");
+    const resentep = await latestMangas(provider.provider, page);
     res.status(200).json(resentep);
   } catch (err) {
     console.log(err);
@@ -205,7 +207,7 @@ appExpress.post("/api/findanime", async (req, res) => {
   let { page, title } = req.body;
   title = title.replace("Results For", "");
   try {
-    const provider = await providerFetch();
+    const provider = await providerFetch("Anime");
     const animefound = await animesearch(provider.provider, title, page);
     res.status(200).json(animefound);
   } catch (err) {
@@ -222,7 +224,8 @@ appExpress.post("/api/findmanga", async (req, res) => {
   let { page, title } = req.body;
   title = title.replace("Results For", "");
   try {
-    const Mangafound = await MangaSearch(title, page);
+    const provider = await providerFetch("Manga");
+    const Mangafound = await MangaSearch(provider.provider, title, page);
     res.status(200).json(Mangafound);
   } catch (err) {
     console.log(err);
@@ -264,6 +267,7 @@ appExpress.post("/api/download", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 // download api [ for downloading manga / adding to queue ]
 appExpress.post("/api/mangadownload", async (req, res) => {
   const { ep, start, end } = req.body;
@@ -299,6 +303,7 @@ appExpress.post("/api/mangadownload", async (req, res) => {
     // Handle other errors
   }
 });
+
 // logger [ bassically we are tracking how much we have downloaded ]
 appExpress.post("/api/logger", async (req, res) => {
   const { caption, totalSegments, currentSegments, epid } = req.body;
@@ -374,21 +379,11 @@ appExpress.get("/api/download/remove/all", async (req, res) => {
   }
 });
 
-// update manga json
-appExpress.get("/updatemangajson", async (req, res) => {
-  try {
-    await MangaSeeJsonFetch(true);
-    res.redirect("/manga?updated=true");
-  } catch (err) {
-    res.redirect("/manga?updated=false");
-  }
-});
-
 // get ep url
 appExpress.post("/api/watch", async (req, res) => {
   const { ep, epNum } = req.body;
   try {
-    const provider = await providerFetch();
+    const provider = await providerFetch("Anime");
     const animedata = await animeinfo(provider.provider, ep);
     let AnimeEpId = animedata.episodes[parseInt(epNum) - 1];
     const sourcesArray = await fetchEpisodeSources(provider, AnimeEpId?.id)
@@ -405,9 +400,10 @@ appExpress.post("/api/watch", async (req, res) => {
 });
 
 // ===================== routes =====================
-// home page
+
+// home page anime
 appExpress.get(["/", "/anime"], async (req, res) => {
-  const provider = await providerFetch();
+  const provider = await providerFetch("Anime");
   const resentep = await latestAnime(provider.provider, 1);
   const config = await settingfetch();
   res.render("index.ejs", {
@@ -416,42 +412,31 @@ appExpress.get(["/", "/anime"], async (req, res) => {
     Pagination: config?.Pagination || "off",
   });
 });
+
 // home page manga
 appExpress.get("/manga", async (req, res) => {
+  const provider = await providerFetch("Manga");
   const config = await settingfetch();
-  const updated = req.query.updated ?? null;
-  let message = null;
-  if (updated === "true") {
-    message = {
-      type: "success",
-      message: "Updated manga database successfully!",
-    };
-  } else if (updated === "false") {
-    message = {
-      type: "error",
-      message: "Failed to update manga database. Try again later.",
-    };
-  }
-
-  const data = await latestMangas(1);
+  const data = await latestMangas(provider.provider, 1);
 
   res.render("manga.ejs", {
     data: data,
     catagorie: "Latest Updated",
-    message: message,
-    Pagination: data.hasNextPage ? config?.Pagination || "off" : "off",
+    Pagination: data?.hasNextPage ? config?.Pagination || "off" : "off",
   });
 });
+
 // settings
 appExpress.get("/setting", async (req, res) => {
   const setting = await settingfetch();
-  url = null;
-  if (!setting.mal_on_off || setting.mal_on_off === null) {
-    const url = await MalCreateUrl();
-    return res.render("settings.ejs", { settings: setting, url: url });
-  }
+  // url = null;
+  // if (!setting.mal_on_off || setting.mal_on_off === null) {
+  //   const url = await MalCreateUrl();
+  //   return res.render("settings.ejs", { settings: setting, url: url });
+  // }
   res.render("settings.ejs", { settings: setting });
 });
+
 // search anime
 appExpress.get("/search", async (req, res) => {
   const animeToSearch = req?.query?.animetosearch;
@@ -461,11 +446,11 @@ appExpress.get("/search", async (req, res) => {
   if (mangaToSearch) {
     const mangaToSearch = req.query.mangatosearch;
     try {
-      const data = await MangaSearch(mangaToSearch);
+      const provider = await providerFetch("Manga");
+      const data = await MangaSearch(provider.provider, mangaToSearch);
       res.render("manga.ejs", {
         data: data,
         catagorie: `Results For ${mangaToSearch}`,
-        message: null,
         Pagination: config?.Pagination || "off",
       });
     } catch (err) {
@@ -476,13 +461,12 @@ appExpress.get("/search", async (req, res) => {
       res.render("manga.ejs", {
         catagorie: "no results found..",
         data: null,
-        message: null,
         Pagination: "off",
       });
     }
   } else if (animeToSearch) {
     try {
-      const provider = await providerFetch();
+      const provider = await providerFetch("Anime");
       const data = await animesearch(provider.provider, animeToSearch);
       res.render("index.ejs", {
         data: data,
@@ -502,25 +486,30 @@ appExpress.get("/search", async (req, res) => {
     }
   }
 });
+
 // logs
 appExpress.get("/log", async (req, res) => {
   const logs = await getLogs();
   res.render("logs.ejs", { logs });
 });
+
 // info page
 appExpress.get("/info", async (req, res) => {
   const animeId = req.query.animeid.trim();
-  const provider = await providerFetch();
+  const provider = await providerFetch("Anime");
   const data = await animeinfo(provider.provider, animeId);
   const setting = await settingfetch();
   res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
 });
+
 // manga info page
 appExpress.get("/mangainfo", async (req, res) => {
   const mangaid = req.query.mangaid.trim();
-  const data = await MangaInfo(mangaid);
+  const provider = await providerFetch("Manga");
+  const data = await MangaInfo(provider.provider, mangaid);
   res.render("mangainfo.ejs", { data: data });
 });
+
 // downloads page
 appExpress.get("/downloads", async (req, res) => {
   let caption = "Nothing in progress";
@@ -543,6 +532,7 @@ appExpress.get("/downloads", async (req, res) => {
     currentSegments: currentSegments,
   });
 });
+
 // proxy for images
 appExpress.get("/proxy/image", async (req, res) => {
   const imageUrl = req.query.url;

@@ -25,8 +25,6 @@
       </section>
       <% } %>
     </main>
-    <script src="/js/libs/jquery.js"></script>
-    <script src="/js/bootstrap.js"></script>
     <!-- handle pagination & scroll -->
     <script>
       const pagination = "<%= Pagination %>";
@@ -35,6 +33,7 @@
       let currentPage = 1;
       let isFetching = false;
       let totalPages = null;
+      let allDataFetched = false;
       let hasNextPage = "<%= data?.hasNextPage ? data.hasNextPage : false %>";
 
       function isScrolledToBottom() {

@@ -14,8 +14,8 @@ async function downloadfunction(animeid, startep, endep) {
   endep = parseInt(endep);
   if (!startep || !animeid) throw new Error("Something seems to be missing..");
   if (!(startep > 0)) throw new Error("Start ep is 0");
-  const provider = await providerFetch();
   const config = await settingfetch();
+  const provider = await providerFetch("Anime");
 
   let info = [];
   let errors = [];
@@ -57,7 +57,7 @@ async function downloadfunction(animeid, startep, endep) {
           EpNum: TryToDownload[i] + 1,
           Title: animedata.title,
           config: {
-            provider: config?.provider,
+            Animeprovider: config?.Animeprovider,
             quality: config?.quality,
             mergeSubtitles: config?.mergeSubtitles,
             subtitleFormat: config?.subtitleFormat,
@@ -137,7 +137,7 @@ async function downloadfunction(animeid, startep, endep) {
             EpNum: allEpisodes[i].number,
             Title: animedata.title,
             config: {
-              provider: config?.provider,
+              Animeprovider: config?.Animeprovider,
               quality: config?.quality,
               mergeSubtitles: config?.mergeSubtitles,
               subtitleFormat: config?.subtitleFormat,
@@ -158,7 +158,7 @@ async function downloadfunction(animeid, startep, endep) {
   await saveQueue();
 
   // add to mal? TODO : FIX FOR ALL PROVIDERS
-  // if (config.mal_on_off == true && config.provider === "") {
+  // if (config.mal_on_off == true && config.Animeprovider === "") {
   //   try {
   //     let malid = await MalGogo(animeid);
   //     const true_false_added = await MalAddToList(malid, config.status);
@@ -180,7 +180,11 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
   if (!startchap || !mangaid)
     throw new Error("Something seems to be missing..");
   if (!(startchap > 0)) throw new Error("Start ep is 0");
-  const mangainfo = await MangaInfo(mangaid);
+
+  const config = await settingfetch();
+  const provider = await providerFetch("Manga");
+
+  const mangainfo = await MangaInfo(provider.provider, mangaid);
   if (!mangainfo) throw new Error("no manga found with this id");
 
   let Title = mangainfo.title;
@@ -197,6 +201,10 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
       await addToQueue({
         Type: "Manga",
         Title: Title,
+        config: {
+          Mangaprovider: config?.Mangaprovider,
+          CustomDownloadLocation: config?.CustomDownloadLocation,
+        },
         EpNum: startchap,
         epid: eptodownload.id,
         ChapterTitle: eptodownload.title,
@@ -221,6 +229,10 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
         await addToQueue({
           Type: "Manga",
           Title: Title,
+          config: {
+            Mangaprovider: config?.Mangaprovider,
+            CustomDownloadLocation: config?.CustomDownloadLocation,
+          },
           EpNum: startchap,
           epid: epdownloads.id,
           ChapterTitle: epdownloads.title,

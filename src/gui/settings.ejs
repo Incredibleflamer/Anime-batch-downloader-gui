@@ -15,226 +15,197 @@
     <%- include("components/navbar") %>
     <main>
     <div id="overlay" class="overlay" style="display: none"></div>
-    <div class="container">
-      <h1>Settings</h1>
-      <form class="settings" onsubmit="submitSettings(event)">
-        <!-- Mal selection -->
-        <% if (url) { %>
-          <button type="button" class="btn btn-outline-info" onclick="redirectToUrl('<%= url %>')">Connect To My Anime List</button>
-        <% } else { %>
-          <button type="button" class="btn btn-outline-danger" onclick="redirectToUrl('/mal/logout')">Logout</button>
-          <br />
-          <br />
-          <div class="mb-3" id="status">
-            <label for="malstatus" class="form-label">Auto Update Anime Status To</label>
-            <select class="form-select form-select-lg mb-3" id="malstatus">
-              <option value="plan_to_watch" <% if (settings.status === "plan_to_watch") { %> selected <% } %>>plan to watch</option>
-              <option value="watching" <% if (settings.status === "watching") { %> selected <% } %>>watching</option>
-              <option value="dropped" <% if (settings.status === "dropped") { %> selected <% } %>>dropped</option>
-              <option value="completed" <% if (settings.status === "completed") { %> selected <% } %>>completed</option>
-              <option value="on_hold" <% if (settings.status === "on_hold") { %> selected <% } %>>on hold</option>
+ 
+    <!-- setting page start -->
+    <div id="overlay" class="overlay" style="display: none"></div>
+    <div id="settings-container">
+      <div id="settings-left">
+        <ul>
+          <li class="settings-option" data-target="utils" onclick="showSection('utils')">Utils</li>
+          <li class="settings-option" data-target="anime" onclick="showSection('anime')">Anime</li>
+          <li class="settings-option" data-target="manga" onclick="showSection('manga')">Manga</li>
+          <li class="settings-option" data-target="ui" onclick="showSection('ui')">UI</li>
+        </ul>
+      </div>
+      <div id="settings-right">
+        <!-- Utils Settings -->
+        <div class="settings-section" id="utils">
+          <h2>Utils Settings</h2>
+          <div class="settings-div">
+            <label for="concurrent-downloads">Concurrent download:</label>
+            <input id="concurrent-downloads" type="number" min="1" step="1" value="<%= settings.concurrentDownloads !== null ? settings.concurrentDownloads : 5 %>"/>
+    
+            <label for="download-location">Download Location:</label>
+            <input id="download-location" type="text" placeholder="Enter your custom download path" value="<%= settings.CustomDownloadLocation !== null ? settings.CustomDownloadLocation : '' %>"/>
+          </div>
+        </div>
+    
+        <!-- Anime Settings -->
+        <div class="settings-section" id="anime">
+          <h2>Anime Settings</h2>
+          <div class="settings-div">
+            <label for="anime-provider">Provider:</label>
+            <select id="anime-provider" onchange="handleProviderChange()">
+              <option value="hianime" <% if (settings.Animeprovider === "hianime") { %> selected <% } %>>hianime</option>
+              <option value="pahe" <% if (settings.Animeprovider === "pahe") { %> selected <% } %>>Pahe</option>
+            </select>
+    
+            <div id="quality">
+              <label for="quality-select">Quality:</label>
+              <select id="quality-select">
+                <% ["1080p", "720p", "360p"].forEach((q) => { %>
+                  <option value="<%= q %>" <%= settings.quality === q ? "selected" : "" %>><%= q %></option>
+                <% }) %>
+              </select>
+            </div>
+    
+            <div id="merge-subtitles">
+              <label for="merge-subtitles-select">Merge Subtitles:</label>
+              <select id="merge-subtitles-select" onchange="handleProviderChange()">
+                <option value="on" <% if (settings.mergeSubtitles === "on") { %> selected <% } %>>ON</option>
+                <option value="off" <% if (settings.mergeSubtitles === "off") { %> selected <% } %>>OFF</option>
+              </select>
+            </div>
+    
+            <div id="subtitle-format">
+              <label for="subtitle-format-select">Subtitles Format:</label>
+              <select id="subtitle-format-select">
+                <option value="ttv" <% if (settings.subtitleFormat === "ttv") { %> selected <% } %>>TTV</option>
+                <option value="srt" <% if (settings.subtitleFormat === "srt") { %> selected <% } %>>SRT</option>
+              </select>
+            </div>
+    
+            <div id="subdub-option">
+              <label for="subdub-option-select">SubDub Option:</label>
+              <select id="subdub-option-select">
+                <option value="sub" <% if (settings.subDub === "sub" || !settings.subDub) { %> selected <% } %>>Sub</option>
+                <option value="dub" <% if (settings.subDub === "dub") { %> selected <% } %>>Dub</option>
+              </select>
+            </div>
+          </div>
+        </div>
+    
+        <!-- Manga Settings -->
+        <div class="settings-section" id="manga">
+          <h2>Manga Settings</h2>
+          <div class="settings-div">
+            <label for="manga-provider">Provider:</label>
+            <select id="manga-provider">
+              <option value="weebcentral" <% if (settings.Animeprovider === "weebcentral") { %> selected <% } %>>weebcentral</option>
             </select>
           </div>
-          <div class="mb-3" id="autotrack">
-            <label for="malautotrack" class="form-label">Auto Track Downloaded Anime As Watched</label>
-            <select class="form-select form-select-lg mb-3" id="malautotrack">
-              <option value="off" <% if (settings.autotrack === "off" || !settings.autotrack) { %> selected <% } %>>OFF</option>
-              <option value="on" <% if (settings.autotrack === "on") { %> selected <% } %>>ON</option>
+        </div>
+    
+        <!-- UI Settings -->
+        <div class="settings-section" id="ui">
+          <h2>UI Settings</h2>
+          <div class="settings-div">
+            <label for="pagination">Pagination:</label>
+            <select id="pagination">
+              <option value="off" <% if (settings.Pagination === "off" || !settings.Pagination) { %> selected <% } %>>OFF</option>
+              <option value="on" <% if (settings.Pagination === "on") { %> selected <% } %>>ON</option>
             </select>
           </div>
-        <% } %>
-        <br />
-        <br />
-
-        <!-- Quality selection -->
-        <div class="mb-3">
-          <label for="quality" class="form-label">Download Quality</label>
-          <select class="form-select form-select-lg mb-3" id="quality">
-            <option value="1080p" <% if (settings.quality === "1080p") { %> selected <% } %>>1080p</option>
-            <option value="720p" <% if (settings.quality === "720p") { %> selected <% } %>>720p</option>
-            <option value="360p" <% if (settings.quality === "360p") { %> selected <% } %>>360p</option>
-          </select>
         </div>
-
-        <!-- Custom Download Location -->
-        <div class="mb-3">
-          <label for="customDownloadLocation" class="form-label">Custom Download Location</label>
-          <input
-            type="text"
-            class="form-control"
-            id="customDownloadLocation"
-            placeholder="Enter your custom download path"
-            value="<%= settings.CustomDownloadLocation !== null ? settings.CustomDownloadLocation : '' %>"
-          />
-        </div>  
-
-        <!-- Anime Provider selection -->
-        <div class="mb-3">
-          <label for="providerSelect" class="form-label">Anime Provider</label>
-          <select
-            class="form-select"
-            id="providerSelect"
-            onchange="toggleSubtitleOption()"
-          >
-            <option value="hianime" <% if (settings.provider === "hianime") { %> selected <% } %>>hianime</option>
-            <option value="pahe" <% if (settings.provider === "pahe") { %> selected <% } %>>Pahe</option>
-          </select>
-        </div>
-
-        <!-- SubDub Option ( visible for Pahe provider only ) -->
-         <div class="mb-3" id="subDubOption" style="display: none;">
-          <label for="subDub" class="form-label">SubDub Option</label>
-          <select class="form-select" id="subDub">
-            <option value="sub" <% if (settings.subDub === "sub" || !settings.subDub) { %> selected <% } %>>Sub</option>
-            <option value="dub" <% if (settings.subDub === "dub") { %> selected <% } %>>Dub</option>
-          </select>
-        </div>
-
-        <!-- Subtitle Merge option (visible for hianime provider only) -->
-        <div class="mb-3" id="subtitleOption" style="display: none">
-          <label for="mergeSubtitles" class="form-label"
-            >Merge Subtitles</label
-          >
-          <select class="form-select" id="mergeSubtitles">
-            <option value="on" <% if (settings.mergeSubtitles === "on") { %> selected <% } %>>ON</option>
-            <option value="off" <% if (settings.mergeSubtitles === "off") { %> selected <% } %>>OFF</option>
-          </select>
-        </div>
-
-        <!-- Subtitle Format option (visible for hianime provider and Merge Subtitles = OFF only) -->
-         <div class="mb-3" id="subtitleFormatOption" style="display: none">
-          <label for="subtitleFormat" class="form-label">Subtitles Format</label>
-          <select class="form-select" id="subtitleFormat">
-            <option value="ttv" <% if (settings.subtitleFormat === "ttv") { %> selected <% } %>>TTV</option>
-            <option value="srt" <% if (settings.subtitleFormat === "srt") { %> selected <% } %>>SRT</option>
-          </select>
-        </div>
-
-        <!-- Pagination -->
-        <div class="mb-3" id="PaginationOption">
-          <label for="Pagination" class="form-label">Pagination</label>
-          <select class="form-select form-select-lg mb-3" id="Pagination">
-            <option value="off" <% if (settings.Pagination === "off" || !settings.Pagination) { %> selected <% } %>>OFF</option>
-            <option value="on" <% if (settings.Pagination === "on") { %> selected <% } %>>ON</option>
-          </select>
-        </div>
-
-        <!-- Concurrent Downloads -->
-        <div class="mb-3">
-          <label for="concurrentDownloads" class="form-label">Concurrent Downloads</label>
-          <input
-            type="number"
-            class="form-control"
-            id="concurrentDownloads"
-            placeholder="Enter the number of concurrent downloads"
-            value="<%= settings.concurrentDownloads !== null ? settings.concurrentDownloads : 5 %>"
-            min="1"
-            step="1"
-          />
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Update</button>
-      </form>
+      </div>
     </div>
+    
+    <div id="save-settings" onclick="submitSettings(event)" style="display: none">Save Settings</div> 
+    <!-- setting page over -->
 
     <div id="loading" class="loader" hidden></div>
-
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-      crossorigin="anonymous"
-    ></script>
     <script>
+      let OldSettings =  <%- JSON.stringify(settings) %> 
+    
+      function showSection(targetId) {
+        document.querySelectorAll(".settings-section").forEach((section) => {
+          section.style.display = section.id === targetId ? "block" : "none";
+        });
+      }
+    
+      function showLoadingAnimation() {
+        document.getElementById("overlay").style.display = "block";
+      }
+    
+      function hideLoadingAnimation() {
+        document.getElementById("overlay").style.display = "none";
+      }
+    
       function submitSettings(event) {
         event.preventDefault();
-
-        const statusElement = document.getElementById("malstatus");
-        const qualityElement = document.getElementById("quality");
-        const autotrackElement = document.getElementById("malautotrack");
-        const customDownloadLocationElement = document.getElementById(
-          "customDownloadLocation"
-        );
-        const Pagination = document.getElementById("Pagination");
-        const concurrentDownloadsElement = document.getElementById("concurrentDownloads");
-
-        const providerElement = document.getElementById("providerSelect");
-        const mergeSubtitlesElement = document.getElementById("mergeSubtitles");
-        const subtitleFormatElement = document.getElementById("subtitleFormat");
-        const subDubElement = document.getElementById("subDub");  
-
+    
         const data = {
-          status: statusElement ? statusElement.value : null,
-          quality: qualityElement ? qualityElement.value : null,
-          autotrack: autotrackElement ? autotrackElement.value : null,
-          CustomDownloadLocation: customDownloadLocationElement
-            ? customDownloadLocationElement.value
-            : null,
-          provider: providerElement ? providerElement.value : null,
-          mergeSubtitles:
-            providerElement.value === "hianime" && mergeSubtitlesElement
-              ? mergeSubtitlesElement.value
-              : null,
-          subtitleFormat: providerElement.value === "hianime" && mergeSubtitlesElement.value === "off" && subtitleFormatElement ? subtitleFormatElement.value : null,
-          Pagination: Pagination ? Pagination.value : null,
-          concurrentDownloads: concurrentDownloadsElement
-            ? concurrentDownloadsElement.value
-            : null,
-          subDub: subDubElement ? subDubElement.value : null, 
+          quality: document.getElementById("quality-select")?.value || null,
+          Animeprovider: document.getElementById("anime-provider")?.value || null,
+          Mangaprovider: document.getElementById("manga-provider")?.value || null,
+          CustomDownloadLocation: document.getElementById("download-location")?.value || null,
+          concurrentDownloads: document.getElementById("concurrent-downloads")?.value || null,
+          mergeSubtitles: document.getElementById("merge-subtitles-select")?.value || null,
+          subDub: document.getElementById("subdub-option-select")?.value || null,
+          Pagination: document.getElementById("pagination")?.value || null,
+          subtitleFormat: document.getElementById("subtitle-format-select")?.value || null,
         };
 
+        console.log(data)
+        console.log(OldSettings)
+        OldSettings = data;
+        document.getElementById("save-settings").style.display = "none";
+    
+        console.log(data);
         showLoadingAnimation();
-
+    
         fetch("/api/settings", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         })
-          .then((response) => {
-            return response.json();
-          })
-          .then((data) => {
+          .then((response) => response.json())
+          .then((responseData) => {
             hideLoadingAnimation();
-            if (data.message) {
-              swal("Updated Your User Config", data.message, "success");
+            if (responseData.message) {
+              swal("Updated Your User Config", responseData.message, "success");
             } else {
-              swal("Something Is Missing", data.error, "error");
+              swal("Something Is Missing", responseData.error, "error");
             }
+          })
+          .catch((error) => {
+            hideLoadingAnimation();
+            console.error("Error:", error);
+            swal("Error", "Failed to update settings", "error");
           });
       }
 
-      function showLoadingAnimation() {
-        const overlay = document.getElementById("overlay");
-        overlay.style.display = "block";
-        document.getElementById("loading").removeAttribute("hidden");
-      }
 
-      function hideLoadingAnimation() {
-        const overlay = document.getElementById("overlay");
-        overlay.style.display = "none";
-        document.getElementById("loading").setAttribute("hidden", true);
-      }
+      function handleProviderChange() {
+        const selectedProvider =  document.getElementById("anime-provider")?.value;
+        const subDubOption = document.getElementById("subdub-option")
+        const quality = document.getElementById("quality");
+        const mergeSubtitles =  document.getElementById("merge-subtitles")
+        const mergeSubtitlesValue = document.getElementById("merge-subtitles-select")?.value
+        const SubtitlesFormat = document.getElementById("subtitle-format")
 
-      function toggleSubtitleOption() {
-        const providerElement = document.getElementById("providerSelect");
-        const mergeSubtitlesElement = document.getElementById("mergeSubtitles");
-        const subtitleOptionElement = document.getElementById("subtitleOption");
-        const subtitleFormatOptionElement = document.getElementById("subtitleFormatOption");
-        const subDubOptionElement = document.getElementById("subDubOption");
-
-
-        subtitleOptionElement.style.display = providerElement.value === "hianime" ? "block" : "none";
+  
+        subDubOption.style.display =
+          selectedProvider === "pahe" ? "block" : "none";
+    
+        quality.style.display =
+          selectedProvider === "hianime" ? "none" : "block";
+      
+        mergeSubtitles.style.display =
+          selectedProvider === "hianime" ? "block" : "none";
         
-        if (providerElement.value === "hianime" && mergeSubtitlesElement.value === "off") {
-          subtitleFormatOptionElement.style.display = "block";
-        } else {
-          subtitleFormatOptionElement.style.display = "none";
-        }
-
-        subDubOptionElement.style.display = providerElement.value === "pahe" ? "block" : "none";
+        SubtitlesFormat.style.display = selectedProvider === "hianime" && mergeSubtitlesValue === "on" ? "block" : "none";
       }
-      document.getElementById("mergeSubtitles")?.addEventListener("change", toggleSubtitleOption);
-      document.addEventListener("DOMContentLoaded", toggleSubtitleOption);
+
+    
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("input, select").forEach((input) => {
+          input.addEventListener("input", () => document.getElementById("save-settings").style.display = "block");
+        });
+    
+        showSection("utils");
+        handleProviderChange();
+      });
     </script>
     </main>
   </body>

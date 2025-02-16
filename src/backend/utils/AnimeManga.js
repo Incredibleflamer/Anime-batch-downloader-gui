@@ -73,33 +73,32 @@ async function fetchEpisodeSources(provider, episodeId) {
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const axios = require("axios");
-const manga = require("../Scrappers/MangaSee");
 const HLSLogger = require("./logger");
 
 // Latest Manga
-async function latestMangas(Page = 1) {
-  return await manga.latestManga(Page);
+async function latestMangas(provider, Page = 1) {
+  return await provider.latestManga(Page);
 }
 
 // Manga Search
-async function MangaSearch(MANGA_NAME, PAGE = 1) {
+async function MangaSearch(provider, MANGA_NAME, PAGE = 1) {
   try {
-    return await manga.search(MANGA_NAME, PAGE);
+    return await provider.searchManga(MANGA_NAME, PAGE);
   } catch (err) {
-    throw new Error("No Manga found..");
+    throw new Error(`No Manga found.. ${err}`);
   }
 }
 
 // Manga Info
-async function MangaInfo(MANGA_ID) {
-  let info = await manga.fetchMangaInfo(MANGA_ID);
+async function MangaInfo(provider, MANGA_ID) {
+  let info = await provider.fetchMangaInfo(MANGA_ID);
   info.chapters.reverse();
   return info;
 }
 
 // Chapters Fetch
-async function MangaChapterFetch(MangaChapterID) {
-  return await manga.fetchChapterPages(MangaChapterID);
+async function MangaChapterFetch(provider, MangaChapterID) {
+  return await provider.fetchChapterPages(MangaChapterID);
 }
 
 // Download Chapters

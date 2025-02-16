@@ -129,7 +129,7 @@ async function AnimeInfo(
     animeInfo.totalEpisodes = total_episodes;
     animeInfo.last_page = last_page;
     animeInfo.episodes = episodes;
-    animeInfo.provider = "pahe";
+    animeInfo.Animeprovider = "pahe";
 
     return animeInfo;
   } catch (error) {

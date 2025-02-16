@@ -3,117 +3,38 @@
     <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manga Downloader</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" type="text/css" href="/index.css" />
+    <title>Anime Downloader</title>
+    <link rel="stylesheet" href="/css/index.css" />
   </head>
   <body>
-    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarTogglerDemo01"
-        aria-controls="navbarTogglerDemo01"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-        <a class="navbar-brand" href="/">Anime Downloader</a>
-        <a class="navbar-brand" href="/manga">Manga Downloader</a>
-        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="/log">logs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/downloads">Downloads</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/setting">Setting</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/updatemangajson">Sync</a>
-          </li>
-        </ul>
-        <form class="form-inline my-2 my-lg-0">
-          <input
-            class="form-control mr-sm-2"
-            type="search"
-            id="searchInput"
-            placeholder="Search for Manga"
-            aria-label="Search"
-          />
-          <button
-            class="btn btn-outline-info"
-            type="submit"
-            onclick="search(event)"
-          >
-            Search
-          </button>
-        </form>
-      </div>
-    </nav>
+    <!-- navbar -->
+    <%- include("components/navbar") %>
 
-    <section class="recently-updated">
+    <main class="main-content">
       <h2><%= catagorie %></h2>
       <% if (data && data.results && data.results.length > 0) { %>
-      <div class="anime-grid" id="anime-grid">
+      <section class="anime-grid" id="anime-grid">
         <% data.results.forEach(result => { %>
         <a href="/mangainfo?mangaid=<%= result.id %>">
-          <div class="anime-card">
-            <div class="image-container">
-              <img
-                src="<%= result.image %>"
-                alt="<%= result.title %>"
-                class="anime-image"
-                loading="lazy"
-              />
-              <div class="image-overlay">
-                <h3><%= result.title %></h3>
-              </div>
-            </div>
+          <div class="anime-item">
+            <img src="<%= result.image %>" alt="<%= result.title %>" />
+            <div class="overlay"><%= result.title %></div>
           </div>
         </a>
         <% }); %>
-      </div>
+      </section>
       <% } %>
-    </section>
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
-      crossorigin="anonymous"
-    ></script>
-    <% if (message) { %>
+    </main>
+    <!-- handle pagination & scroll -->
     <script>
-      swal(
-        "<%= message.type.charAt(0).toUpperCase() + message.type.slice(1) %>!",
-        "<%= message.message %>",
-        "<%= message.type %>"
-      );
-    </script>
-    <% } %>
-
-    <!--  -->
-    <script>
-      let currentPage = 1;
-      let isFetching = false;
-      let totalPages = null;
-      let hasNextPage = "<%= data?.hasNextPage ? data.hasNextPage : false %>";
       const pagination = "<%= Pagination %>";
       const catagorie = "<%= catagorie %>";
       const ApiCall = `<%= catagorie === "Latest Updated" ? "/api/manga/latest" : "/api/findmanga" %>`;
+      let currentPage = 1;
+      let isFetching = false;
+      let totalPages = null;
+      let allDataFetched = false;
+      let hasNextPage = "<%= data?.hasNextPage ? data.hasNextPage : false %>";
 
       function isScrolledToBottom() {
         return (
@@ -134,9 +55,10 @@
             throw new Error("Failed to fetch data");
           }
           const data = await response.json();
-
           if (data?.currentPage) {
             currentPage = data?.currentPage;
+          } else {
+            currentPage += 1;
           }
 
           if (data?.hasNextPage) {
@@ -161,15 +83,13 @@
             const animeCard = document.createElement("div");
             animeCard.classList.add("anime-card");
             animeCard.innerHTML = `
-                    <a href="/mangainfo?mangaid=${result.id}">
-                      <div class="image-container">
-                        <img src="${result.image}" alt="${result.name}" class="anime-image"   loading="lazy" />
-                        <div class="image-overlay">
-                          <h3>${result.title}</h3>
-                        </div>
-                      </div>
-                    </a>
-                  `;
+              <a href="/mangainfo?mangaid=${result.id}">
+                <div class="anime-item">
+                  <img src="${result.image}" alt="${result.title}" />
+                  <div class="overlay">${result.title}</div>
+                  </div>
+              </a>
+            `;
             animeGrid.appendChild(animeCard);
           });
         }
@@ -194,11 +114,10 @@
           "pagination-controls"
         );
         paginationContainer.innerHTML = "";
-
         if (hasNextPage) {
           const inputField = `<input type="number" id="pageInput" min="1" max="${
             totalPages || ""
-          }" value="${currentPage}" class="form-control mx-2 d-inline-block" style="width: 80px; text-align: center;" inputmode="numeric" pattern="[0-9]*">`;
+          }" value="${currentPage}" class="pagination-btn page-number" style="width: 80px; text-align: center;" inputmode="numeric" pattern="[0-9]*">`;
 
           let firstButtons = "";
           let lastButtons = "";
@@ -210,9 +129,11 @@
             )
               .map(
                 (page) =>
-                  `<button class="btn btn-outline-info mx-1 ${
+                  `<button class="pagination-btn page-number ${
                     page === currentPage ? "active" : ""
-                  }" data-page="${page}">${page}</button>`
+                  }" data-page="${page}" ${
+                    page === currentPage ? "disabled" : ""
+                  }>${page}</button>`
               )
               .join("");
 
@@ -221,23 +142,25 @@
                 ? Array.from({ length: 4 }, (_, i) => totalPages - 3 + i)
                     .map(
                       (page) =>
-                        `<button class="btn btn-outline-info mx-1 ${
+                        `<button class="pagination-btn page-number ${
                           page === currentPage ? "active" : ""
-                        }" data-page="${page}">${page}</button>`
+                        }" data-page="${page}" ${
+                          page === currentPage ? "disabled" : ""
+                        }>${page}</button> `
                     )
                     .join("")
                 : "";
 
             paginationContainer.innerHTML = `
       <div class="pagination-wrapper">
-        ${firstButtons} <button class="btn btn-outline-info mx-1" id="prevPage">&lt;</button> ${inputField} <button class="btn btn-outline-info mx-1" id="nextPage">&gt;</button> ${lastButtons}
+        ${firstButtons} <button class="pagination-btn page-number" id="prevPage">&lt;</button> ${inputField} <button class="pagination-btn page-number" id="nextPage">&gt;</button> ${lastButtons}
       </div>`;
           } else {
             paginationContainer.innerHTML = `
       <div class="pagination-wrapper">
-        <button class="btn btn-outline-info mx-1" id="prevPage">&lt;</button>
+        <button class="pagination-btn page-number" id="prevPage">&lt;</button>
         ${inputField}
-        <button class="btn btn-outline-info mx-1" id="nextPage">&gt;</button>
+        <button class="pagination-btn page-number" id="nextPage">&gt;</button>
       </div>`;
           }
 
@@ -325,23 +248,6 @@
         document.body.innerHTML += '<div id="pagination-controls"></div>';
       }
       init();
-      // search script
-      document
-        .querySelector("form")
-        .addEventListener("submit", function search(event) {
-          event.preventDefault();
-          const searchInput = document
-            .getElementById("searchInput")
-            .value.trim();
-          if (!searchInput) {
-            return swal(
-              "Invalid Search",
-              `Please enter some text to search`,
-              "error"
-            );
-          }
-          window.location.href = `/search?mangatosearch=${searchInput}`;
-        });
     </script>
   </body>
 </html>

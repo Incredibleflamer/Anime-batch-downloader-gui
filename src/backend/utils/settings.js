@@ -14,27 +14,32 @@ const settings = new SimplDB({ dataFile: DatabaseFilePath });
 
 let config = [];
 
-const providers = {
+const Anime_providers = {
   hianime: require("../Scrappers/hianime"),
   pahe: require("../Scrappers/animepahe"),
   // anivibe: require("../Scrappers/anivibe"),
 };
 
+const Manga_providers = {
+  weebcentral: require("../Scrappers/weebcentral"),
+};
+
 // update the settings
-async function settingupdate(
+async function settingupdate({
   quality = null,
-  mal_on_off = null,
-  status = null,
-  malToken = null,
-  autotrack = null,
+  // mal_on_off = null,
+  // status = null,
+  // malToken = null,
+  // autotrack = null,
   CustomDownloadLocation = null,
-  provider = null,
+  Animeprovider = null,
+  Mangaprovider = null,
   mergeSubtitles = null,
   subtitleFormat = null,
   Pagination = null,
   concurrentDownloads = null,
-  subDub = null
-) {
+  subDub = null,
+}) {
   const currentSettings = settings.get("config");
   // quality
   if (quality === null) {
@@ -44,23 +49,26 @@ async function settingupdate(
     throw new Error("Quality parameter is required.");
   }
   // mal on off
-  if (mal_on_off === "logout") {
-    mal_on_off = false;
-    malToken = null;
-  } else {
-    if (malToken === null) malToken = currentSettings?.malToken || null;
-    if (malToken !== null) {
-      mal_on_off = true;
-    } else {
-      mal_on_off = false;
-    }
-  }
+  // if (mal_on_off === "logout") {
+  //   mal_on_off = false;
+  //   malToken = null;
+  // } else {
+  //   if (malToken === null) malToken = currentSettings?.malToken || null;
+  //   if (malToken !== null) {
+  //     mal_on_off = true;
+  //   } else {
+  //     mal_on_off = false;
+  //   }
+  // }
   // auto track anime as watched
-  if (autotrack === null) autotrack = currentSettings?.autotrack || "off";
+  // if (autotrack === null) autotrack = currentSettings?.autotrack || "off";
   // status
-  if (status === null) status = currentSettings?.status || "plan_to_watch";
+  // if (status === null) status = currentSettings?.status || "plan_to_watch";
   // provider
-  if (provider === null) provider = currentSettings?.provider || "hianime";
+  if (Animeprovider === null)
+    Animeprovider = currentSettings?.Animeprovider || "hianime";
+  if (Mangaprovider === null)
+    Mangaprovider = currentSettings?.Mangaprovider || "weebcentral";
   // mergeSubtitles
   if (mergeSubtitles === null)
     mergeSubtitles = currentSettings?.mergeSubtitles || "on";
@@ -80,17 +88,18 @@ async function settingupdate(
   // quality
   config.quality = quality;
   // mal on off
-  config.mal_on_off = mal_on_off;
+  // config.mal_on_off = mal_on_off;
   // mal status
-  config.status = status;
+  // config.status = status;
   // mal access_token
-  config.malToken = malToken;
+  // config.malToken = malToken;
   // mal auto track ep
-  config.autotrack = autotrack;
+  // config.autotrack = autotrack;
   // custom dir
   config.CustomDownloadLocation = CustomDownloadLocation;
   // provider
-  config.provider = provider;
+  config.Animeprovider = Animeprovider;
+  config.Mangaprovider = Mangaprovider;
   // mergeSubtitles
   config.mergeSubtitles = mergeSubtitles;
   // Pagination
@@ -106,10 +115,11 @@ async function settingupdate(
   // return config
   return {
     quality,
-    mal_on_off,
-    status,
-    autotrack,
-    provider,
+    // mal_on_off,
+    // status,
+    // autotrack,
+    Animeprovider,
+    Mangaprovider,
     mergeSubtitles,
     Pagination,
     concurrentDownloads,
@@ -137,11 +147,15 @@ async function settingfetch() {
         changes = true;
       }
     }
-    // checking provider is valid
-    if (!config?.provider || !providers.hasOwnProperty(config?.provider)) {
-      config.provider = "hianime";
+    // checking Animeprovider is valid
+    if (
+      !config?.Animeprovider ||
+      !Anime_providers.hasOwnProperty(config?.Animeprovider)
+    ) {
+      config.Animeprovider = "hianime";
       changes = true;
     }
+
     // checking quality
     if (
       !config?.quality ||
@@ -169,8 +183,18 @@ async function settingfetch() {
       changes = true;
     }
 
+    // checking subDub
     if (!config?.subDub) {
       config.subDub = "sub";
+      changes = true;
+    }
+
+    // checking Mangaprovider is valid
+    if (
+      !config?.Mangaprovider ||
+      !Anime_providers.hasOwnProperty(config?.Mangaprovider)
+    ) {
+      config.Mangaprovider = "weebcentral";
       changes = true;
     }
 
@@ -195,11 +219,12 @@ async function SettingsLoad() {
         ? storedConfig
         : {
             quality: "1080p",
-            mal_on_off: false,
-            status: "plan_to_watch",
-            malToken: null,
+            // mal_on_off: false,
+            // status: "plan_to_watch",
+            // malToken: null,
             CustomDownloadLocation: getDownloadsFolder(),
-            provider: "hianime",
+            Animeprovider: "hianime",
+            Mangaprovider: "weebcentral",
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
@@ -207,10 +232,10 @@ async function SettingsLoad() {
             subDub: "sub",
           };
 
-    if (config.malToken != null) {
-      await refresh_token(config.malToken);
-      await MalLogin(token);
-    }
+    // if (config.malToken != null) {
+    //   await refresh_token(config.malToken);
+    //   await MalLogin(token);
+    // }
     await settingSave();
   } catch (err) {
     console.log(err);
@@ -220,14 +245,27 @@ async function SettingsLoad() {
 }
 
 // fetch which provider
-async function providerFetch(provider = config.provider) {
-  return {
-    provider_name: provider,
-    provider:
-      provider && providers[provider]
-        ? providers[provider]
-        : providers["hianime"],
-  };
+async function providerFetch(Type = "Anime", provider) {
+  if (!provider)
+    provider = Type === "Anime" ? config?.Animeprovider : config?.Mangaprovider;
+
+  return Type === "Anime"
+    ? {
+        provider_name:
+          provider && Anime_providers[provider] ? provider : "hianime",
+        provider:
+          provider && Anime_providers[provider]
+            ? Anime_providers[provider]
+            : Anime_providers["hianime"],
+      }
+    : {
+        provider_name:
+          provider && Manga_providers[provider] ? provider : "weebcentral",
+        provider:
+          provider && Manga_providers[provider]
+            ? Manga_providers[provider]
+            : Manga_providers["weebcentral"],
+      };
 }
 
 // sync the config with database

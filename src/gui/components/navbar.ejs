@@ -33,8 +33,8 @@
         </a>
         <span class="nav-tooltip">Anime</span>
       </li>
-      <li class="nav-item" hidden>
-        <a href="#" class="nav-link">
+      <li class="nav-item">
+        <a href="/manga" class="nav-link">
           <span class="nav-icon material-symbols-rounded">menu_book</span>
           <span class="nav-label">Manga</span>
         </a>
@@ -119,12 +119,18 @@
     }
 
     function performSearch() {
+      const isMangaPage =
+        window.location.pathname.includes("/manga") ||
+        window.location.search.includes("?mangatosearch");
+
+      const searchType = isMangaPage ? "mangatosearch" : "animetosearch";
+
       const query = inputField.value.trim();
       if (!query) {
         swal("Invalid Search", "Please enter some text to search", "error");
         return;
       }
-      window.location.href = `/search?animetosearch=${encodeURIComponent(
+      window.location.href = `/search?${searchType}=${encodeURIComponent(
         query
       )}`;
     }

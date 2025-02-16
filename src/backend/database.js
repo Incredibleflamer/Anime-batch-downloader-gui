@@ -26,6 +26,7 @@ const {
 } = require("./utils/queue");
 const { settingfetch, providerFetch } = require("./utils/settings");
 const HLSLogger = require("./utils/logger");
+const { config } = require("process");
 
 // queue start
 async function continuousExecution() {
@@ -59,8 +60,14 @@ async function continuousExecution() {
             }
           } else if (currentTask?.Type === "Manga") {
             let { Title, EpNum, epid, ChapterTitle } = currentTask;
-            if (Title && EpNum && epid && ChapterTitle) {
-              await downloadMangaChapters(Title, EpNum, epid, ChapterTitle);
+            if (Title && EpNum && epid && ChapterTitle && config) {
+              await downloadMangaChapters(
+                config,
+                Title,
+                EpNum,
+                epid,
+                ChapterTitle
+              );
             } else {
               logger.error(
                 `Error message: Some Manga Data missing [ removing from queue  ]`
@@ -135,7 +142,7 @@ async function downloadEpisodeByQuality(
 ) {
   try {
     let preferredQualities = ["1080p", "720p", "360p", "default", "backup"];
-    const provider = await providerFetch(config.provider);
+    const provider = await providerFetch("Anime", config.Animeprovider);
     const sourcesArray = await fetchEpisodeSources(provider.provider, epid);
     let selectedSource = sourcesArray.sources.find(
       (source) => source.quality === config?.quality ?? "1080p"
@@ -381,18 +388,22 @@ function convertTTVToSRT(ttvPath, srtPath) {
 }
 
 // start downloadloading manga
-async function downloadMangaChapters(Title, EpNum, ChapterId, ChapterTitle) {
-  const ChapterData = await MangaChapterFetch(ChapterId);
+async function downloadMangaChapters(
+  config,
+  Title,
+  EpNum,
+  ChapterId,
+  ChapterTitle
+) {
+  const provider = await providerFetch("Manga", config?.Mangaprovider);
+  const ChapterData = await MangaChapterFetch(provider.provider, ChapterId);
+
   if (!ChapterData || ChapterData?.length < 1) {
     await removeQueue(Title, EpNum, ChapterId);
     throw new Error("No Image Found For This Chapter!");
   }
-  const CustomDownloadLocationSaved = await settingfetch();
 
-  const directoryPath = await MangaDir(
-    Title,
-    CustomDownloadLocationSaved?.CustomDownloadLocation
-  );
+  const directoryPath = await MangaDir(Title, config?.CustomDownloadLocation);
   try {
     const sanitizedChapterName = ChapterTitle.replace(/[<>:"/\\|?*]/g, "-");
     const outputFile = path.join(directoryPath, `${sanitizedChapterName}.pdf`);
