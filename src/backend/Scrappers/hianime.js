@@ -268,14 +268,58 @@ async function hianimeExtract(videoUrl) {
       url: s.file,
       lang: s.label ? s.label : "Thumbnails",
     }));
-    result.sources = srcsData.sources.map((s) => ({
-      url: s.file,
-      type: s.type,
-      isM3U8: s.file.includes(".m3u8"),
-    }));
+
+    const videoUrlPromises = srcsData.sources.map(async (s) => {
+      const videoUrls = await getVideoUrls(s.file);
+      return videoUrls;
+    });
+    const videoUrlsArray = await Promise.all(videoUrlPromises);
+    result.sources = videoUrlsArray.flat();
+
     return result;
   } catch (err) {
     throw err;
+  }
+}
+
+async function getVideoUrls(url) {
+  try {
+    const quality = ["1080", "720", "360"];
+    const response = await axios.get(url);
+    const text = response.data;
+    const lines = text.split("\n");
+    const baseUrl = url.split("/").slice(0, -1).join("/");
+
+    const videoUrls = [];
+
+    videoUrls.push({
+      quality: "default",
+      url: `${url}`,
+    });
+
+    lines.map((line, index) => {
+      if (line.includes("RESOLUTION") && line.includes("FRAME-RATE")) {
+        let properties = line.split(",");
+        let resolution = properties.find((item) => item.includes("RESOLUTION"));
+        let resolutionValue = resolution.split("=")[1]?.split("x");
+
+        if (resolutionValue && resolutionValue[1]) {
+          let height = resolutionValue[1];
+          const qualityMatch = quality.find((q) => q === height);
+          if (qualityMatch) {
+            videoUrls.push({
+              quality: `${qualityMatch}p`,
+              url: `${baseUrl}/${lines[index + 1]}`,
+            });
+          }
+        }
+      }
+    });
+
+    return videoUrls;
+  } catch (error) {
+    console.error("Error fetching the .m3u8 file:", error);
+    return [];
   }
 }
 

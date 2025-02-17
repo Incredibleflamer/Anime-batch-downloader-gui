@@ -237,20 +237,54 @@ async function getSources(id) {
     const { data } = await axios.get(
       `https://animekai.to/ajax/links/view?id=${id}&_=${GenerateToken(id)}`
     );
-
     let { url } = JSON.parse(DecodeIframeData(data.result).replace(/\\/gm, ""));
 
     url = url.replace(/\/(e|e2)\//, "/media/");
-
     const sources = await axios.get(url);
-
-    return {
-      sources: JSON.parse(
-        Decode(sources?.data?.result).replace(/\\/g, "")
-      ).sources.map((s) => ({ url: s.file, isM3U8: s.file.endsWith(".m3u8") })),
-    };
+    const Results = { sources: [] };
+    const decodedSources = JSON.parse(
+      Decode(sources?.data?.result).replace(/\\/g, "")
+    ).sources;
+    const videoUrlPromises = decodedSources.map(async (s) => {
+      const videoUrls = await getVideoUrls(s.file);
+      return videoUrls;
+    });
+    const videoUrlsArray = await Promise.all(videoUrlPromises);
+    Results.sources = videoUrlsArray.flat();
+    return Results;
   } catch (err) {
     throw new Error(err);
+  }
+}
+
+async function getVideoUrls(url) {
+  const quality = ["1080", "720", "360"];
+  try {
+    const response = await axios.get(url);
+    const text = response.data;
+    const lines = text.split("\n");
+    const baseUrl = url.split("/").slice(0, -1).join("/");
+    const videoUrls = [];
+
+    videoUrls.push({
+      quality: "default",
+      url: `${url}`,
+    });
+
+    lines.forEach((line, index) => {
+      const qualityMatch = quality.find((q) => line.endsWith(q));
+      if (qualityMatch && lines[index + 1]) {
+        videoUrls.push({
+          quality: `${qualityMatch}p`,
+          url: `${baseUrl}/${lines[index + 1]}`,
+        });
+      }
+    });
+
+    return videoUrls;
+  } catch (error) {
+    console.error("Error fetching the .m3u8 file:", error);
+    return [];
   }
 }
 

@@ -147,12 +147,9 @@
           subtitleFormat: document.getElementById("subtitle-format-select")?.value || null,
         };
 
-        console.log(data)
-        console.log(OldSettings)
         OldSettings = data;
         document.getElementById("save-settings").style.display = "none";
     
-        console.log(data);
         showLoadingAnimation();
     
         fetch("/api/settings", {
@@ -180,17 +177,12 @@
       function handleProviderChange() {
         const selectedProvider =  document.getElementById("anime-provider")?.value;
         const subDubOption = document.getElementById("subdub-option")
-        const quality = document.getElementById("quality");
         const mergeSubtitles =  document.getElementById("merge-subtitles")
         const mergeSubtitlesValue = document.getElementById("merge-subtitles-select")?.value
         const SubtitlesFormat = document.getElementById("subtitle-format")
 
-  
         subDubOption.style.display =
           selectedProvider === "pahe" ? "block" : "none";
-    
-        quality.style.display =
-          selectedProvider === "hianime" ? "none" : "block";
       
         mergeSubtitles.style.display =
           selectedProvider === "hianime" ? "block" : "none";
