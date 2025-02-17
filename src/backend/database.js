@@ -144,6 +144,7 @@ async function downloadEpisodeByQuality(
     let preferredQualities = ["1080p", "720p", "360p", "default", "backup"];
     const provider = await providerFetch("Anime", config.Animeprovider);
     const sourcesArray = await fetchEpisodeSources(provider.provider, epid);
+
     let selectedSource = sourcesArray.sources.find(
       (source) => source.quality === config?.quality ?? "1080p"
     );

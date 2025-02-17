@@ -66,6 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
               <span class="remove-icon" onclick="removeFromQueue('${item.Title}', '${item.EpNum}', '${item.epid}')">🗑️</span>`;
             queueItemsContainer.appendChild(queueItem);
           });
+        } else {
+          queueContainer.innerHTML = "";
         }
 
         queueItemsContainer.scrollTop = scrollTop;

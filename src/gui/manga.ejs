@@ -32,9 +32,9 @@
       const ApiCall = `<%= catagorie === "Latest Updated" ? "/api/manga/latest" : "/api/findmanga" %>`;
       let currentPage = 1;
       let isFetching = false;
-      let totalPages = null;
+      let totalPages = false;
       let allDataFetched = false;
-      let hasNextPage = "<%= data?.hasNextPage ? data.hasNextPage : false %>";
+      let hasNextPage = <%= data?.hasNextPage ? "true" : "false" %>;
 
       function isScrolledToBottom() {
         return (
@@ -231,16 +231,10 @@
       }
 
       async function init() {
-        const data = await fetchPageData(currentPage);
-        if (data) {
-          await addchild(data);
-
-          if (pagination === "on") {
-            totalPages = data.totalPages || null;
-            addPaginationControls();
-          } else {
-            window.addEventListener("scroll", handleScroll);
-          }
+        if (pagination === "on" && hasNextPage) {
+          addPaginationControls();
+        } else {
+          window.addEventListener("scroll", handleScroll);
         }
       }
 

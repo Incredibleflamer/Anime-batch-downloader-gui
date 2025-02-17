@@ -85,13 +85,32 @@
           />
 
           <div class="additional-info">
-            Type: <%= data.type %> (<%= data.subOrDub || "UNKNOWN" %>)
+            <!--  -->
+            <% if (data?.type) { %>
             <br />
-            Total Episodes: <%= data?.totalEpisodes %>
+            Type: <%= data.type %> <% if (data?.subOrDub) { %> ( <%=
+            data.subOrDub %> ) <% } %> <% } %>
+            <!--  -->
+            <% if (data?.totalEpisodes) { %>
             <br />
-            <%= data?.status ? `Status: ${data?.status}` : "" %> <% if
-            (data?.subs > 0) { %><br />Subs Episodes: <%= data.subs %><% } %> <%
-            if (data?.dubs > 0) { %><br />Dubs Episodes: <%= data.dubs %><% } %>
+            Total Episodes: <%= data.totalEpisodes %> <% } %>
+            <!--  -->
+            <% if (data?.status) { %>
+            <br />
+            Status: <%= data.status %> <% } %>
+            <!--  -->
+            <% if (data?.subs && data.subs > 0) { %>
+            <br />
+            Subs Episodes: <%= data.subs %> <% } %>
+            <!--  -->
+            <% if (data?.dubs && data.dubs > 0) { %>
+            <br />
+            Dubs Episodes: <%= data.dubs %> <% } %>
+            <!--  -->
+            <% if (data?.aired) { %>
+            <br />
+            Aired On: <%= data.aired %> <% } %>
+            <!--  -->
           </div>
         </div>
         <div class="anime-info-right">
@@ -108,7 +127,7 @@
             <h2>Download Options</h2>
           </div>
 
-          <% if (data.id.includes('-both')) { %>
+          <% if (data.id.includes('both')) { %>
           <!-- Toggle Button -->
           <div class="toggle-container" id="toggle-container">
             <button
@@ -176,11 +195,23 @@
 
     <!-- creating buttons -->
     <script>
-      <% if (data?.subs > 0) { %>
-        createDownloadButton('sub', <%= data?.subs %>, '<%= data.id %>');
-      <% } %>
-      <% if (data?.dubs > 0) { %>
-        createDownloadButton('dub', <%= data?.dubs %>, '<%= data.id %>');
+      <% if (data?.epsorted && data?.subs > 0 && data?.dubs > 0) { %>
+        const episodes = [
+          <% data.episodes.forEach((episode, index) => { %>
+            { number: <%= episode.number %>, id: "<%= episode.id %>", lang: "<%= episode.lang %>" }<%= index < data.episodes.length - 1 ? ',' : '' %>
+            <% }); %>
+          ];
+
+        createDownloadButton_with_episdoes_array("sub", episodes , "<%= data.id %>")
+        createDownloadButton_with_episdoes_array("dub", episodes , "<%= data.id %>")
+
+      <% } else { %>
+        if (<%= data?.subs %> > 0) {
+          createDownloadButton("sub", <%= data?.subs %>, "<%= data.id %>");
+        }
+        if (<%= data?.dubs %> > 0) {
+          createDownloadButton("dub", <%= data?.dubs %>, "<%= data.id %>");
+        }
       <% } %>
     </script>
   </body>

@@ -97,6 +97,78 @@ function createDownloadButton(type, episodes, id) {
   container.appendChild(episodeWrapper);
 }
 
+function createDownloadButton_with_episdoes_array(type, episodes, id) {
+  try {
+    let ToAdd = [];
+
+    episodes.forEach(async (items) => {
+      if (type === items?.lang || items?.lang === "both") {
+        ToAdd.push(items);
+      }
+    });
+
+    const togglecontainer = document.getElementById("toggle-container");
+
+    const specificEpisodesBtn = document.createElement("button");
+    specificEpisodesBtn.classList.add(
+      "btn",
+      "btn-outline-info",
+      `${type}Options`
+    );
+    if (type === "dub") {
+      specificEpisodesBtn.style.display = "none";
+    }
+    specificEpisodesBtn.textContent = `Download From Specific Episodes (${type.toUpperCase()})`;
+    specificEpisodesBtn.setAttribute(
+      "data-ep",
+      JSON.stringify(id.replace("-both", `-${type}`))
+    );
+    specificEpisodesBtn.setAttribute("data-total-episodes", ToAdd?.length);
+    togglecontainer.appendChild(specificEpisodesBtn);
+
+    const downloadAllBtn = document.createElement("button");
+    downloadAllBtn.classList.add("btn", "btn-outline-info", `${type}Options`);
+    if (type === "dub") {
+      downloadAllBtn.style.display = "none";
+    }
+    downloadAllBtn.type = "button";
+    downloadAllBtn.textContent = `Download All Episodes (${type.toUpperCase()})`;
+    downloadAllBtn.setAttribute(
+      "onclick",
+      `download('${id.replace("-both", `-${type}`)}', 1, ${ToAdd.length})`
+    );
+    togglecontainer.appendChild(downloadAllBtn);
+
+    const container = document.getElementById(`${type}Options`);
+    const episodeWrapper = document.createElement("div");
+    episodeWrapper.classList.add("wrapper");
+    const episodeContainer = document.createElement("div");
+    episodeContainer.classList.add("episode-container");
+
+    episodes.forEach(async (items) => {
+      console.log(`${items?.number} : ${items?.lang}`);
+      if (type === items?.lang || items?.lang === "both") {
+        console.log(`adding : ${items?.number} : ${items?.lang}`);
+        const episodeBtn = document.createElement("button");
+        episodeBtn.classList.add("episode");
+        episodeBtn.type = "button";
+        episodeBtn.textContent = `Download Episode ${
+          items?.number
+        } (${type.toUpperCase()})`;
+        episodeBtn.setAttribute(
+          "onclick",
+          `download('${id.replace("-both", `-${type}`)}', ${items?.number})`
+        );
+        episodeContainer.appendChild(episodeBtn);
+      }
+      episodeWrapper.appendChild(episodeContainer);
+      container.appendChild(episodeWrapper);
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 // setting click
 function toggleDownloadOptions() {
   const dubOptions = document.getElementsByClassName("dubOptions");
