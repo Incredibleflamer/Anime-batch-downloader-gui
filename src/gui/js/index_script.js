@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const animeName = searchInput.value.trim();
     if (animeName !== "") {
       showLoadingAnimation();
-      const apiUrl = `http://localhost:6969/api/search?animetosearch=${encodeURIComponent(
-        animeName
-      )}`;
+      const apiUrl = `http://localhost:${
+        global.PORT
+      }/api/search?animetosearch=${encodeURIComponent(animeName)}`;
 
       fetch(apiUrl)
         .then((response) => {

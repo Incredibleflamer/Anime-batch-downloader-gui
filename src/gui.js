@@ -10,6 +10,7 @@ const {
   dialog,
   Notification,
 } = require("electron");
+const net = require("net");
 const { autoUpdater } = require("electron-updater");
 const { exec } = require("child_process");
 const path = require("node:path");
@@ -54,7 +55,6 @@ const {
 const { MalCreateUrl, MalVerifyToken } = require("./backend/utils/mal");
 const { continuousExecution } = require("./backend/database");
 // express
-const PORT = 6969;
 const appExpress = express();
 // middle ware
 appExpress.use(bodyParser.urlencoded({ extended: true }));
@@ -554,8 +554,12 @@ appExpress.get("/proxy/image", async (req, res) => {
 });
 
 // start server
-appExpress.listen(PORT, async () => {
-  //
+getFreePort().then((PORT) => {
+  global.PORT = PORT;
+
+  appExpress.listen(PORT, () => {
+    logger.info(`Listening on port ${PORT}`);
+  });
 });
 
 // create window / electron
@@ -574,7 +578,7 @@ const createWindow = () => {
   app.commandLine.appendSwitch("disable-renderer-backgrounding");
   win.maximize();
   nativeTheme.themeSource = "dark";
-  win.loadURL(`http://localhost:${PORT}`);
+  win.loadURL(`http://localhost:${global.PORT}`);
   win.webContents.on("will-navigate", (event, url) => {
     event.preventDefault();
     if (url.startsWith("https://myanimelist.net")) {
@@ -698,3 +702,20 @@ autoUpdater.on("update-installed", () => {
 
   notification.show();
 });
+
+async function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const tryFindPort = () => {
+      const server = net.createServer();
+      server.listen(0, () => {
+        const port = server.address().port;
+        server.close(() => resolve(port));
+      });
+
+      server.on("error", (err) => {
+        tryFindPort();
+      });
+    };
+    tryFindPort();
+  });
+}

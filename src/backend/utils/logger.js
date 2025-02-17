@@ -12,7 +12,7 @@ class HLSLogger {
     this.epid = epid;
   }
   logProgress() {
-    fetch("http:localhost:6969/api/logger", {
+    fetch(`http:localhost:${global.PORT}/api/logger`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
