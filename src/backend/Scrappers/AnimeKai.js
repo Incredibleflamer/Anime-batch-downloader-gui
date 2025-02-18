@@ -153,8 +153,10 @@ async function fetchEpisode(dataId, subOrDub) {
 
   const $ = cheerio.load(data.result);
 
+  let total = 0;
   const episodes = $("a")
     .map((i, el) => {
+      total++;
       let lang = el.attribs["langs"];
       if (lang === "1") {
         lang = "sub";
@@ -163,7 +165,7 @@ async function fetchEpisode(dataId, subOrDub) {
       } else {
         lang = "dub";
       }
-      if (subOrDub === lang || lang === "both") {
+      if (subOrDub === lang || subOrDub === "both") {
         return {
           number: parseInt(el.attribs["num"]),
           lang: lang,

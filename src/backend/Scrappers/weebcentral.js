@@ -16,7 +16,7 @@ async function latestManga(page = 1) {
         id = id.split("/series/")?.[1].split("/")?.[0];
         if (id) {
           const image = Manga.find("picture > img").attr("src");
-          const title = Manga.find("picture > img").attr("alt");
+          const title = Manga.find(".font-semibold.text-lg").text();
           latestMangas.push({
             id: id,
             title: title,

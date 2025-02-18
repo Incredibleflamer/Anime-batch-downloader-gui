@@ -33,14 +33,6 @@
             <h5 class="modal-title" id="downloadModalLabel">
               Download Episodes
             </h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
           </div>
           <div class="modal-body">
             <form id="download-form">
@@ -146,21 +138,23 @@
           </div>
           <% } else { %>
           <div class="genres">
-            <button
-              data-ep="<%= data.id %>"
-              data-total-episodes="<%= data.totalEpisodes %>"
-              class="btn btn-outline-secondary round download-form-button"
-            >
-              Download From Specific Episodes
-            </button>
-            <button
-              id="downloadall"
-              type="button"
-              class="btn btn-outline-secondary round"
-              onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
-            >
-              Download All Episodes
-            </button>
+            <div class="toggle-container">
+              <button
+                data-ep="<%= data.id %>"
+                data-total-episodes="<%= data.totalEpisodes %>"
+                class="btn btn-outline-info subOptions download-form-button"
+              >
+                Download From Specific Episodes
+              </button>
+              <button
+                id="downloadall"
+                type="button"
+                class="btn btn-outline-info dubOptions"
+                onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+              >
+                Download All Episodes
+              </button>
+            </div>
           </div>
 
           <div id="modal-root"></div>
@@ -202,10 +196,9 @@
             <% }); %>
           ];
 
-        createDownloadButton_with_episdoes_array("sub", episodes , "<%= data.id %>")
-        createDownloadButton_with_episdoes_array("dub", episodes , "<%= data.id %>")
+        createDownloadButton_with_episodes_array(episodes , "<%= data.id %>")
 
-      <% } else { %>
+      <% } else if (data?.subs > 0 && data?.dubs > 0) { %>
         if (<%= data?.subs %> > 0) {
           createDownloadButton("sub", <%= data?.subs %>, "<%= data.id %>");
         }
