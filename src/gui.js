@@ -53,7 +53,7 @@ const {
   loadQueue,
 } = require("./backend/utils/queue");
 const { MalCreateUrl, MalVerifyToken } = require("./backend/utils/mal");
-const { continuousExecution } = require("./backend/database");
+const { continuousExecution, getAllMetadata } = require("./backend/database");
 // express
 const appExpress = express();
 // middle ware
@@ -383,19 +383,37 @@ appExpress.get("/api/download/remove/all", async (req, res) => {
 appExpress.post("/api/watch", async (req, res) => {
   const { ep, epNum } = req.body;
   try {
+    if (!ep || !epNum) throw new Error("");
     const provider = await providerFetch("Anime");
-    const animedata = await animeinfo(provider.provider, ep);
-    let AnimeEpId = animedata.episodes[parseInt(epNum) - 1];
-    const sourcesArray = await fetchEpisodeSources(provider, AnimeEpId?.id)
-      .sources;
-    res.status(400).json({
-      sourcesArray,
-    });
+    let animedata = null;
+
+    if (provider?.provider_name === "pahe") {
+      let currentPage = Math.ceil(epNum / 30);
+      animedata = await animeinfo(provider.provider, ep, {
+        page: currentPage,
+        fetch_info: false,
+      });
+    } else {
+      animedata = await animeinfo(provider.provider, ep);
+    }
+
+    let AnimeEpId = animedata.episodes.find(
+      (item) => item.number === parseInt(epNum)
+    );
+    if (!AnimeEpId?.id) throw new Error("Episode Not Found");
+    const sourcesArray = await fetchEpisodeSources(
+      provider.provider,
+      AnimeEpId?.id
+    );
+    res.status(200).json(sourcesArray);
   } catch (err) {
     // logging
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
     console.log(err);
+    res.status(200).json({
+      sources: [],
+    });
   }
 });
 
@@ -423,6 +441,28 @@ appExpress.get("/manga", async (req, res) => {
     data: data,
     catagorie: "Latest Updated",
     Pagination: data?.hasNextPage ? config?.Pagination || "off" : "off",
+  });
+});
+
+// Local Anime Page
+appExpress.get("/local/anime", async (req, res) => {
+  const config = await settingfetch();
+  let data = await getAllMetadata(config?.CustomDownloadLocation, "Anime", 1);
+  res.render("index.ejs", {
+    data: data,
+    catagorie: "Local Anime Library",
+    Pagination: "off",
+  });
+});
+
+// Local Manga Page
+appExpress.get("/local/manga", async (req, res) => {
+  const config = await settingfetch();
+  let data = await getAllMetadata(config?.CustomDownloadLocation, "Manga", 1);
+  res.render("manga.ejs", {
+    data: data,
+    catagorie: "Local Manga Library",
+    Pagination: "off",
   });
 });
 
@@ -496,10 +536,17 @@ appExpress.get("/log", async (req, res) => {
 // info page
 appExpress.get("/info", async (req, res) => {
   const animeId = req.query.animeid.trim();
-  const provider = await providerFetch("Anime");
-  const data = await animeinfo(provider.provider, animeId);
-  const setting = await settingfetch();
-  res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
+  if (animeId) {
+    const provider = await providerFetch("Anime");
+    const data = await animeinfo(provider.provider, animeId);
+    const setting = await settingfetch();
+    res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
+  } else {
+    const localanimeid = req.query.localanimeid.trim();
+    const folderName = req.query.folder.trim();
+    console.log(localanimeid);
+    console.log(folderName);
+  }
 });
 
 // manga info page
@@ -550,6 +597,37 @@ appExpress.get("/proxy/image", async (req, res) => {
   } catch (error) {
     console.error("Error fetching image:", error);
     res.status(500).send("Internal server error.");
+  }
+});
+
+// Proxy for m3u8
+appExpress.get("/proxy", async (req, res) => {
+  try {
+    const videoUrl = req.query.url;
+    if (!videoUrl) return res.status(400).json({ error: "No URL provided" });
+
+    const response = await ddosGuardRequest(videoUrl, {
+      responseType: "arraybuffer",
+    });
+
+    const contentType = response.headers["content-type"];
+    res.setHeader("Content-Type", contentType);
+
+    if (contentType.includes("application/vnd.apple.mpegurl")) {
+      let m3u8Data = response.data.toString("utf-8");
+
+      m3u8Data = m3u8Data.replace(
+        /^https?:\/\/.*$/gm,
+        (match) => `/proxy?url=${encodeURIComponent(match)}`
+      );
+
+      return res.send(m3u8Data);
+    }
+
+    res.send(response.data);
+  } catch (error) {
+    console.error("Error fetching video:", error.message);
+    res.status(500).json({ error: "Failed to fetch video" });
   }
 });
 

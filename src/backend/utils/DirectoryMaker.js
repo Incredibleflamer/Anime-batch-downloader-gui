@@ -6,18 +6,20 @@ const os = require("os");
 
 // Anime Dir Maker
 async function directoryMaker(title, ep, customdir) {
-  let customdirneko = customdir || getDownloadsFolder();
   let destination;
-  try {
-    await fs.promises.access(customdirneko);
-    destination = customdirneko;
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      destination = path.join(
-        process.env.PORTABLE_EXECUTABLE_DIR || process.cwd()
-      );
+  if (customdir) {
+    try {
+      await fs.promises.access(customdir);
+      destination = customdir;
+    } catch (err) {
+      if (err.code === "ENOENT") {
+        destination = getDownloadsFolder();
+      }
     }
+  } else {
+    destination = getDownloadsFolder();
   }
+
   //Anime dir Making
   const animeDirectory = path.join(destination, `./Anime`);
   try {
@@ -29,6 +31,7 @@ async function directoryMaker(title, ep, customdir) {
       throw error;
     }
   }
+
   //Anime Name Dir
   const directoryName = title.replace(/[^a-zA-Z0-9]/g, "_");
   const directoryPath = path.join(animeDirectory, directoryName);
@@ -41,6 +44,7 @@ async function directoryMaker(title, ep, customdir) {
       throw error;
     }
   }
+
   //Temp of eps
   const tempeps = path.join(animeDirectory, directoryName, `Temp_${ep}/`);
   try {
@@ -64,6 +68,50 @@ async function directoryMaker(title, ep, customdir) {
   } catch (error) {}
 
   return [directoryPath, tempeps];
+}
+
+// Dir GET
+async function GetDir(title, customdir, Type) {
+  let destination;
+  if (customdir) {
+    try {
+      await fs.promises.access(customdir);
+      destination = customdir;
+    } catch (err) {
+      if (err.code === "ENOENT") {
+        destination = getDownloadsFolder();
+      }
+    }
+  } else {
+    destination = getDownloadsFolder();
+  }
+
+  // Type dir Making
+  const Directory = path.join(destination, `./${Type}`);
+  try {
+    await fs.promises.access(Directory);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      await fs.promises.mkdir(Directory);
+    } else {
+      throw error;
+    }
+  }
+
+  // Name Dir
+  const directoryName = title.replace(/[^a-zA-Z0-9]/g, "_");
+  const directoryPath = path.join(Directory, directoryName);
+  try {
+    await fs.promises.access(directoryPath);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      await fs.promises.mkdir(directoryPath);
+    } else {
+      throw error;
+    }
+  }
+
+  return directoryPath;
 }
 
 // dir + file remover
@@ -142,4 +190,5 @@ module.exports = {
   MangaDir,
   ensureDirectoryExists,
   getDownloadsFolder,
+  GetDir,
 };

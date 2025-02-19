@@ -72,8 +72,10 @@ async function fetchRecentEpisodes(page = 1) {
 // Animeinfo
 async function AnimeInfo(
   id,
-  { dub = false, fetch_info = true, page = 1 } = {}
+  { dub = false, fetch_info = true, page = 1, NeedEp = null } = {}
 ) {
+  id = id.replace(/-(dub|sub|both)$/, "");
+
   const animeInfo = {
     id: id,
     title: "",
@@ -154,7 +156,7 @@ async function fetchEpisodesPages(id, page, dub) {
         ...data
           .filter((item) => item?.audio && item?.audio?.toLowerCase() === "eng")
           .map((item) => ({
-            id: `${id}/${item.session}`,
+            id: `${id}/${item.session}-dub`,
             number: item.episode,
             title: item.title,
             duration: item.duration,
@@ -162,12 +164,18 @@ async function fetchEpisodesPages(id, page, dub) {
       );
     } else {
       episodes.push(
-        ...data.map((item) => ({
-          id: `${id}/${item.session}`,
-          number: item.episode,
-          title: item.title,
-          duration: item.duration,
-        }))
+        ...data.map((item) => {
+          let suffix =
+            item?.audio && item?.audio?.toLowerCase() === "eng"
+              ? "both"
+              : "sub";
+          return {
+            id: `${id}/${item.session}-${suffix}`,
+            number: item.episode,
+            title: item.title,
+            duration: item.duration,
+          };
+        })
       );
     }
 
@@ -185,8 +193,10 @@ async function fetchEpisodesPages(id, page, dub) {
 // fetching Episodes Download Links
 async function fetchEpisodeSources(episodeId) {
   try {
-    let dub = episodeId.endsWith("$dub");
-    episodeId = episodeId.replace("$dub", "");
+    const isBoth = episodeId.endsWith("both");
+    const isDub = episodeId.endsWith("dub") ? true : false;
+
+    episodeId = episodeId.replace(/-(dub|sub|both)$/, "");
 
     const response = await ddosGuardRequest(`${baseUrl}/play/${episodeId}`, {
       headers: {
@@ -201,20 +211,35 @@ async function fetchEpisodeSources(episodeId) {
       audio: $(el).attr("data-audio"),
     }));
 
-    const iSource = {
-      sources: [],
-    };
+    let iSource = {};
+
+    if (!isBoth) iSource.sources = [];
+    if (isBoth)
+      iSource = {
+        dub: {
+          sources: [],
+        },
+        sub: {
+          sources: [],
+        },
+      };
 
     for (const link of links) {
       const res = await extract(new URL(link.url));
       res[0].quality = link.quality;
       res[0].isDub = link.audio === "eng";
-      if (dub && res[0].isDub) {
-        iSource.sources.push(res[0]);
-      } else if (!dub && !res[0].isDub) {
-        iSource.sources.push(res[0]);
+      if (isBoth) {
+        if (res[0]?.isDub) {
+          iSource.dub.sources.push(res[0]);
+        } else if (!res[0]?.isDub) {
+          iSource.sub.sources.push(res[0]);
+        }
       } else {
-        continue;
+        if (isDub && res[0].isDub) {
+          iSource.sources.push(res[0]);
+        } else if (!isDub && !res[0].isDub) {
+          iSource.sources.push(res[0]);
+        }
       }
     }
     return iSource;

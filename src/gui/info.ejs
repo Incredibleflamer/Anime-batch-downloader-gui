@@ -115,63 +115,102 @@
             </button>
             <% }); %>
           </div>
-          <div class="episodes">
-            <h2>Download Options</h2>
-          </div>
-
-          <% if (data.id.includes('both')) { %>
-          <!-- Toggle Button -->
-          <div class="toggle-container" id="toggle-container">
+          <div class="genres">
             <button
-              id="toggleDownloadOptions"
+              id="watch-download-tongle"
               class="btn btn-outline-info"
-              onclick="toggleDownloadOptions()"
+              onclick="tongledownloadwatch()"
             >
-              Show Dub 🎥
+              Watch
             </button>
           </div>
+          <div id="downloadContainer">
+            <div class="episodes">
+              <h2>Download Options</h2>
+            </div>
 
-          <!-- Download Options (hidden initially) -->
-          <div class="genres downloadOptions">
-            <div class="subOptions" id="subOptions"></div>
-            <div class="dubOptions" id="dubOptions" style="display: none"></div>
-          </div>
-          <% } else { %>
-          <div class="genres">
-            <div class="toggle-container">
+            <% if (data.id.includes('both')) { %>
+            <!-- Toggle Button -->
+            <div class="toggle-container" id="toggle-container">
               <button
-                data-ep="<%= data.id %>"
-                data-total-episodes="<%= data.totalEpisodes %>"
-                class="btn btn-outline-info subOptions download-form-button"
+                id="toggleDownloadOptions"
+                class="btn btn-outline-info"
+                onclick="toggleDownloadOptions()"
               >
-                Download From Specific Episodes
-              </button>
-              <button
-                id="downloadall"
-                type="button"
-                class="btn btn-outline-info dubOptions"
-                onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
-              >
-                Download All Episodes
+                Show Dub 🎥
               </button>
             </div>
-          </div>
 
-          <div id="modal-root"></div>
-          <div class="wrapper">
-            <div class="episode-container">
-              <% for (let i = data.totalEpisodes - 1; i >= 0; i--) { %>
-              <button
-                class="episode"
-                type="button"
-                onclick="download('<%= data.id %>', '<%= i + 1 %>')"
-              >
-                Download Episode <%= i + 1 %>
-              </button>
-              <% } %>
+            <!-- Download Options (hidden initially) -->
+            <div class="genres downloadOptions">
+              <div class="subOptions" id="subOptions"></div>
+              <div
+                class="dubOptions"
+                id="dubOptions"
+                style="display: none"
+              ></div>
+            </div>
+            <% } else { %>
+            <div class="genres">
+              <div class="toggle-container">
+                <button
+                  data-ep="<%= data.id %>"
+                  data-total-episodes="<%= data.totalEpisodes %>"
+                  class="btn btn-outline-info subOptions download-form-button"
+                >
+                  Download From Specific Episodes
+                </button>
+                <button
+                  id="downloadall"
+                  type="button"
+                  class="btn btn-outline-info dubOptions"
+                  onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+                >
+                  Download All Episodes
+                </button>
+              </div>
+            </div>
+
+            <div id="modal-root"></div>
+            <div class="wrapper">
+              <div class="episode-container">
+                <% for (let i = data.totalEpisodes - 1; i >= 0; i--) { %>
+                <button
+                  class="episode"
+                  type="button"
+                  onclick="download('<%= data.id %>', '<%= i + 1 %>')"
+                >
+                  Download Episode <%= i + 1 %>
+                </button>
+                <% } %>
+              </div>
+            </div>
+            <% } %>
+          </div>
+          <div id="watchContainer" style="display: none">
+            <div class="video-player">
+              <div class="description" id="now_playing">Now Playing :</div>
+              <video
+                id="vid1"
+                class="video-js vjs-default-skin"
+                controls
+              ></video>
+              <br />
+              select video
+              <h4>Click on ep from list to start playing</h4>
+              <div class="d-grid gap-2 episode-container scrollable-ele">
+                <% data.episodes.forEach(ep => { %>
+                <button
+                  class="btn btn-success round"
+                  type="button"
+                  onclick="Videoplay('<%= data.id %>', <%= ep.number %>)"
+                >
+                  Watch ep <%= ep.number %>
+                </button>
+                <% }); %>
+              </div>
             </div>
           </div>
-          <% } %>
         </div>
       </div>
     </div>
@@ -181,11 +220,11 @@
     <script src="/js/libs/bootstrap.js"></script>
     <script src="/js/common.js"></script>
     <script src="/js/info.js"></script>
-    <!-- <script src="/js/libs/videojs-http-source-selector.js"></script>
+    <script src="/js/libs/videojs-http-source-selector.js"></script>
     <script src="/js/libs/video.js"></script>
-    <script src="/js/libs/videojs-contrib-quality-levels.js"></script> -->
-    <!-- <script src="/js/player/quality.js"></script> -->
-    <!-- <script src="/js/player/play.js"></script> -->
+    <script src="/js/libs/videojs-contrib-quality-levels.js"></script>
+    <script src="/js/player/quality.js"></script>
+    <script src="/js/player/play.js"></script>
 
     <!-- creating buttons -->
     <script>

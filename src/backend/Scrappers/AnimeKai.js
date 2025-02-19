@@ -153,10 +153,8 @@ async function fetchEpisode(dataId, subOrDub) {
 
   const $ = cheerio.load(data.result);
 
-  let total = 0;
   const episodes = $("a")
     .map((i, el) => {
-      total++;
       let lang = el.attribs["langs"];
       if (lang === "1") {
         lang = "sub";
@@ -171,7 +169,7 @@ async function fetchEpisode(dataId, subOrDub) {
           lang: lang,
           slug: el.attribs["slug"],
           title: $(el).find("span").text(),
-          id: `${el.attribs["token"]}$${lang}`,
+          id: `${el.attribs["token"]}-${lang}`,
         };
       } else {
         return null;
@@ -186,15 +184,15 @@ async function fetchEpisode(dataId, subOrDub) {
 
 async function fetchEpisodeSources(episodeId) {
   try {
-    let isDub = episodeId.endsWith("dub");
-    episodeId = episodeId.replace(/\$(both|sub|dub)/gi, "");
+    const isBoth = episodeId.endsWith("both");
+    const subOrDub = episodeId.endsWith("sub") ? "sub" : "dub";
+    episodeId = episodeId.replace(/-(dub|sub|both)$/, "");
 
     const { data } = await axios.get(
       `https://animekai.to/ajax/links/list?token=${episodeId}&_=${GenerateToken(
         episodeId
       )}`
     );
-
     const $ = cheerio.load(data.result);
     const servers = $(".server-items")
       .map((_, el) => {
@@ -210,25 +208,41 @@ async function fetchEpisodeSources(episodeId) {
       })
       .get();
 
-    let filteredServers = servers.find((s) =>
-      isDub ? s.type === "dub" : s.type === "sub"
-    );
+    let filteredServers = isBoth
+      ? servers.filter((s) => s.type === "sub" || s.type === "dub")
+      : servers.filter((s) => s.type === subOrDub);
 
-    if (!filteredServers || filteredServers.servers.length === 0) {
+    if (!filteredServers || filteredServers.length === 0) {
       throw new Error(
-        isDub ? "No dubbed episodes available." : "No subbed episodes found."
+        subOrDub === "dub"
+          ? "No dubbed episodes available."
+          : "No subbed episodes found."
       );
     }
 
-    for (let server of filteredServers.servers) {
-      try {
-        return await getSources(server.id);
-      } catch (error) {
-        console.warn(`Error fetching from ${server.server}, trying next...`);
+    let SourceResult = [];
+    for (let serverGroup of filteredServers) {
+      for (let server of serverGroup.servers) {
+        if (!isBoth && SourceResult.length > 0) break;
+        try {
+          SourceResult.push({
+            type: serverGroup.type,
+            data: await getSources(server.id),
+          });
+        } catch (error) {
+          //  ignore
+        }
       }
     }
 
-    throw new Error("All servers failed to fetch sources.");
+    if (isBoth) {
+      return {
+        sub: SourceResult.find((item) => item.type === "sub")?.data || [],
+        dub: SourceResult.find((item) => item.type === "dub")?.data || [],
+      };
+    } else {
+      return SourceResult.length > 0 ? SourceResult[0].data : null;
+    }
   } catch (err) {
     throw new Error(err.message);
   }

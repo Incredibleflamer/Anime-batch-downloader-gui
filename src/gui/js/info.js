@@ -204,7 +204,7 @@ function createEpisodeButtons(containerId, episodes, type, id) {
   container.appendChild(fragment);
 }
 
-// setting click
+// Downloads : Tongle Sub / Dub
 function toggleDownloadOptions() {
   const dubOptions = document.getElementsByClassName("dubOptions");
   const subOptions = document.getElementsByClassName("subOptions");
@@ -226,5 +226,27 @@ function toggleDownloadOptions() {
       dubOptions[i].style.display = "block";
     }
     button.textContent = "Show Sub 🎭";
+  }
+}
+
+// Tongle Watch / Download
+function tongledownloadwatch() {
+  const downloadContainer = document.getElementById("downloadContainer");
+  const watchContainer = document.getElementById("watchContainer");
+  const watchDownloadToggleButton = document.getElementById(
+    "watch-download-tongle"
+  );
+
+  if (downloadContainer.style.display === "none") {
+    downloadContainer.style.display = "block";
+    watchContainer.style.display = "none";
+    document.body.style.overflowY = "hidden";
+    watchDownloadToggleButton.textContent = "Watch";
+  } else {
+    downloadContainer.style.display = "none";
+    watchContainer.style.display = "block";
+    document.body.style.overflowY = "auto";
+    document.body.style.paddingBottom = "1rem";
+    watchDownloadToggleButton.textContent = "Download";
   }
 }

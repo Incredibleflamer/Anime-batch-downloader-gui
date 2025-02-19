@@ -127,9 +127,10 @@ body {
 
 #vid1 {
   width: 100%;
-  height: auto;
+  height: 400px;
   min-height: 400px;
   max-width: 100%;
+  background-color: black;
 }
 
 .episode {

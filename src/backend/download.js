@@ -57,6 +57,7 @@ async function downloadfunction(animeid, startep, endep) {
           await addToQueue({
             Type: "Anime",
             EpNum: TryToDownload[i] + 1,
+            id: animeid,
             Title: animedata.title,
             config: {
               Animeprovider: config?.Animeprovider,
@@ -65,6 +66,7 @@ async function downloadfunction(animeid, startep, endep) {
               subtitleFormat: config?.subtitleFormat,
               CustomDownloadLocation: config?.CustomDownloadLocation,
             },
+            image: animedata?.image ?? null,
             epid: epid,
             totalSegments: 0,
             currentSegments: 0,
@@ -90,6 +92,7 @@ async function downloadfunction(animeid, startep, endep) {
         } else {
           await addToQueue({
             Type: "Anime",
+            id: animeid,
             EpNum: episode.number,
             Title: animedata.title,
             config: {
@@ -99,6 +102,7 @@ async function downloadfunction(animeid, startep, endep) {
               subtitleFormat: config?.subtitleFormat,
               CustomDownloadLocation: config?.CustomDownloadLocation,
             },
+            image: animedata?.image ?? null,
             epid: epid,
             totalSegments: 0,
             currentSegments: 0,
@@ -173,6 +177,7 @@ async function downloadfunction(animeid, startep, endep) {
           await addToQueue({
             Type: "Anime",
             EpNum: allEpisodes[i].number,
+            id: animeid,
             Title: animedata.title,
             config: {
               Animeprovider: config?.Animeprovider,
@@ -182,8 +187,9 @@ async function downloadfunction(animeid, startep, endep) {
               CustomDownloadLocation: config?.CustomDownloadLocation,
             },
             epid: `${epid}${
-              config?.subDub && config?.subDub === "dub" ? "$dub" : ""
+              config?.subDub && config?.subDub === "dub" ? "-dub" : ""
             }`,
+            image: animedata?.image ?? null,
             totalSegments: 0,
             currentSegments: 0,
           });
@@ -238,6 +244,8 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
     } else {
       await addToQueue({
         Type: "Manga",
+        id: mangaid,
+        image: mangainfo.image,
         Title: Title,
         config: {
           Mangaprovider: config?.Mangaprovider,

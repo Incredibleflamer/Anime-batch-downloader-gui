@@ -13,18 +13,17 @@ async function SearchAnime(query, page = 1) {
 }
 
 async function AnimeInfo(id) {
-  let subOrDub = id.endsWith("sub")
-    ? "sub"
-    : id.endsWith("dub")
-    ? "dub"
-    : id.endsWith("both")
+  let SubDubBoth = id.endsWith("both")
     ? "both"
-    : "both";
+    : id.endsWith("sub")
+    ? "sub"
+    : "dub";
+
   const info = {
     id: id,
     title: "",
   };
-  id = id.replace("-dub", "").replace("-sub", "").replace("-both", "");
+  id = id.replace(/-(dub|sub|both)$/, "");
   try {
     const { data } = await axios.get(`${baseUrl}/watch/${id}`);
     const $ = (0, cheerio.load)(data);
@@ -47,7 +46,7 @@ async function AnimeInfo(id) {
       $("div.film-stats div.tick div.tick-item.tick-sub").text()
     );
 
-    info.subOrDub = subOrDub;
+    info.subOrDub = SubDubBoth;
     const episodesAjax = await axios.get(
       `${baseUrl}/ajax/v2/episode/list/${id.split("-").pop()}`
     );
@@ -65,9 +64,9 @@ async function AnimeInfo(id) {
             ? void 0
             : _b.replace("?ep=", "$episode$")) === null || _c === void 0
           ? void 0
-          : subOrDub !== "both"
-          ? _c.concat(`$${subOrDub}`)
-          : _c;
+          : SubDubBoth !== "both"
+          ? _c.concat(`-${SubDubBoth}`)
+          : _c.concat(`-both`);
       const number = parseInt($$(el).attr("data-number"));
       const title = $$(el).attr("title");
       const url = baseUrl + $$(el).attr("href");
@@ -99,37 +98,69 @@ async function fetchEpisodeSources(episodeId) {
       ...(await hianimeExtract(episodeId)),
     };
   }
+
   if (!episodeId.includes("$episode$")) throw new Error("Invalid episode id");
-  const subOrDub = episodeId.endsWith("sub") ? "sub" : "dub";
-  episodeId = `${baseUrl}/watch/${episodeId
+
+  console.log(episodeId);
+  const isBoth = episodeId.endsWith("both");
+  const subOrDub = isBoth
+    ? ["sub", "dub"]
+    : episodeId.endsWith("sub")
+    ? ["sub"]
+    : ["dub"];
+
+  console.log(subOrDub);
+
+  const cleanEpisodeId = episodeId
     .replace("$episode$", "?ep=")
-    .replace(/\$auto|\$sub|\$dub/gi, "")}`;
+    .replace(/-(dub|sub|both)$/, "");
+
   try {
-    const { data } = await axios.get(
-      `${baseUrl}/ajax/v2/episode/servers?episodeId=${
-        episodeId.split("?ep=")[1]
-      }`
-    );
-    const $ = (0, cheerio.load)(data.html);
-    let serverId = null;
-    try {
+    const episodeNumber = cleanEpisodeId.split("?ep=")[1];
+
+    const fetchSource = async (type) => {
       try {
-        serverId = retrieveServerId($, 4, subOrDub);
-      } catch (err) {
+        const { data } = await axios.get(
+          `${baseUrl}/ajax/v2/episode/servers?episodeId=${episodeNumber}`
+        );
+        const $ = cheerio.load(data.html);
+        let serverId = null;
+
         try {
-          serverId = retrieveServerId($, 1, subOrDub);
+          serverId = retrieveServerId($, 4, type);
         } catch (err) {
-          //
+          try {
+            serverId = retrieveServerId($, 1, type);
+          } catch (err) {
+            // ignore
+          }
         }
+
+        if (serverId) {
+          const {
+            data: { link },
+          } = await axios.get(
+            `${baseUrl}/ajax/v2/episode/sources?id=${serverId}`
+          );
+
+          return await fetchEpisodeSources(link);
+        } else {
+          return null;
+        }
+      } catch (err) {
+        return null;
       }
-      if (!serverId) throw new Error("");
-    } catch (err) {
-      throw new Error("Couldn't find server.");
+    };
+
+    if (isBoth) {
+      const [subSource, dubSource] = await Promise.all([
+        fetchSource("sub"),
+        fetchSource("dub"),
+      ]);
+      return { sub: subSource, dub: dubSource };
+    } else {
+      return await fetchSource(subOrDub[0]);
     }
-    const {
-      data: { link },
-    } = await axios.get(`${baseUrl}/ajax/v2/episode/sources?id=${serverId}`);
-    return await fetchEpisodeSources(link);
   } catch (err) {
     console.log(err);
     throw err;
