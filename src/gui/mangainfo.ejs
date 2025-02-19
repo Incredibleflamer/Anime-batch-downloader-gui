@@ -7,11 +7,130 @@
     <title>Manga Downloader</title>
     <link rel="stylesheet" href="/css/libs/bootstrap.css" />
     <link rel="stylesheet" href="/css/info.css" />
+    <style>
+      .manga-container {
+        padding-top: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        gap: 1rem;
+      }
+
+      .manga-page {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .StickyMangaControls {
+        position: fixed;
+        bottom: 1%;
+        left: 6%;
+        width: 250px;
+        background: #222;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid #e68900;
+        border-radius: 10px;
+        z-index: 500;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .chapter-navigation,
+      .page-navigation,
+      .jump-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: 5px;
+      }
+
+      .manga-btn {
+        background-color: #ff9800;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 16px;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .manga-btn:hover {
+        background-color: #e68900;
+      }
+
+      .manga-input {
+        color: white;
+        width: 175px;
+        padding: 5px;
+        text-align: center;
+        border-radius: 5px;
+        background-color: #222;
+        border: 0rem;
+        margin: 0rem;
+      }
+
+      .chapter-navigation span,
+      .page-navigation span {
+        font-size: 16px;
+        text-align: center;
+        flex-grow: 1;
+      }
+
+      .chapter-navigation button,
+      .page-navigation button {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .jump-container {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .chapter-navigation,
+      .page-navigation {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .chapter-navigation span,
+      .page-navigation span {
+        flex-grow: 1;
+        text-align: center;
+        font-size: clamp(12px, 2vw, 16px);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+    </style>
   </head>
   <body>
     <!-- navbar -->
     <%- include("components/navbar") %>
 
+    <!-- Start Modal -->
     <div
       class="modal fade"
       id="downloadModal"
@@ -102,159 +221,131 @@
             </button>
             <% }); %>
           </div>
-          <div class="episodes">
-            <h2>Download Options</h2>
-          </div>
-
           <div class="genres">
-            <div class="toggle-container">
-              <button
-                id="download-form-button"
-                data-ep="<%= data.id %>"
-                data-total-episodes="<%= data.chapters.length %>"
-                class="btn btn-outline-info"
-              >
-                Download From Specific Chapter
-              </button>
-              <button
-                id="downloadall"
-                type="button"
-                class="btn btn-outline-info"
-                onclick="download('<%= data.id %>', 1, <%= data.chapters.length %>)"
-              >
-                Download All Chapters
-              </button>
+            <button
+              id="read-download-tongle"
+              class="btn btn-outline-info"
+              onclick="tongledownloadread()"
+            >
+              Read
+            </button>
+          </div>
+          <div id="downloadContainer">
+            <div class="episodes">
+              <h2>Download Options</h2>
+            </div>
+
+            <div class="genres">
+              <div class="toggle-container">
+                <button
+                  id="download-form-button"
+                  data-ep="<%= data.id %>"
+                  data-total-episodes="<%= data.chapters.length %>"
+                  class="btn btn-outline-info"
+                >
+                  Download From Specific Chapter
+                </button>
+                <button
+                  id="downloadall"
+                  type="button"
+                  class="btn btn-outline-info"
+                  onclick="download('<%= data.id %>', 1, <%= data.chapters.length %>)"
+                >
+                  Download All Chapters
+                </button>
+              </div>
+            </div>
+            <div id="modal-root"></div>
+            <div class="episodes">
+              <h2>Chapters List</h2>
+            </div>
+            <div class="wrapper">
+              <div class="episode-container">
+                <% let i = 1 %> <% data.chapters.forEach(ep => { %>
+                <button
+                  class="episode"
+                  type="button"
+                  onclick="download('<%= data.id %>', <%= i %> )"
+                >
+                  <%= ep.title %>
+                </button>
+                <% i++; }); %>
+              </div>
             </div>
           </div>
-          <div id="modal-root"></div>
-          <div class="episodes">
-            <h2>Chapters List</h2>
-          </div>
-          <div class="d-grid gap-2 episode-container scrollable-ele">
-            <% let i = 1 %> <% data.chapters.forEach(ep => { %>
-            <button
-              class="btn btn-success round"
-              type="button"
-              onclick="download('<%= data.id %>', <%= i %> )"
-            >
-              <%= ep.title %>
-            </button>
-            <% i++; }); %>
+          <div class="readContainer" style="display: none">
+            <div id="mangaContainer" class="manga-container"></div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="readContainer" style="display: none">
+      <div class="StickyMangaControls">
+        <!-- Chapter Navigation -->
+        <div class="chapter-navigation">
+          <button id="prevChapter" class="manga-btn" onclick="PrevChapter()">
+            &lt;
+          </button>
+          <span
+            >Chapter: <span id="currentChapter">1</span> /
+            <span id="totalChapters"
+              ><%= data?.totalChapters ? data.totalChapters : "??"%></span
+            ></span
+          >
+          <button id="nextChapter" class="manga-btn" onclick="NextChapter()">
+            &gt;
+          </button>
+        </div>
+
+        <!-- Jump to Chapter (Inline) -->
+        <div class="jump-container">
+          <input
+            type="number"
+            id="jumpToChapter"
+            placeholder="Enter Chapter"
+            min="1"
+            class="manga-input"
+          />
+          <button id="jumpChapterBtn" class="manga-btn">Go</button>
+        </div>
+
+        <!-- Page Navigation (Inline) -->
+        <div class="page-navigation">
+          <button id="prevPage" class="manga-btn" onclick="PrevPage()">
+            &lt;
+          </button>
+          <span
+            >Page: <span id="currentPage">1</span> /
+            <span id="totalPages">??</span></span
+          >
+          <button id="nextPage" class="manga-btn" onclick="NextPage()">
+            &gt;
+          </button>
+        </div>
+
+        <!-- Jump to Page (Inline) -->
+        <div class="jump-container">
+          <input
+            type="number"
+            id="jumpToPage"
+            placeholder="Enter Page"
+            min="1"
+            class="manga-input"
+          />
+          <button id="jumpPageBtn" class="manga-btn">Go</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/libs/sweetalert.js"></script>
+    <script src="/js/mangainfo.js"></script>
     <script>
-      // search
-      function search(event) {
-        event.preventDefault();
-        const searchInput = document.getElementById("searchInput").value.trim();
-        if (!searchInput) {
-          return swal(
-            "Invalid Search",
-            `Please enter some text to search`,
-            "error"
-          );
-        }
-        redirectToSearch(searchInput);
-      }
-
-      document.querySelector("form").addEventListener("submit", search);
-
-      function redirectToSearch(query) {
-        window.location.href = `/search?mangatosearch=${query}`;
-      }
-
-      // go back script
-      function goBack() {
-        window.history.back();
-      }
-
-      // download
-      async function download(ep, start, end) {
-        try {
-          const response = await fetch("/api/mangadownload", {
-            method: "POST",
-            body: JSON.stringify({
-              ep: ep,
-              start: start,
-              end: end,
-            }),
-            headers: {
-              "Content-type": "application/json; charset=UTF-8",
-            },
-          });
-          const responseData = await response.json();
-          if (response.status === 400) {
-            swal("Something Went Wrong..", `${responseData.message}`, "error");
-          } else if (!response.ok) {
-            swal(
-              "Request Failed",
-              `There are ${responseData.queue} Anime in Queue. 
-        Error: ${responseData.message}`,
-              "error"
-            );
-          } else {
-            swal(
-              `Added To Queue Current Queue Size : ${responseData.queue}!`,
-              `${responseData.message}`,
-              "success"
-            );
-          }
-        } catch (err) {
-          console.log(err);
-          swal("Couldnt add to queue...", `Error: ${err}`, "error");
-        }
-      }
-
-      // modal
-      document.addEventListener("DOMContentLoaded", function () {
-        const downloadFormButton = document.getElementById(
-          "download-form-button"
-        );
-        const totalEpisodes = downloadFormButton.dataset.totalEpisodes;
-        const epdata = downloadFormButton.dataset.ep;
-
-        function showModal() {
-          $("#downloadModal").modal("toggle");
-        }
-
-        downloadFormButton.addEventListener("click", showModal);
-
-        const downloadForm = document.getElementById("download-form");
-        downloadForm.addEventListener("submit", async function (event) {
-          event.preventDefault();
-          const startEpisode = parseInt(
-            document.getElementById("start-episode").value
-          );
-          const endEpisode = parseInt(
-            document.getElementById("end-episode").value
-          );
-          if (
-            startEpisode > endEpisode ||
-            startEpisode < 1 ||
-            endEpisode > totalEpisodes ||
-            startEpisode === 0 ||
-            endEpisode === 0
-          ) {
-            alert("Invalid episode range. Please enter a valid range.");
-            return;
-          }
-          await download(epdata, startEpisode, endEpisode);
-          $("#downloadModal").modal("toggle");
-        });
-      });
+      let chapters = <%- JSON.stringify(data.chapters) %>
+      initChapterRead("<%= data.totalChapters %>", chapters , "<%= autoLoadNextChapter ? autoLoadNextChapter : 'off' %>");
     </script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
-      crossorigin="anonymous"
-    ></script>
+    <script src="/js/libs/jquery.js"></script>
+    <script src="/js/libs/bootstrap.js"></script>
+    <script src="/js/common.js"></script>
   </body>
 </html>

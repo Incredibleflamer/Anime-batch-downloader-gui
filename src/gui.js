@@ -37,6 +37,7 @@ const {
   animeinfo,
   animesearch,
   fetchEpisodeSources,
+  MangaChapterFetch,
 } = require("./backend/utils/AnimeManga");
 const { ddosGuardRequest } = require("./backend/Scrappers/animepahe");
 const { logger, getLogs } = require("./backend/utils/AppLogger");
@@ -91,6 +92,7 @@ appExpress.post("/api/settings", async (req, res) => {
     concurrentDownloads,
     subtitleFormat,
     subDub,
+    autoLoadNextChapter,
   } = req.body;
   try {
     // if (
@@ -127,6 +129,7 @@ appExpress.post("/api/settings", async (req, res) => {
       Pagination: Pagination,
       concurrentDownloads: concurrentDownloads,
       subDub: subDub,
+      autoLoadNextChapter: autoLoadNextChapter,
     });
 
     const data = await settingfetch();
@@ -150,7 +153,7 @@ appExpress.post("/api/settings", async (req, res) => {
       }
     }
 
-    message += `\nManga Provider : ${data?.Mangaprovider}`;
+    message += `\nManga Provider : ${data?.Mangaprovider}\nAutoload Next Chapter : ${data?.autoLoadNextChapter}`;
 
     // Pagination & concurrentDownloads
     message += `\nPagination : ${data.Pagination}\nConcurrent Downloads: ${data.concurrentDownloads}`;
@@ -417,6 +420,22 @@ appExpress.post("/api/watch", async (req, res) => {
   }
 });
 
+// get chapter
+appExpress.post("/api/read", async (req, res) => {
+  const { chapterID } = req.body;
+  try {
+    if (!chapterID) throw new Error("");
+    const provider = await providerFetch("Manga");
+    const chapters = await MangaChapterFetch(provider.provider, chapterID);
+    res.status(200).json(chapters);
+  } catch (err) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.status(200).json([]);
+  }
+});
+
 // ===================== routes =====================
 
 // home page anime
@@ -554,7 +573,11 @@ appExpress.get("/mangainfo", async (req, res) => {
   const mangaid = req.query.mangaid.trim();
   const provider = await providerFetch("Manga");
   const data = await MangaInfo(provider.provider, mangaid);
-  res.render("mangainfo.ejs", { data: data });
+  const setting = await settingfetch();
+  res.render("mangainfo.ejs", {
+    data: data,
+    autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
+  });
 });
 
 // downloads page

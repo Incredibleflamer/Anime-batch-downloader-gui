@@ -94,6 +94,14 @@
             <select id="manga-provider">
               <option value="weebcentral" <% if (settings.Animeprovider === "weebcentral") { %> selected <% } %>>weebcentral</option>
             </select>
+
+            <div id="auto-load-next-chapter">
+              <label for="auto-load-next-chapter-select">Auto Load Next Chapter:</label>
+              <select id="auto-load-next-chapter-select">
+                <option value="on" <% if (settings.autoLoadNextChapter === "on") { %> selected <% } %>>ON</option>
+                <option value="off" <% if (settings.autoLoadNextChapter === "off") { %> selected <% } %>>OFF</option>
+              </select>
+            </div>
           </div>
         </div>
     
@@ -145,6 +153,7 @@
           subDub: document.getElementById("subdub-option-select")?.value || null,
           Pagination: document.getElementById("pagination")?.value || null,
           subtitleFormat: document.getElementById("subtitle-format-select")?.value || null,
+          autoLoadNextChapter: document.getElementById("auto-load-next-chapter-select")?.value || null, 
         };
 
         OldSettings = data;

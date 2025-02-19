@@ -40,16 +40,10 @@ async function settingupdate({
   Pagination = null,
   concurrentDownloads = null,
   subDub = null,
+  autoLoadNextChapter = null,
 }) {
   const currentSettings = settings.get("config");
-  // quality
-  if (quality === null) {
-    quality = currentSettings.quality || "1080p";
-  }
-  if (!quality) {
-    throw new Error("Quality parameter is required.");
-  }
-  // mal on off
+
   // if (mal_on_off === "logout") {
   //   mal_on_off = false;
   //   malToken = null;
@@ -61,59 +55,64 @@ async function settingupdate({
   //     mal_on_off = false;
   //   }
   // }
-  // auto track anime as watched
+
   // if (autotrack === null) autotrack = currentSettings?.autotrack || "off";
-  // status
   // if (status === null) status = currentSettings?.status || "plan_to_watch";
-  // provider
-  if (Animeprovider === null)
+
+  if (quality === null) {
+    quality = currentSettings.quality || "1080p";
+  }
+
+  if (Animeprovider === null) {
     Animeprovider = currentSettings?.Animeprovider || "hianime";
-  if (Mangaprovider === null)
+  }
+
+  if (Mangaprovider === null) {
     Mangaprovider = currentSettings?.Mangaprovider || "weebcentral";
-  // mergeSubtitles
-  if (mergeSubtitles === null)
+  }
+
+  if (autoLoadNextChapter === null) {
+    autoLoadNextChapter = currentSettings?.autoLoadNextChapter || "on";
+  }
+
+  if (mergeSubtitles === null) {
     mergeSubtitles = currentSettings?.mergeSubtitles || "on";
-  // Pagination
-  if (Pagination === null) Pagination = currentSettings?.Pagination || "off";
-  // concurrentDownloads
+  }
+
+  if (Pagination === null) {
+    Pagination = currentSettings?.Pagination || "off";
+  }
+
   if (concurrentDownloads === null) {
     concurrentDownloads = currentSettings?.concurrentDownloads || 5;
   } else {
     concurrentDownloads = parseInt(concurrentDownloads) || 5;
   }
-  if (subtitleFormat === null)
+
+  if (subtitleFormat === null) {
     subtitleFormat = currentSettings?.subtitleFormat || "ttv";
+  }
 
-  if (subDub === null) subDub = currentSettings?.subDub || "sub";
+  if (subDub === null) {
+    subDub = currentSettings?.subDub || "sub";
+  }
 
-  // quality
   config.quality = quality;
-  // mal on off
   // config.mal_on_off = mal_on_off;
-  // mal status
   // config.status = status;
-  // mal access_token
   // config.malToken = malToken;
-  // mal auto track ep
   // config.autotrack = autotrack;
-  // custom dir
   config.CustomDownloadLocation = CustomDownloadLocation;
-  // provider
   config.Animeprovider = Animeprovider;
   config.Mangaprovider = Mangaprovider;
-  // mergeSubtitles
   config.mergeSubtitles = mergeSubtitles;
-  // Pagination
   config.Pagination = Pagination;
-  // concurrentDownloads
   config.concurrentDownloads = concurrentDownloads;
-  // subtitleFormat
   config.subtitleFormat = subtitleFormat;
-  // subDub
   config.subDub = subDub;
+  config.autoLoadNextChapter = autoLoadNextChapter;
 
   await settingSave();
-  // return config
   return {
     quality,
     // mal_on_off,
@@ -126,6 +125,7 @@ async function settingupdate({
     concurrentDownloads,
     subtitleFormat,
     subDub,
+    autoLoadNextChapter,
   };
 }
 
@@ -226,6 +226,7 @@ async function SettingsLoad() {
             CustomDownloadLocation: getDownloadsFolder(),
             Animeprovider: "hianime",
             Mangaprovider: "weebcentral",
+            autoLoadNextChapter: "on",
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
