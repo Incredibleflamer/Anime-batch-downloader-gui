@@ -440,27 +440,41 @@ appExpress.post("/api/read", async (req, res) => {
 
 // home page anime
 appExpress.get(["/", "/anime"], async (req, res) => {
-  const provider = await providerFetch("Anime");
-  const resentep = await latestAnime(provider.provider, 1);
-  const config = await settingfetch();
-  res.render("index.ejs", {
-    data: resentep,
-    catagorie: "Recent Episodes",
-    Pagination: config?.Pagination || "off",
-  });
+  try {
+    const provider = await providerFetch("Anime");
+    const resentep = await latestAnime(provider.provider, 1);
+    const config = await settingfetch();
+    res.render("index.ejs", {
+      data: resentep,
+      catagorie: "Recent Episodes",
+      Pagination: config?.Pagination || "off",
+    });
+  } catch (err) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.render("error.ejs");
+  }
 });
 
 // home page manga
 appExpress.get("/manga", async (req, res) => {
-  const provider = await providerFetch("Manga");
-  const config = await settingfetch();
-  const data = await latestMangas(provider.provider, 1);
+  try {
+    const provider = await providerFetch("Manga");
+    const config = await settingfetch();
+    const data = await latestMangas(provider.provider, 1);
 
-  res.render("manga.ejs", {
-    data: data,
-    catagorie: "Latest Updated",
-    Pagination: data?.hasNextPage ? config?.Pagination || "off" : "off",
-  });
+    res.render("manga.ejs", {
+      data: data,
+      catagorie: "Latest Updated",
+      Pagination: data?.hasNextPage ? config?.Pagination || "off" : "off",
+    });
+  } catch (error) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.render("error.ejs");
+  }
 });
 
 // Local Anime Page
@@ -554,30 +568,44 @@ appExpress.get("/log", async (req, res) => {
 
 // info page
 appExpress.get("/info", async (req, res) => {
-  const animeId = req.query.animeid.trim();
-  if (animeId) {
-    const provider = await providerFetch("Anime");
-    const data = await animeinfo(provider.provider, animeId);
-    const setting = await settingfetch();
-    res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
-  } else {
-    const localanimeid = req.query.localanimeid.trim();
-    const folderName = req.query.folder.trim();
-    console.log(localanimeid);
-    console.log(folderName);
+  try {
+    const animeId = req.query.animeid.trim();
+    if (animeId) {
+      const provider = await providerFetch("Anime");
+      const data = await animeinfo(provider.provider, animeId);
+      const setting = await settingfetch();
+      res.render("info.ejs", { data: data, subDub: setting?.subDub ?? "sub" });
+    } else {
+      const localanimeid = req.query.localanimeid.trim();
+      const folderName = req.query.folder.trim();
+      console.log(localanimeid);
+      console.log(folderName);
+    }
+  } catch (error) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.render("error.ejs");
   }
 });
 
 // manga info page
 appExpress.get("/mangainfo", async (req, res) => {
-  const mangaid = req.query.mangaid.trim();
-  const provider = await providerFetch("Manga");
-  const data = await MangaInfo(provider.provider, mangaid);
-  const setting = await settingfetch();
-  res.render("mangainfo.ejs", {
-    data: data,
-    autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
-  });
+  try {
+    const mangaid = req.query.mangaid.trim();
+    const provider = await providerFetch("Manga");
+    const data = await MangaInfo(provider.provider, mangaid);
+    const setting = await settingfetch();
+    res.render("mangainfo.ejs", {
+      data: data,
+      autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
+    });
+  } catch (error) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.render("error.ejs");
+  }
 });
 
 // downloads page

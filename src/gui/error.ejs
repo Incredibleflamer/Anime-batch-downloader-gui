@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Error</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background-color: #222;
+        color: #333;
+        display: flex;
+      }
+
+      .content {
+        padding-left: 8rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+      }
+
+      .content h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #d9534f;
+      }
+
+      .content p {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- navbar -->
+    <%- include("components/navbar") %>
+    <div class="content">
+      <h1>Oops! Something went wrong.</h1>
+      <p>
+        It looks like you have lost your internet connection, or the page you're
+        looking for doesn't exist.
+      </p>
+    </div>
+  </body>
+</html>
