@@ -39,6 +39,46 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
+// download
+async function download(ep, start, end) {
+  try {
+    start = parseInt(start);
+    end = parseInt(end);
+
+    const response = await fetch("/api/download", {
+      method: "POST",
+      body: JSON.stringify({
+        ep: ep,
+        start: start,
+        end: end,
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    });
+    const responseData = await response.json();
+    if (response.status === 400) {
+      swal("Something Went Wrong..", `${responseData.message}`, "error");
+    } else if (!response.ok) {
+      swal(
+        "Request Failed",
+        `There are ${responseData.queue} Anime in Queue. 
+          Error: ${responseData.message}`,
+        "error"
+      );
+    } else {
+      swal(
+        `Added To Queue Current Queue Size : ${responseData.queue}!`,
+        `[NOTE: if it skips episode that means that episode is not aviable yet! ]\n${responseData.message}`,
+        "success"
+      );
+    }
+  } catch (err) {
+    console.log(err);
+    swal("Couldnt add to queue...", `Error: ${err}`, "error");
+  }
+}
+
 // download buttons
 function createDownloadButton(type, episodes, id) {
   const togglecontainer = document.getElementById("toggle-container");
@@ -101,6 +141,8 @@ function createDownloadButton(type, episodes, id) {
 
 function createDownloadButton_with_episodes_array(episodes, id) {
   try {
+    episodes = JSON.parse(episodes);
+
     const { subs, dubs } = episodes.reduce(
       (acc, item) => {
         if (item.lang === "both") {
@@ -229,24 +271,76 @@ function toggleDownloadOptions() {
   }
 }
 
-// Tongle Watch / Download
-function tongledownloadwatch() {
+// Toggle Watch / Download
+function toggleDownloadWatch(Internet) {
   const downloadContainer = document.getElementById("downloadContainer");
   const watchContainer = document.getElementById("watchContainer");
   const watchDownloadToggleButton = document.getElementById(
     "watch-download-tongle"
   );
+  const noInternet = document.getElementById("nointernet");
 
-  if (downloadContainer.style.display === "none") {
-    downloadContainer.style.display = "block";
-    watchContainer.style.display = "none";
-    document.body.style.overflowY = "hidden";
-    watchDownloadToggleButton.textContent = "Watch";
-  } else {
+  const noInternetDisplay = window.getComputedStyle(noInternet).display;
+  const watchDisplay = window.getComputedStyle(watchContainer).display;
+  const downloadDisplay = window.getComputedStyle(downloadContainer).display;
+
+  if (noInternetDisplay !== "none") {
+    noInternet.style.display = "none";
+    watchContainer.style.display = "block";
+    watchDownloadToggleButton.textContent = "Download";
+  } else if (downloadDisplay !== "none") {
+    document.body.style.paddingBottom = "1rem";
     downloadContainer.style.display = "none";
     watchContainer.style.display = "block";
-    document.body.style.overflowY = "auto";
-    document.body.style.paddingBottom = "1rem";
     watchDownloadToggleButton.textContent = "Download";
+  } else if (watchDisplay !== "none") {
+    if (Internet) {
+      watchContainer.style.display = "none";
+      downloadContainer.style.display = "block";
+      watchDownloadToggleButton.textContent = "Watch";
+    } else {
+      watchContainer.style.display = "none";
+      noInternet.style.display = "block";
+      watchDownloadToggleButton.textContent = "Watch";
+    }
   }
+}
+
+// Sync Anime
+async function SyncAnimeInfo(animeid) {
+  try {
+    const response = await fetch(`/api/sync/local`, {
+      method: "POST",
+      body: JSON.stringify({
+        animeid: animeid,
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    });
+    if (response.status === 400 || !response.ok) {
+      throw new Error("Something Went Wrong");
+    } else {
+      swal("Success!", "Syncing May Take Time!", "success");
+      updateLastUpdated();
+    }
+  } catch (err) {
+    swal("Couldnt Sync Animedata...", `Error: ${err}`, "error");
+  }
+}
+
+function updateLastUpdated() {
+  const additionalInfo = document.getElementById("additional-info");
+  if (!additionalInfo) return;
+
+  const lines = additionalInfo.innerHTML.split("<br>");
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes("Last Updated")) {
+      lines[i] = `Last Updated: now`;
+      break;
+    }
+  }
+
+  additionalInfo.innerHTML = lines.join("<br>");
 }

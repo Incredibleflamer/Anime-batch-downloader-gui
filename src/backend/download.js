@@ -6,6 +6,7 @@ const {
   saveQueue,
   checkEpisodeDownload,
 } = require("./utils/queue");
+const { MetadataAdd } = require("./utils/Metadata");
 // const { MalAddToList, MalGogo } = require("./utils/mal");
 
 // main download function
@@ -37,6 +38,23 @@ async function downloadfunction(animeid, startep, endep) {
         TryToDownload.push(i - 1);
       }
     }
+
+    MetadataAdd("Anime", {
+      id: animeid,
+      title: `${Title} ${animedata?.subOrDub}`,
+      provider: provider.provider_name,
+      subOrDub: animedata?.subOrDub ?? null,
+      type: animedata.type ?? null,
+      description: animedata.description ?? null,
+      status: animedata.status ?? null,
+      genres: animedata?.genres?.join(",") ?? null,
+      aired: animedata?.aired ?? null,
+      totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
+      last_page: parseInt(animedata?.last_page) ?? null,
+      episodes: JSON.stringify(animedata?.episodes) ?? null,
+      ImageUrl: animedata?.image,
+    });
+
     if (provider.provider_name === "hianime") {
       // checking if ep are ther in sources
       for (let i = 0; i < TryToDownload.length; i++) {
@@ -59,6 +77,7 @@ async function downloadfunction(animeid, startep, endep) {
             EpNum: TryToDownload[i] + 1,
             id: animeid,
             Title: animedata.title,
+            SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
             config: {
               Animeprovider: config?.Animeprovider,
               quality: config?.quality,
@@ -95,6 +114,7 @@ async function downloadfunction(animeid, startep, endep) {
             id: animeid,
             EpNum: episode.number,
             Title: animedata.title,
+            SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
             config: {
               Animeprovider: config?.Animeprovider,
               quality: config?.quality,
@@ -114,11 +134,13 @@ async function downloadfunction(animeid, startep, endep) {
     }
   } else if (provider.provider_name === "pahe") {
     let currentPage = Math.ceil(startep / 30);
+    console.log(startep);
+    console.log(currentPage);
     let animedata = await animeinfo(provider.provider, animeid, {
-      dub: config?.subDub === "dub" ? true : false,
       fetch_info: true,
       page: currentPage,
     });
+    console.log(animedata);
     if (!animedata) throw new Error("no anime found with this id");
     let Title = animedata.title;
 
@@ -138,7 +160,6 @@ async function downloadfunction(animeid, startep, endep) {
         let nextPage = currentPage + 1;
         while (lastFetchedEp < endep) {
           const datanew = await animeinfo(provider.provider, animeid, {
-            dub: config?.subDub === "dub" ? true : false,
             fetch_info: false,
             page: nextPage,
           });
@@ -155,6 +176,25 @@ async function downloadfunction(animeid, startep, endep) {
         .filter((ep) => ep.number >= startep && ep.number <= endep)
         .sort((a, b) => a.number - b.number);
     }
+
+    console.log(allEpisodes);
+
+    // Saving in metadata
+    MetadataAdd("Anime", {
+      id: animeid,
+      title: `${Title} ${config?.subDub === "dub" ? "dub" : "sub"}`,
+      provider: provider.provider_name,
+      subOrDub: config?.subDub === "dub" ? "dub" : "sub",
+      type: animedata.type ?? null,
+      description: animedata.description ?? null,
+      status: animedata.status ?? null,
+      genres: animedata?.genres?.join(",") ?? null,
+      aired: animedata?.aired ?? null,
+      totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
+      last_page: parseInt(animedata?.last_page) ?? null,
+      episodes: JSON.stringify(animedata?.episodes) ?? null,
+      ImageUrl: animedata?.image,
+    });
 
     // doing a foreach
     if (allEpisodes.length > 0) {
@@ -179,6 +219,7 @@ async function downloadfunction(animeid, startep, endep) {
             EpNum: allEpisodes[i].number,
             id: animeid,
             Title: animedata.title,
+            SubDub: `${config?.subDub === "dub" ? "dub" : "sub"}`,
             config: {
               Animeprovider: config?.Animeprovider,
               quality: config?.quality,
@@ -186,9 +227,7 @@ async function downloadfunction(animeid, startep, endep) {
               subtitleFormat: config?.subtitleFormat,
               CustomDownloadLocation: config?.CustomDownloadLocation,
             },
-            epid: `${epid}${
-              config?.subDub && config?.subDub === "dub" ? "-dub" : ""
-            }`,
+            epid: `${epid}`,
             image: animedata?.image ?? null,
             totalSegments: 0,
             currentSegments: 0,
@@ -235,6 +274,20 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
   let info = [];
   let errors = [];
   let Success = [];
+
+  MetadataAdd("Manga", {
+    id: mangaid,
+    title: Title,
+    provider: provider.provider_name,
+    description: mangainfo.description ?? null,
+    genres: mangainfo?.genres?.join(",") ?? null,
+    type: mangainfo.type ?? null,
+    author: mangainfo?.author ?? null,
+    released: mangainfo?.released ?? null,
+    chapters: JSON.stringify(mangainfo?.chapters) ?? null,
+    totalChapters: parseInt(mangainfo?.totalChapters) ?? null,
+    ImageUrl: mangainfo?.image,
+  });
 
   if (!endchap) {
     let eptodownload = mangainfo.chapters[parseInt(startchap) - 1];

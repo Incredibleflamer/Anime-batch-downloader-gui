@@ -23,7 +23,7 @@
 
 ## Overview
 
-This is a Node.js-based anime & manga downloader that allows you to download anime episodes in bulk, quickly, and from the multiple sources. Additionally, it has the functionality to automatically add the downloaded anime to your MyAnimeList plan-to-watch list. The downloader supports both dubbed (dub) and subtitled (sub) versions for anime. For manga, it downloads chapters from Mangasee123 and saves them in PDF format.
+This is a Node.js-based anime & manga downloader that allows you to download anime episodes in bulk, quickly, and from the multiple sources. Additionally, it has the functionality to automatically add the downloaded anime to your MyAnimeList plan-to-watch list. The downloader supports both dubbed (dub) and subtitled (sub) versions for anime. For manga, it downloads chapters from Mangasee123 and saves them in cbz format.
 
 ### Features
 
@@ -31,7 +31,7 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 - **Fast and Efficient:** Enjoy a ridiculously efficient, fast, and light-weight downloader.
 - **Dub and Sub Options:** Download either dubbed or subtitled versions based on your preference for anime.
 - **MyAnimeList Integration:** Automatically add downloaded anime to your MyAnimeList plan-to-watch list.
-- **Manga Downloading:** Download manga chapters from Mangasee123 in PDF format.
+- **Manga Downloading:** Download manga chapters from Mangasee123 in cbz format.
 
 ## System Requirements
 
@@ -49,7 +49,7 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 2. Search through the anime or manga list and download what you like.
 3. See progress in downloads.
 4. Anime episodes will be downloaded in the folder where you have stored `animedownloader.exe`.
-5. Manga chapters will be saved as PDF files in the designated folder.
+5. Manga chapters will be saved as cbz files in the designated folder.
 
 ## Videos
 

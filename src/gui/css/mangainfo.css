@@ -1,0 +1,116 @@
+.manga-container {
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  gap: 1rem;
+}
+
+.manga-page {
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  object-fit: contain;
+}
+
+.StickyMangaControls {
+  position: fixed;
+  bottom: 1%;
+  left: 6%;
+  width: 250px;
+  background: #222;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e68900;
+  border-radius: 10px;
+  z-index: 500;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.chapter-navigation,
+.page-navigation,
+.jump-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 5px;
+}
+
+.manga-btn {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manga-btn:hover {
+  background-color: #e68900;
+}
+
+.manga-input {
+  color: white;
+  width: 175px;
+  padding: 5px;
+  text-align: center;
+  border-radius: 5px;
+  background-color: #222;
+  border: 0rem;
+  margin: 0rem;
+}
+
+.chapter-navigation span,
+.page-navigation span {
+  font-size: 16px;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.chapter-navigation button,
+.page-navigation button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jump-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chapter-navigation,
+.page-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+
+.chapter-navigation span,
+.page-navigation span {
+  flex-grow: 1;
+  text-align: center;
+  font-size: clamp(12px, 2vw, 16px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

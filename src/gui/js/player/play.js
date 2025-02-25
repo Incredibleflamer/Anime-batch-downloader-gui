@@ -4,9 +4,9 @@ let Isboth = false;
 let subtitles = [];
 let skipIntroTime = null;
 
-async function Videoplay(id, EpisodeNumber) {
+async function Videoplay(id, EpisodeNumber, Downloaded = false) {
   try {
-    ep = EpisodeNumber;
+    ep = parseInt(EpisodeNumber, 10);
     if (player) {
       player.pause();
     }
@@ -14,8 +14,9 @@ async function Videoplay(id, EpisodeNumber) {
     const response = await fetch("/api/watch", {
       method: "POST",
       body: JSON.stringify({
-        ep: `${id.replace(/-(dub|sub|both)$/, "")}-both`,
+        ep: `${Downloaded ? id : `${id.replace(/-(dub|sub|both)$/, "")}-both`}`,
         epNum: ep,
+        Downloaded: Downloaded,
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -41,7 +42,9 @@ async function Videoplay(id, EpisodeNumber) {
       ? "sub"
       : sources?.sub?.sources?.length > 0
       ? "sub"
-      : "dub";
+      : sources?.dub?.source?.length > 0
+      ? "dub"
+      : "sub";
 
     updateVideoSource();
     updateSubDubButton();
@@ -78,11 +81,21 @@ function updateVideoSource() {
     player.src(
       selectedSources?.sources
         ?.filter((source) => source?.quality && source.quality !== "default")
-        ?.map((source) => ({
-          src: `/proxy?url=${encodeURIComponent(source?.url)}`,
-          type: "application/x-mpegURL",
-          label: source?.quality,
-        }))
+        ?.map((source) => {
+          if (source?.url.endsWith(".m3u8")) {
+            return {
+              src: `/proxy?url=${encodeURIComponent(source?.url)}`,
+              type: "application/x-mpegURL",
+              label: source?.quality,
+            };
+          } else {
+            return {
+              src: source?.url,
+              type: "video/mp4",
+              label: source?.quality,
+            };
+          }
+        })
     );
 
     player.playbackRates([0.7, 1.0, 1.5, 2.0, 3.0, 4.0]);

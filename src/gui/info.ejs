@@ -4,7 +4,7 @@
     <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anime Downloader</title>
+    <title>Anime Downloader | <%= data.title %></title>
     <link rel="stylesheet" href="/css/libs/bootstrap.css" />
     <link rel="stylesheet" href="/css/info.css" />
     <link rel="stylesheet" href="/css/libs/video-js.css" />
@@ -76,7 +76,7 @@
             alt="<%= data.title %>"
           />
 
-          <div class="additional-info">
+          <div id="additional-info">
             <!--  -->
             <% if (data?.type) { %>
             <br />
@@ -86,6 +86,10 @@
             <% if (data?.totalEpisodes) { %>
             <br />
             Total Episodes: <%= data.totalEpisodes %> <% } %>
+            <!--  -->
+            <% if (data?.DownloadedEpisodes) { %>
+            <br />
+            Downloaded Episodes: <%= data.DownloadedEpisodes.length %> <% } %>
             <!--  -->
             <% if (data?.status) { %>
             <br />
@@ -103,6 +107,10 @@
             <br />
             Aired On: <%= data.aired %> <% } %>
             <!--  -->
+            <% if (data?.last_updated) { %>
+            <br />
+            Last Updated : <%= data.last_updated %> <% } %>
+            <!--  -->
           </div>
         </div>
         <div class="anime-info-right">
@@ -116,17 +124,36 @@
             <% }); %>
           </div>
           <div class="genres">
-            <button
-              id="watch-download-tongle"
-              class="btn btn-outline-info"
-              onclick="tongledownloadwatch()"
-            >
-              Watch
-            </button>
+            <div class="watch-sync-container">
+              <button
+                id="watch-download-tongle"
+                class="btn btn-outline-info"
+                onclick="toggleDownloadWatch(`<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
+              `true`)"
+              >
+                Watch
+              </button>
+              <!--  -->
+              <% if (typeof Internet !== "undefined" && Internet !== false) { %>
+              <button
+                id="sync"
+                class="btn btn-outline-info"
+                onclick="SyncAnimeInfo('<%= data.id %>')"
+              >
+                Sync
+              </button>
+              <% } %>
+            </div>
           </div>
           <div id="downloadContainer">
             <div class="episodes">
               <h2>Download Options</h2>
+              <% if (data?.DownloadedEpisodes?.length > 0) { %>
+              <h6>
+                Hidden episodes already downloaded: <%=
+                data?.DownloadedEpisodes?.join(", ") %>
+              </h6>
+              <% } %>
             </div>
 
             <% if (data.id.includes('both')) { %>
@@ -164,7 +191,7 @@
                   id="downloadall"
                   type="button"
                   class="btn btn-outline-info dubOptions"
-                  onclick="download(<%= JSON.stringify(data.id) %>, 1, <%= data.totalEpisodes %>)"
+                  onclick='download("<%= data.id %>", 1, "<%= data.totalEpisodes %>")'
                 >
                   Download All Episodes
                 </button>
@@ -174,13 +201,14 @@
             <div id="modal-root"></div>
             <div class="wrapper">
               <div class="episode-container">
-                <% for (let i = data.totalEpisodes - 1; i >= 0; i--) { %>
+                <% for (let i = 1; i <= data.totalEpisodes; i++) { %> <% if
+                (data?.DownloadedEpisodes?.includes(i)) { continue; } %>
                 <button
                   class="episode"
                   type="button"
-                  onclick="download('<%= data.id %>', '<%= i + 1 %>')"
+                  onclick="download('<%= data.id %>', '<%= i %>')"
                 >
-                  Download Episode <%= i + 1 %>
+                  Download Episode <%= i %>
                 </button>
                 <% } %>
               </div>
@@ -197,19 +225,54 @@
               ></video>
               <br />
               select video
-              <h4>Click on ep from list to start playing</h4>
+              <h4>Click on ep from below to start playing!</h4>
+
+              <!-- Playing From Downloads File  -->
+              <% if (data?.DownloadedEpisodes) { %>
+              <h5>Play From Downloads</h5>
               <div class="d-grid gap-2 episode-container scrollable-ele">
-                <% data.episodes.forEach(ep => { %>
+                <% data?.DownloadedEpisodes?.forEach(ep => { %>
                 <button
                   class="btn btn-success round"
                   type="button"
-                  onclick="Videoplay('<%= data.id %>', <%= ep.number %>)"
+                  onclick="Videoplay('<%= data.id %>', '<%= ep %>', true)"
                 >
-                  Watch ep <%= ep.number %>
+                  Watch ep <%= ep %>
                 </button>
                 <% }); %>
               </div>
+              <% } %>
+              <!-- Playing From Downloads File End -->
+              <!-- Online Player -->
+              <% if ((Array.isArray(data?.DownloadedEpisodes) && Internet) ||
+              !data?.DownloadedEpisodes) { %>
+              <h5>Play From Online</h5>
+              <div class="d-grid gap-2 episode-container scrollable-ele">
+                <% data.episodes.forEach(ep => { %> <% if
+                (!Array.isArray(data?.DownloadedEpisodes) ||
+                !data.DownloadedEpisodes.includes(ep.number)) { %>
+                <button
+                  class="btn btn-success round"
+                  type="button"
+                  onclick="Videoplay('<%= data.id %>', '<%= ep.number %>', false)"
+                >
+                  Watch Ep <%= ep.number %>
+                </button>
+                <% } %> <% }); %>
+              </div>
+              <% } else { %>
+              <br />
+              <h5>Online Player is Hidden!</h5>
+              <h5>Reason: No Internet Connection.</h5>
+              <br /><br /><br />
+              <% } %>
+              <!-- Online Player End -->
             </div>
+          </div>
+          <div id="nointernet">
+            <strong>No Internet Connection!</strong><br />
+            Download options are currently unavailable.<br />
+            Please check your connection and Revisit the page.
           </div>
         </div>
       </div>
@@ -218,7 +281,6 @@
     <!-- imports -->
     <script src="/js/libs/jquery.js"></script>
     <script src="/js/libs/bootstrap.js"></script>
-    <script src="/js/common.js"></script>
     <script src="/js/info.js"></script>
     <script src="/js/libs/videojs-http-source-selector.js"></script>
     <script src="/js/libs/video.js"></script>
@@ -228,23 +290,36 @@
 
     <!-- creating buttons -->
     <script>
-      <% if (data?.epsorted && data?.subs > 0 && data?.dubs > 0) { %>
-        const episodes = [
-          <% data.episodes.forEach((episode, index) => { %>
-            { number: <%= episode.number %>, id: "<%= episode.id %>", lang: "<%= episode.lang %>" }<%= index < data.episodes.length - 1 ? ',' : '' %>
-            <% }); %>
-          ];
+      let epsorted = "<%= data?.epsorted %>" === "true" ? true : false;
+      let subs = parseInt("<%= data?.subs %>");
+      let dubs = parseInt("<%= data?.dubs %>");
+      let DownloadedEpisodes = `<%- JSON.stringify(data?.DownloadedEpisodes) %>`;
 
-        createDownloadButton_with_episodes_array(episodes , "<%= data.id %>")
+      const Internet =
+        `<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
+        `true`;
 
-      <% } else if (data?.subs > 0 && data?.dubs > 0) { %>
-        if (<%= data?.subs %> > 0) {
-          createDownloadButton("sub", <%= data?.subs %>, "<%= data.id %>");
+      if (Internet) {
+        if (epsorted && subs > 0 && dubs > 0) {
+          let episodesString = `<%- JSON.stringify(data.episodes) %>`;
+          createDownloadButton_with_episodes_array(
+            episodesString,
+            "<%= data.id %>"
+          );
+        } else {
+          if (subs > 0) {
+            createDownloadButton("sub", subs, "<%= data.id %>");
+          } else if (dubs > 0) {
+            createDownloadButton("dub", dubs, "<%= data.id %>");
+          }
         }
-        if (<%= data?.dubs %> > 0) {
-          createDownloadButton("dub", <%= data?.dubs %>, "<%= data.id %>");
-        }
-      <% } %>
+      } else {
+        const downloadContainer = document.getElementById("downloadContainer");
+        const Nointernet = document.getElementById("nointernet");
+
+        downloadContainer.style.display = "none";
+        Nointernet.style.display = "block";
+      }
     </script>
   </body>
 </html>

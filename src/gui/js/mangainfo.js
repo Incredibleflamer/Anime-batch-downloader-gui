@@ -1,3 +1,7 @@
+let lastLoadedChapter = 0;
+let CurrentChapter = 0;
+let CurrentPage = 0;
+
 // download modal
 document.addEventListener("DOMContentLoaded", function () {
   const downloadFormButton = document.getElementById("download-form-button");
@@ -70,40 +74,44 @@ async function download(ep, start, end) {
 }
 
 // Tongle Read / Download
-function tongledownloadread() {
+function toggleDownloadRead(Internet) {
   const downloadContainer = document.getElementById("downloadContainer");
   const readContainers = document.querySelectorAll(".readContainer");
-  const watchDownloadToggleButton = document.getElementById(
+  const readDownloadToggleButton = document.getElementById(
     "read-download-tongle"
   );
+  const noInternet = document.getElementById("nointernet");
 
-  if (downloadContainer.style.display === "none") {
-    downloadContainer.style.display = "block";
-    readContainers.forEach((container) => (container.style.display = "none"));
-    document.body.style.overflowY = "hidden";
-    watchDownloadToggleButton.textContent = "Read";
-  } else {
+  const noInternetDisplay = window.getComputedStyle(noInternet).display;
+  const downloadDisplay = window.getComputedStyle(downloadContainer).display;
+  const anyReadContainerVisible = [...readContainers].some(
+    (container) => window.getComputedStyle(container).display !== "none"
+  );
+
+  if (noInternetDisplay !== "none") {
+    noInternet.style.display = "none";
+    readContainers.forEach((container) => (container.style.display = "block"));
+    readDownloadToggleButton.textContent = "Download";
+  } else if (downloadDisplay !== "none") {
+    document.body.style.paddingBottom = "1rem";
     downloadContainer.style.display = "none";
     readContainers.forEach((container) => (container.style.display = "block"));
-    document.body.style.overflowY = "auto";
-    document.body.style.paddingBottom = "1rem";
-    watchDownloadToggleButton.textContent = "Download";
+    readDownloadToggleButton.textContent = "Download";
+  } else if (anyReadContainerVisible) {
+    if (Internet) {
+      readContainers.forEach((container) => (container.style.display = "none"));
+      downloadContainer.style.display = "block";
+      readDownloadToggleButton.textContent = "Read";
+    } else {
+      readContainers.forEach((container) => (container.style.display = "none"));
+      noInternet.style.display = "block";
+      readDownloadToggleButton.textContent = "Read";
+    }
   }
-}
 
-let LoadNextChapter = false;
-let lastLoadedChapter = 0;
-let CurrentChapter = 0;
-let TotalChapter = 0;
-let CurrentPage = 0;
-let Chapters = [];
-
-// Load Manga
-function initChapterRead(total, chapters, autoLoadNextChapter) {
-  TotalChapter = total;
-  Chapters = chapters;
-  LoadChapter(0, false);
-  LoadNextChapter = autoLoadNextChapter === "on";
+  if (lastLoadedChapter === 0 && !Chapters[0]?.fetched) {
+    LoadChapter(0, false);
+  }
 }
 
 async function NextChapter() {
@@ -148,72 +156,120 @@ async function GoToChapter(GoChapter) {
 
 async function LoadChapter(ChapterNum, Append = false) {
   try {
-    let Chapter = Chapters[ChapterNum];
-    if (Chapter) {
-      if (!Chapter?.fetched || !Append) {
+    let Downloaded = DownloadedChapters.includes(ChapterNum + 1);
+    let Chapter = Chapters?.[ChapterNum];
+
+    let data = null;
+
+    if (!Chapter) {
+      return swal("Chapter Not Found.", "", "error");
+    } else if (!Downloaded && Internet && Chapter?.fetched && Append) {
+      return scrollToElement(`mangapage-${ChapterNum}-0`);
+    } else if (!Downloaded && !Internet) {
+      let current_downloaded_index = DownloadedChapters.indexOf(ChapterNum);
+
+      if (current_downloaded_index < DownloadedChapters.length - 1) {
+        let NextAvalibleChapter =
+          DownloadedChapters[current_downloaded_index + 1];
+        let Foundchapter = Chapters[NextAvalibleChapter - 1];
+
+        if (Foundchapter && Foundchapter?.fetched) {
+          return scrollToElement(`mangapage-${NextAvalibleChapter}-0`);
+        } else {
+          mangaContainer.innerHTML += `<h2> Skipping From ${
+            ChapterNum + 1
+          } ... ${NextAvalibleChapter - 1} </h2>`;
+          mangaContainer.innerHTML += "<h2> Not Downloaded & No Internet <h2>";
+          return LoadChapter(NextAvalibleChapter - 1, true);
+        }
+      } else {
+        mangaContainer.innerHTML += "<h2> Couldnt Find More Chapters!<h2>";
+        mangaContainer.innerHTML += "<h2> Reason : No Internet <h2>";
+        return;
+      }
+    } else if (
+      !Downloaded &&
+      Internet &&
+      Chapter &&
+      (!Chapter?.fetched || !Append)
+    ) {
+      const response = await fetch("/api/read", {
+        method: "POST",
+        body: JSON.stringify({ chapterID: Chapter?.id }),
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+        },
+      });
+
+      data = await response.json();
+    } else {
+      let Foundchapter = Chapters[ChapterNum + 1];
+      if (Foundchapter && Foundchapter?.fetched && !Append) {
+        scrollToElement(`mangapage-${ChapterNum}-0`);
+      } else {
         const response = await fetch("/api/read", {
           method: "POST",
-          body: JSON.stringify({ chapterID: Chapter?.id }),
+          body: JSON.stringify({
+            chapterID: ChapterNum + 1,
+            Downloaded: true,
+            MangaID: id,
+          }),
           headers: {
             "Content-Type": "application/json; charset=UTF-8",
           },
         });
 
-        const data = await response.json();
-        if (data) {
-          if (!Append) scrollToElement(`mangaContainer`);
-
-          const mangaContainer = document.getElementById("mangaContainer");
-          if (!Append) {
-            mangaContainer.innerHTML = `<h2>${Chapter.title}</h2>`;
-          } else {
-            mangaContainer.innerHTML += `<h2>${Chapter.title}</h2>`;
-          }
-
-          data.forEach((page, index) => {
-            const img = document.createElement("img");
-            img.src = page?.img;
-            img.loading = "lazy";
-            img.alt = `Manga Page ${page?.page}`;
-            img.id = `mangapage-${ChapterNum}-${index}`;
-            img.classList.add("manga-page");
-            mangaContainer.appendChild(img);
-          });
-
-          document.querySelectorAll(".manga-page").forEach((img) => {
-            observer.observe(img);
-          });
-
-          document.getElementById("currentChapter").textContent = `${
-            CurrentChapter + 1
-          }`;
-
-          document.getElementById(
-            "totalChapters"
-          ).textContent = `${TotalChapter}`;
-          document.getElementById("currentPage").textContent = `1`;
-          document.getElementById("totalPages").textContent = `${data.length}`;
-
-          if (!Chapters?.fetched) {
-            Chapters[ChapterNum] = {
-              ...Chapters[ChapterNum],
-              fetched: true,
-              TotalPages: data.length,
-            };
-          }
-          CurrentChapter = ChapterNum;
-          lastLoadedChapter = ChapterNum;
-          CurrentPage = 0;
-        } else {
-          swal("Failed to load chapter pages.", "", "error");
-        }
-      } else {
-        scrollToElement(`mangapage-${ChapterNum}-0`);
+        data = await response.json();
       }
+    }
+
+    if (data) {
+      if (!Append) scrollToElement(`mangaContainer`);
+
+      const mangaContainer = document.getElementById("mangaContainer");
+      if (!Append) {
+        mangaContainer.innerHTML = `<h2>${Chapter.title}</h2>`;
+      } else {
+        mangaContainer.innerHTML += `<h2>${Chapter.title}</h2>`;
+      }
+
+      data.forEach((page, index) => {
+        const img = document.createElement("img");
+        img.src = page?.img;
+        img.loading = "lazy";
+        img.alt = `Manga Page ${page?.page}`;
+        img.id = `mangapage-${ChapterNum}-${index}`;
+        img.classList.add("manga-page");
+        mangaContainer.appendChild(img);
+      });
+
+      document.querySelectorAll(".manga-page").forEach((img) => {
+        observer.observe(img);
+      });
+
+      document.getElementById("currentChapter").textContent = `${
+        CurrentChapter + 1
+      }`;
+
+      document.getElementById("totalChapters").textContent = `${TotalChapter}`;
+      document.getElementById("currentPage").textContent = `1`;
+      document.getElementById("totalPages").textContent = `${data.length}`;
+
+      if (!Chapters?.fetched) {
+        Chapters[ChapterNum] = {
+          ...Chapters[ChapterNum],
+          fetched: true,
+          TotalPages: data.length,
+        };
+      }
+      CurrentChapter = ChapterNum;
+      lastLoadedChapter = ChapterNum;
+      CurrentPage = 0;
     } else {
-      swal("Chapter Not Found.", "", "error");
+      swal("Failed to load chapter pages.", "", "error");
     }
   } catch (err) {
+    console.log(err);
     swal("Something went wrong while loading the chapter.", "", "error");
   }
 }
@@ -307,4 +363,42 @@ async function PrevPage() {
   } else {
     swal("No Prev Page Found", "", "error");
   }
+}
+
+async function SyncMangaInfo(mangaid) {
+  try {
+    const response = await fetch(`/api/sync/local`, {
+      method: "POST",
+      body: JSON.stringify({
+        mangaid: mangaid,
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    });
+    if (response.status === 400 || !response.ok) {
+      throw new Error("Something Went Wrong");
+    } else {
+      swal("Success!", "Syncing May Take Time!", "success");
+      updateLastUpdated();
+    }
+  } catch (err) {
+    swal("Couldnt Sync Animedata...", `Error: ${err}`, "error");
+  }
+}
+
+function updateLastUpdated() {
+  const additionalInfo = document.getElementById("additional-info");
+  if (!additionalInfo) return;
+
+  const lines = additionalInfo.innerHTML.split("<br>");
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes("Last Updated")) {
+      lines[i] = `Last Updated: now`;
+      break;
+    }
+  }
+
+  additionalInfo.innerHTML = lines.join("<br>");
 }

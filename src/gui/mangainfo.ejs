@@ -4,127 +4,10 @@
     <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manga Downloader</title>
+    <title>Manga Downloader | <%= data.title %></title>
     <link rel="stylesheet" href="/css/libs/bootstrap.css" />
     <link rel="stylesheet" href="/css/info.css" />
-    <style>
-      .manga-container {
-        padding-top: 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        max-width: 100vw;
-        overflow-x: hidden;
-        gap: 1rem;
-      }
-
-      .manga-page {
-        width: 100%;
-        max-width: 800px;
-        height: auto;
-        object-fit: contain;
-      }
-
-      .StickyMangaControls {
-        position: fixed;
-        bottom: 1%;
-        left: 6%;
-        width: 250px;
-        background: #222;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        border: 1px solid #e68900;
-        border-radius: 10px;
-        z-index: 500;
-        max-height: 80vh;
-        overflow-y: auto;
-      }
-
-      .chapter-navigation,
-      .page-navigation,
-      .jump-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        gap: 5px;
-      }
-
-      .manga-btn {
-        background-color: #ff9800;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        cursor: pointer;
-        border-radius: 5px;
-        font-size: 16px;
-        transition: 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .manga-btn:hover {
-        background-color: #e68900;
-      }
-
-      .manga-input {
-        color: white;
-        width: 175px;
-        padding: 5px;
-        text-align: center;
-        border-radius: 5px;
-        background-color: #222;
-        border: 0rem;
-        margin: 0rem;
-      }
-
-      .chapter-navigation span,
-      .page-navigation span {
-        font-size: 16px;
-        text-align: center;
-        flex-grow: 1;
-      }
-
-      .chapter-navigation button,
-      .page-navigation button {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .jump-container {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .chapter-navigation,
-      .page-navigation {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        gap: 10px;
-      }
-
-      .chapter-navigation span,
-      .page-navigation span {
-        flex-grow: 1;
-        text-align: center;
-        font-size: clamp(12px, 2vw, 16px);
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-    </style>
+    <link rel="stylesheet" href="/css/mangainfo.css" />
   </head>
   <body>
     <!-- navbar -->
@@ -181,6 +64,7 @@
         </div>
       </div>
     </div>
+
     <!-- End Modal -->
     <div class="container-fluids">
       <div class="anime-info">
@@ -192,7 +76,7 @@
             alt="<%= data.title %>"
           />
 
-          <div class="additional-info">
+          <div id="additional-info">
             <% if (data?.type) { %>
             <br />
             Type: <%= data.type %> <% } %>
@@ -208,6 +92,10 @@
             <% if (data?.author) { %>
             <br />
             Author: <%= data.author %> <% } %>
+            <!--  -->
+            <% if (data?.last_updated) { %>
+            <br />
+            Last Updated : <%= data.last_updated %> <% } %>
           </div>
         </div>
 
@@ -221,18 +109,37 @@
             </button>
             <% }); %>
           </div>
+
           <div class="genres">
-            <button
-              id="read-download-tongle"
-              class="btn btn-outline-info"
-              onclick="tongledownloadread()"
-            >
-              Read
-            </button>
+            <div class="watch-sync-container">
+              <button
+                id="read-download-tongle"
+                class="btn btn-outline-info"
+                onclick="toggleDownloadRead(`<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
+              `true`)"
+              >
+                Read
+              </button>
+              <% if (typeof Internet !== "undefined" && Internet !== false) { %>
+              <button
+                id="sync"
+                class="btn btn-outline-info"
+                onclick="SyncMangaInfo('<%= data.id %>')"
+              >
+                Sync
+              </button>
+              <% } %>
+            </div>
           </div>
           <div id="downloadContainer">
             <div class="episodes">
               <h2>Download Options</h2>
+              <% if (data?.DownloadedChapters?.length > 0) { %>
+              <h6>
+                Hidden episodes already downloaded: <%=
+                data?.DownloadedChapters?.join(", ") %>
+              </h6>
+              <% } %>
             </div>
 
             <div class="genres">
@@ -249,7 +156,7 @@
                   id="downloadall"
                   type="button"
                   class="btn btn-outline-info"
-                  onclick="download('<%= data.id %>', 1, <%= data.chapters.length %>)"
+                  onclick='download("<%= data.id %>", 1, "<%= data.chapters.length %>")'
                 >
                   Download All Chapters
                 </button>
@@ -261,15 +168,16 @@
             </div>
             <div class="wrapper">
               <div class="episode-container">
-                <% let i = 1 %> <% data.chapters.forEach(ep => { %>
+                <% let i = 1; %> <% data.chapters.forEach(ep => { %> <% if
+                (!data?.DownloadedChapters?.includes(i)) { %>
                 <button
                   class="episode"
                   type="button"
-                  onclick="download('<%= data.id %>', <%= i %> )"
+                  onclick="download('<%= data.id %>', '<%= i %>')"
                 >
                   <%= ep.title %>
                 </button>
-                <% i++; }); %>
+                <% } %> <% i++; %> <% }); %>
               </div>
             </div>
           </div>
@@ -338,14 +246,36 @@
       </div>
     </div>
 
+    <div id="nointernet">
+      <strong>No Internet Connection!</strong><br />
+      Download options are currently unavailable.<br />
+      Please check your connection and Revisit the page.
+    </div>
+
     <script src="/js/libs/sweetalert.js"></script>
     <script src="/js/mangainfo.js"></script>
     <script>
-      let chapters = <%- JSON.stringify(data.chapters) %>
-      initChapterRead("<%= data.totalChapters %>", chapters , "<%= autoLoadNextChapter ? autoLoadNextChapter : 'off' %>");
+      let Chapters = JSON.parse(`<%- JSON.stringify(data.chapters) %>`);
+      let DownloadedChapters = JSON.parse(
+        `<%- JSON.stringify(data.DownloadedChapters) %>`
+      );
+      let Internet =
+        "<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>" ===
+        "true";
+      let TotalChapter = "<%= data.totalChapters %>";
+      let LoadNextChapter =
+        "<%= autoLoadNextChapter ? autoLoadNextChapter : 'off' %>";
+      let id = "<%= data?.id %>";
+
+      if (!Internet) {
+        const downloadContainer = document.getElementById("downloadContainer");
+        const Nointernet = document.getElementById("nointernet");
+
+        downloadContainer.style.display = "none";
+        Nointernet.style.display = "block";
+      }
     </script>
     <script src="/js/libs/jquery.js"></script>
     <script src="/js/libs/bootstrap.js"></script>
-    <script src="/js/common.js"></script>
   </body>
 </html>

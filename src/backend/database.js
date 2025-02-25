@@ -18,8 +18,6 @@ const {
   MangaChapterFetch,
   DownloadChapters,
   fetchEpisodeSources,
-  animeinfo,
-  MangaInfo,
 } = require("./utils/AnimeManga");
 const {
   getQueue,
@@ -48,36 +46,21 @@ async function continuousExecution() {
             break;
           }
 
-          await SaveMetaDataIfNotThere(
-            currentTask?.Type,
-            currentTask?.config?.CustomDownloadLocation,
-            {
-              title: currentTask?.Title,
-              image: currentTask?.image,
-              id: currentTask?.id,
-              [currentTask?.Type === "Anime"
-                ? "Animeprovider"
-                : "Mangaprovider"]:
-                currentTask?.Type === "Anime"
-                  ? currentTask?.config?.Animeprovider
-                  : currentTask?.config?.Mangaprovider,
-            }
-          );
-
           if (currentTask?.Type === "Anime") {
-            let { config, Title, EpNum, epid } = currentTask;
-            if (config && Title && EpNum && epid) {
-              await downloadep(config, Title, EpNum, epid);
+            let { config, Title, EpNum, epid, SubDub } = currentTask;
+            if (config && Title && EpNum && epid && SubDub) {
+              await downloadep(config, `${Title} ${SubDub}`, EpNum, epid);
             } else {
               logger.error(
                 `Error message: Some Anime Data missing [ removing from queue ]`
               );
-              AnimeQueue.splice(i, 1);
+              AnimeQueue.splice(0, 1);
               await SaveQueueData(AnimeQueue);
               break;
             }
           } else if (currentTask?.Type === "Manga") {
-            let { Title, EpNum, epid, ChapterTitle } = currentTask;
+            let { Title, EpNum, epid, ChapterTitle, config } = currentTask;
+
             if (Title && EpNum && epid && ChapterTitle && config) {
               await downloadMangaChapters(
                 config,
@@ -90,7 +73,7 @@ async function continuousExecution() {
               logger.error(
                 `Error message: Some Manga Data missing [ removing from queue  ]`
               );
-              AnimeQueue.splice(i, 1);
+              AnimeQueue.splice(0, 1);
               await SaveQueueData(AnimeQueue);
               break;
             }
@@ -98,7 +81,7 @@ async function continuousExecution() {
             logger.error(
               `Error message: Type is Not Valid [ removing from queue  ]`
             );
-            AnimeQueue.splice(i, 1);
+            AnimeQueue.splice(0, 1);
             await SaveQueueData(AnimeQueue);
             break;
           }
@@ -108,7 +91,7 @@ async function continuousExecution() {
           console.log("Error executing task:", err);
           logger.error(`Error message: ${err.message}`);
           logger.error(`Stack trace: ${err.stack}`);
-          AnimeQueue.splice(i, 1);
+          AnimeQueue.splice(0, 1);
           await SaveQueueData(AnimeQueue);
           break;
         }
@@ -425,7 +408,7 @@ async function downloadMangaChapters(
   const directoryPath = await MangaDir(Title, config?.CustomDownloadLocation);
   try {
     const sanitizedChapterName = ChapterTitle.replace(/[<>:"/\\|?*]/g, "-");
-    const outputFile = path.join(directoryPath, `${sanitizedChapterName}.pdf`);
+    const outputFile = path.join(directoryPath, `${sanitizedChapterName}.cbz`);
     await DownloadChapters(
       outputFile,
       ChapterData,
@@ -441,140 +424,6 @@ async function downloadMangaChapters(
   }
 }
 
-// Meta Data
-async function SaveMetaDataIfNotThere(Type, dir, Metadata) {
-  try {
-    let Typedir = await GetDir(Metadata.title, dir, Type);
-    let MetaDataFile = await loadMetadata(Typedir);
-    if (!MetaDataFile) {
-      const { data } = await axios.get(Metadata.image, {
-        responseType: "arraybuffer",
-      });
-      await SaveMetaData(Typedir, {
-        title: Metadata.title,
-        id: Metadata.id,
-        [Type === "Anime" ? "Animeprovider" : "Mangaprovider"]:
-          Type === "Anime" ? Metadata.Animeprovider : Metadata.Mangaprovider,
-        last_updated: new Date().toISOString(),
-        image: `data:image/png;base64,${Buffer.from(data).toString("base64")}`,
-      });
-    }
-  } catch (error) {
-    // ignore
-  }
-}
-
-async function SaveMetaData(dir, metadata) {
-  try {
-    await fs.promises.writeFile(
-      path.join(dir, "metadata.json"),
-      JSON.stringify(metadata, null, 2)
-    );
-  } catch (err) {
-    // ignore
-  }
-}
-
-async function loadMetadata(directoryPath) {
-  try {
-    const metadataPath = path.join(directoryPath, "metadata.json");
-    const data = await fs.promises.readFile(metadataPath, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    return null;
-  }
-}
-
-async function getAllMetadata(baseDir, type, page = 1) {
-  try {
-    let allMetadata = [];
-
-    const typeDir = path.join(baseDir, type);
-    let folders = [];
-
-    const directories = await fs.promises.readdir(typeDir, {
-      withFileTypes: true,
-    });
-
-    folders = directories
-      .filter((dir) => dir.isDirectory())
-      .map((dir) => dir.name);
-
-    const limit = 15;
-    const totalItems = folders.length;
-    const totalPages = Math.ceil(totalItems / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedFolders = folders.slice(startIndex, startIndex + limit);
-    const hasNextPage = page < totalPages;
-
-    const metadataPromises = paginatedFolders.map(async (folder) => {
-      const metadataPath = path.join(typeDir, folder, "metadata.json");
-      try {
-        const data = await fs.promises.readFile(metadataPath, "utf-8");
-        const { image, title, id } = JSON.parse(data);
-        return { image: image, id: id, title: title, folder: folder };
-      } catch (err) {
-        return null;
-      }
-    });
-
-    const metadataList = await Promise.all(metadataPromises);
-    allMetadata = metadataList.filter(Boolean);
-
-    return {
-      totalPages,
-      currentPage: page,
-      hasNextPage,
-      totalItems,
-      results: allMetadata,
-    };
-  } catch (err) {
-    console.log(err);
-    return {
-      totalPages: 0,
-      currentPage: 1,
-      hasNextPage: false,
-      totalItems: 0,
-      results: [],
-    };
-  }
-}
-
-async function getMetadataByFolder(baseDir, type, folderName) {
-  try {
-    const metadataPath = path.join(baseDir, type, folderName, "metadata.json");
-
-    const data = await fs.promises.readFile(metadataPath, "utf-8");
-    const metadata = JSON.parse(data);
-
-    if (metadata?.id) {
-      const providerType =
-        type === "Anime" ? metadata?.Animeprovider : metadata?.Mangaprovider;
-      if (providerType) {
-        const provider = await providerFetch(type, providerType);
-        const TypeData =
-          type === "Anime"
-            ? await animeinfo(provider.provider, metadata?.id)
-            : await MangaInfo(provider.provider, metadata?.id);
-
-        return {
-          ...TypeData,
-          image: metadata.image,
-          id: metadata.id,
-          title: metadata.title,
-          folder: folderName,
-        };
-      }
-    }
-    throw new Error("");
-  } catch (err) {
-    console.error(`Error fetching metadata for ${folderName}:`, err);
-    return null;
-  }
-}
-
 module.exports = {
   continuousExecution,
-  getAllMetadata,
-  getMetadataByFolder,
 };

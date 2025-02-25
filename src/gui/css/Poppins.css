@@ -4,7 +4,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./fonts/Poppins-Regular.woff2") format("woff2");
+  src: url("/fonts/Poppins-Regular.woff2") format("woff2");
 }
 
 /* Medium (500) */
@@ -13,7 +13,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("./fonts/Poppins-Medium.woff2") format("woff2");
+  src: url("/fonts/Poppins-Medium.woff2") format("woff2");
 }
 
 /* Semi-Bold (600) */
@@ -22,7 +22,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("./fonts/Poppins-SemiBold.woff2") format("woff2");
+  src: url("/fonts/Poppins-SemiBold.woff2") format("woff2");
 }
 
 /* Bold (700) */
@@ -31,5 +31,5 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("./fonts/Poppins-Bold.woff2") format("woff2");
+  src: url("/fonts/Poppins-Bold.woff2") format("woff2");
 }

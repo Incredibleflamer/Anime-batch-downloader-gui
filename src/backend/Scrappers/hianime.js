@@ -101,15 +101,12 @@ async function fetchEpisodeSources(episodeId) {
 
   if (!episodeId.includes("$episode$")) throw new Error("Invalid episode id");
 
-  console.log(episodeId);
   const isBoth = episodeId.endsWith("both");
   const subOrDub = isBoth
     ? ["sub", "dub"]
     : episodeId.endsWith("sub")
     ? ["sub"]
     : ["dub"];
-
-  console.log(subOrDub);
 
   const cleanEpisodeId = episodeId
     .replace("$episode$", "?ep=")

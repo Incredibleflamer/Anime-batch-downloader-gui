@@ -162,7 +162,7 @@ async function MangaDir(title, customdir) {
       throw error;
     }
   }
-  // Chapter pdf
+  // Chapter cbz
   return directoryPath;
 }
 

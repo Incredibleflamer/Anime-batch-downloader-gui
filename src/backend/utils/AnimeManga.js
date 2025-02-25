@@ -70,7 +70,7 @@ async function fetchEpisodeSources(provider, episodeId) {
 }
 
 //====================================== Manga ================================
-const PDFDocument = require("pdfkit");
+const JSZip = require("jszip");
 const fs = require("fs");
 const axios = require("axios");
 const HLSLogger = require("./logger");
@@ -110,9 +110,7 @@ async function DownloadChapters(
   MangaChapterID
 ) {
   try {
-    const doc = new PDFDocument({ autoFirstPage: false });
-    const stream = fs.createWriteStream(outputFile);
-    doc.pipe(stream);
+    const zip = new JSZip();
 
     const logger = new HLSLogger(
       `Downloading ${Title} || ${ChapterName}`,
@@ -132,20 +130,18 @@ async function DownloadChapters(
       }
 
       const imageBuffer = await downloadImage(imageUrl);
-      const image = doc.openImage(imageBuffer);
 
-      doc.addPage({ size: [image.width, image.height] });
+      const fileExtension = imageUrl.split(".").pop().split(/\#|\?/)[0];
+      const fileName = `${i + 1}.${fileExtension}`;
 
-      doc.image(imageBuffer, 0, 0, {
-        width: image.width,
-        height: image.height,
-      });
+      zip.file(fileName, imageBuffer);
 
       logger.currentSegments = i + 1;
       logger.logProgress();
     }
 
-    doc.end();
+    const cbzBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    fs.writeFileSync(outputFile, cbzBuffer);
   } catch (error) {
     throw new Error(error);
   }

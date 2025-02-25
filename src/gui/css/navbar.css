@@ -1,4 +1,5 @@
-@import url("./css/poppins.css");
+@import url("/css/poppins.css");
+@import url("/css/icons.css");
 
 .sidebar {
   position: fixed;

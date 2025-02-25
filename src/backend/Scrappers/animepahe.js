@@ -70,14 +70,16 @@ async function fetchRecentEpisodes(page = 1) {
 }
 
 // Animeinfo
-async function AnimeInfo(
-  id,
-  { dub = false, fetch_info = true, page = 1, NeedEp = null } = {}
-) {
+async function AnimeInfo(id, { fetch_info = true, page = 1 } = {}) {
+  let suffix = id.endsWith("both")
+    ? "both"
+    : id.endsWith("dub")
+    ? "dub"
+    : "sub";
   id = id.replace(/-(dub|sub|both)$/, "");
 
   const animeInfo = {
-    id: id,
+    id: `${id}-${suffix}`,
     title: "",
   };
 
@@ -125,7 +127,7 @@ async function AnimeInfo(
     const { episodes, last_page, total_episodes } = await fetchEpisodesPages(
       id,
       page,
-      dub
+      suffix
     );
 
     animeInfo.totalEpisodes = total_episodes;
@@ -141,42 +143,51 @@ async function AnimeInfo(
 }
 
 // Fetching Episodes Pages
-async function fetchEpisodesPages(id, page, dub) {
+async function fetchEpisodesPages(id, page, suffix) {
   try {
     let episodes = [];
 
-    const {
+    let {
       data: { last_page, data, total },
     } = await ddosGuardRequest(
       `${baseUrl}/api?m=release&id=${id}&sort=episode_asc&page=${page}`
     );
 
-    if (dub) {
-      episodes.push(
-        ...data
-          .filter((item) => item?.audio && item?.audio?.toLowerCase() === "eng")
-          .map((item) => ({
-            id: `${id}/${item.session}-dub`,
-            number: item.episode,
-            title: item.title,
-            duration: item.duration,
-          }))
+    data.forEach((item) => {
+      let hasEngAudio = item?.audio && item?.audio?.toLowerCase() === "eng";
+      let epSuffix = hasEngAudio ? "both" : "sub";
+
+      if (suffix === "dub" && hasEngAudio) {
+        episodes.push({
+          id: `${id}/${item.session}-dub`,
+          number: item.episode,
+          title: item.title,
+          duration: item.duration,
+        });
+      } else if (suffix === "sub") {
+        episodes.push({
+          id: `${id}/${item.session}-sub`,
+          number: item.episode,
+          title: item.title,
+          duration: item.duration,
+        });
+      } else if (suffix === "both") {
+        episodes.push({
+          id: `${id}/${item.session}-${epSuffix}`,
+          number: item.episode,
+          title: item.title,
+          duration: item.duration,
+        });
+      }
+    });
+
+    if (page === 1 && last_page > 1) {
+      const {
+        data: { data },
+      } = await ddosGuardRequest(
+        `${baseUrl}/api?m=release&id=${id}&sort=episode_asc&page=${last_page}`
       );
-    } else {
-      episodes.push(
-        ...data.map((item) => {
-          let suffix =
-            item?.audio && item?.audio?.toLowerCase() === "eng"
-              ? "both"
-              : "sub";
-          return {
-            id: `${id}/${item.session}-${suffix}`,
-            number: item.episode,
-            title: item.title,
-            duration: item.duration,
-          };
-        })
-      );
+      last_page = data[0]?.episode ?? last_page;
     }
 
     return {
