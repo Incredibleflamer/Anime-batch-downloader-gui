@@ -301,7 +301,8 @@
 
       if (Internet) {
         if (epsorted && subs > 0 && dubs > 0) {
-          let episodesString = `<%- JSON.stringify(data.episodes) %>`;
+          let episodesString = <%- JSON.stringify(data.episodes) %>;
+
           createDownloadButton_with_episodes_array(
             episodesString,
             "<%= data.id %>"

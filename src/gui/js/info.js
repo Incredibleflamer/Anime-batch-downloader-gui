@@ -141,8 +141,6 @@ function createDownloadButton(type, episodes, id) {
 
 function createDownloadButton_with_episodes_array(episodes, id) {
   try {
-    episodes = JSON.parse(episodes);
-
     const { subs, dubs } = episodes.reduce(
       (acc, item) => {
         if (item.lang === "both") {
