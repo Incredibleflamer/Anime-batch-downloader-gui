@@ -309,7 +309,8 @@
         } else {
           if (subs > 0) {
             createDownloadButton("sub", subs, "<%= data.id %>");
-          } else if (dubs > 0) {
+          }
+          if (dubs > 0) {
             createDownloadButton("dub", dubs, "<%= data.id %>");
           }
         }
