@@ -134,13 +134,10 @@ async function downloadfunction(animeid, startep, endep) {
     }
   } else if (provider.provider_name === "pahe") {
     let currentPage = Math.ceil(startep / 30);
-    console.log(startep);
-    console.log(currentPage);
     let animedata = await animeinfo(provider.provider, animeid, {
       fetch_info: true,
       page: currentPage,
     });
-    console.log(animedata);
     if (!animedata) throw new Error("no anime found with this id");
     let Title = animedata.title;
 
@@ -176,8 +173,6 @@ async function downloadfunction(animeid, startep, endep) {
         .filter((ep) => ep.number >= startep && ep.number <= endep)
         .sort((a, b) => a.number - b.number);
     }
-
-    console.log(allEpisodes);
 
     // Saving in metadata
     MetadataAdd("Anime", {

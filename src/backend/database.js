@@ -116,7 +116,6 @@ async function downloadep(Videoconfig, Title, EpNum, AnimeEpId) {
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
     console.log(err);
-    console.log("removing!");
     await removeQueue(AnimeEpId);
   }
 }
