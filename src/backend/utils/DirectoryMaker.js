@@ -45,29 +45,7 @@ async function directoryMaker(title, ep, customdir) {
     }
   }
 
-  //Temp of eps
-  const tempeps = path.join(animeDirectory, directoryName, `Temp_${ep}/`);
-  try {
-    await fs.promises.access(tempeps);
-    await fs_extra.emptyDir(tempeps);
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      await fs.promises.mkdir(tempeps);
-    } else {
-      throw error;
-    }
-  }
-  // try and check if ${episodeNumber}Ep.ts or ${episodeNumber}Ep.mp4 exists
-  const mp4 = path.join(animeDirectory, directoryName, `${ep}Ep.mp4`);
-  const ts = path.join(animeDirectory, directoryName, `${ep}Ep.ts`);
-  try {
-    await fs.promises.access(mp4);
-  } catch (error) {}
-  try {
-    await fs.promises.access(ts);
-  } catch (error) {}
-
-  return [directoryPath, tempeps];
+  return directoryPath;
 }
 
 // Dir GET
