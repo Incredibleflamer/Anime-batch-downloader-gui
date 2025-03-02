@@ -75,7 +75,7 @@ class downloader {
       this.currentSegments = 0;
 
       if (this.subtitles && this.subtitles.length > 0) {
-        this.totalSegments = this.subtitles.length;
+        this.totalSegments += this.subtitles.length;
       }
     }
   }
