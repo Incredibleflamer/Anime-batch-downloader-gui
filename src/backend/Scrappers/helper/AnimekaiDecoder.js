@@ -2,20 +2,21 @@ class AnimekaiDecoder {
   #reverseIt = (n) => {
     return n.split("").reverse().join("");
   };
+
   #base64UrlEncode = (str) => {
     return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   };
+
   #substitute = (input, keys, values) => {
     const map = Object.fromEntries(
       keys.split("").map((key, i) => [key, values[i] || ""])
     );
-    let a = input
+    return input
       .split("")
       .map((char) => map[char] || char)
       .join("");
-
-    return a;
   };
+
   #transform = (n, t) => {
     let v = Array.from({ length: 256 }, (_, i) => i),
       c = 0,
@@ -34,6 +35,7 @@ class AnimekaiDecoder {
 
     return f;
   };
+
   #base64UrlDecode = (n) => {
     n = n
       .padEnd(n.length + ((4 - (n.length % 4)) % 4), "=")
@@ -44,64 +46,118 @@ class AnimekaiDecoder {
 
   GenerateToken = (n) => {
     n = encodeURIComponent(n);
+    return (n = this.#base64UrlEncode(
+      this.#substitute(
+        this.#base64UrlEncode(
+          this.#transform(
+            "sXmH96C4vhRrgi8",
+            this.#reverseIt(
+              this.#reverseIt(
+                this.#base64UrlEncode(
+                  this.#transform(
+                    "kOCJnByYmfI",
+                    this.#substitute(
+                      this.#substitute(
+                        this.#reverseIt(
+                          this.#base64UrlEncode(
+                            this.#transform("0DU8ksIVlFcia2", n)
+                          )
+                        ),
+                        "1wctXeHqb2",
+                        "1tecHq2Xbw"
+                      ),
+                      "48KbrZx1ml",
+                      "Km8Zb4lxr1"
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        "hTn79AMjduR5",
+        "djn5uT7AMR9h"
+      )
+    ));
+  };
 
-    let temp1 = this.#base64UrlEncode(
-      this.#transform("gEUzYavPrGpj", this.#reverseIt(n))
-    );
-
-    temp1 = this.#substitute(temp1, "U8nv0tEFGTb", "bnGvE80UtTF");
-    temp1 = this.#substitute(temp1, "9ysoRqBZHV", "oqsZyVHBR9");
-    temp1 = this.#reverseIt(
-      this.#base64UrlEncode(this.#transform("CSk63F7PwBHJKa", temp1))
-    );
-    temp1 = this.#substitute(temp1, "cKj9BMN15LsdH", "NL5cdKs1jB9MH");
-    return this.#base64UrlEncode(
-      this.#reverseIt(
-        this.#base64UrlEncode(this.#transform("T2zEp1WHL9CsSk7", temp1))
+  DecodeIframeData = (n) => {
+    n = `${n}`;
+    n = this.#transform(
+      "0DU8ksIVlFcia2",
+      this.#base64UrlDecode(
+        this.#reverseIt(
+          this.#substitute(
+            this.#substitute(
+              this.#transform(
+                "kOCJnByYmfI",
+                this.#base64UrlDecode(
+                  this.#reverseIt(
+                    this.#reverseIt(
+                      this.#transform(
+                        "sXmH96C4vhRrgi8",
+                        this.#base64UrlDecode(
+                          this.#substitute(
+                            this.#base64UrlDecode(n),
+                            "djn5uT7AMR9h",
+                            "hTn79AMjduR5"
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              "Km8Zb4lxr1",
+              "48KbrZx1ml"
+            ),
+            "1tecHq2Xbw",
+            "1wctXeHqb2"
+          )
+        )
       )
     );
-  };
-  DecodeIframeData = (n) => {
-    var temp1 = this.#base64UrlDecode(
-      this.#reverseIt(this.#base64UrlDecode(n))
-    );
-
-    var temp2 = this.#transform("T2zEp1WHL9CsSk7", temp1);
-
-    var temp3 = this.#reverseIt(
-      this.#substitute(temp2, "NL5cdKs1jB9MH", "cKj9BMN15LsdH")
-    );
-    var temp4 = this.#transform("CSk63F7PwBHJKa", this.#base64UrlDecode(temp3));
-    var temp5 = this.#substitute(temp4, "oqsZyVHBR9", "9ysoRqBZHV");
-    var temp6 = this.#base64UrlDecode(
-      this.#substitute(temp5, "bnGvE80UtTF", "U8nv0tEFGTb")
-    );
-    n = this.#reverseIt(this.#transform("gEUzYavPrGpj", temp6));
-
     return decodeURIComponent(n);
   };
+
   Decode = (n) => {
-    n = this.#base64UrlDecode(this.#base64UrlDecode(n));
-    n = this.#reverseIt(this.#transform("E438hS1W9oRmB", n));
-    n = this.#reverseIt(
-      this.#substitute(n, "D5qdzkGANMQZEi", "Q5diEGMADkZzNq")
-    );
-    n = this.#base64UrlDecode(
-      this.#substitute(
-        this.#transform("NZcfoMD7JpIrgQE", this.#base64UrlDecode(n)),
-        "kTr0pjKzBqZV",
-        "kZpjzTV0KqBr"
-      )
-    );
     n = this.#reverseIt(
       this.#substitute(
-        this.#transform("Gay7bxj5B81TJFM", n),
-        "zcUxoJTi3fgyS",
-        "oSgyJUfizcTx3"
+        this.#transform(
+          "5ygxI8hjLiuDQ0",
+          this.#base64UrlDecode(
+            this.#transform(
+              "z9cWnXuoDtx",
+              this.#base64UrlDecode(
+                this.#substitute(
+                  this.#reverseIt(
+                    this.#substitute(
+                      this.#transform(
+                        "EZnfG1IL6DF",
+                        this.#base64UrlDecode(
+                          this.#reverseIt(this.#base64UrlDecode((n = `${n}`)))
+                        )
+                      ),
+                      "M2DCEbQmWOe",
+                      "bEDCeOQ2mWM"
+                    )
+                  ),
+                  "Lw7nfcTNz3FbWy",
+                  "TFf37zywcNWnLb"
+                )
+              )
+            )
+          )
+        ),
+        "HK0TOgYzU1C",
+        "T1CHYU0OKgz"
       )
     );
+
     return decodeURIComponent(n);
   };
 }
 
 module.exports = AnimekaiDecoder;
+
+// Taken From : https://github.com/Dungeon69/Junk/blob/3a8d7ffdcfaec5d40a50fae272a2ded148c20924/Completed/animekai.to/clean/extractor.js
