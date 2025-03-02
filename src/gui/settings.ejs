@@ -33,7 +33,7 @@
           <h2>Utils Settings</h2>
           <div class="settings-div">
             <label for="concurrent-downloads">Concurrent download:</label>
-            <input id="concurrent-downloads" oninput="checkConcurrent(this)" type="number" min="1" max="100" step="1"
+            <input id="concurrent-downloads" oninput="checkConcurrent(this)" type="number" min="10" max="100" step="1"
             value="<%= settings.concurrentDownloads !== null ? settings.concurrentDownloads : 5 %>" />
      
             <label for="download-location">Download Location:</label>
@@ -204,9 +204,9 @@
         let val = parseInt(input.value, 10);
         
         if (isNaN(val)) {
-          input.value = 1;
+          input.value = 10;
         } else if (val < 1) {
-          input.value = 1;
+          input.value = 10;
         } else if (val > 100) {
           input.value = 100;
         }

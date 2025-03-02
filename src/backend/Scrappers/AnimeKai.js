@@ -1,7 +1,6 @@
 const AnimekaiDecoder = require("./helper/AnimekaiDecoder");
 const axios = require("axios");
 const cheerio = require("cheerio");
-
 const baseUrl = "https://animekai.to";
 const { GenerateToken, DecodeIframeData, Decode } = new AnimekaiDecoder();
 
@@ -122,7 +121,7 @@ async function AnimeInfo(id) {
       title: mainEntity.find("div.title").text().trim() || "Unknown",
       dubs: dub,
       subs: sub,
-      subOrDub: subOrDub.toUpperCase(),
+      subOrDub: subOrDub,
       type: dubsub.find("span > b").text().trim() || "Unknown",
       status: details.find("div:contains('Status:') > span").text() || "Unkown",
       genres: details

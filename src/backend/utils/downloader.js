@@ -5,11 +5,6 @@ const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
 
-const httpClient = axios.create({
-  timeout: 10000,
-  headers: { Connection: "keep-alive" },
-});
-
 // ffmpeg path fix for bundled application
 const ffmpegPath = ffmpeg.replace("app.asar", "app.asar.unpacked");
 
@@ -27,8 +22,8 @@ class downloader {
     ChangeTosrt = false,
   }) {
     // storing in object
-    this.concurrency = Math.min(Math.max(parseInt(concurrency) || 1, 1), 100);
-    this.maxRetries = parseInt(maxRetries) || 10;
+    this.concurrency = Math.min(Math.max(parseInt(concurrency) || 1, 10), 100);
+    this.maxRetries = Math.max(parseInt(maxRetries) || 10, 10);
     this.directory = directory;
     this.streamUrl = streamUrl;
     this.Epnum = parseInt(Epnum);
@@ -39,6 +34,10 @@ class downloader {
     this.MergeSubtitles = MergeSubtitles ?? false;
     this.ChangeTosrt = ChangeTosrt ?? false;
     this.downloadedPaths = [];
+    this.httpClient = axios.create({
+      timeout: 5000,
+      headers: { Connection: "keep-alive" },
+    });
   }
 
   // Additional Checks
@@ -58,14 +57,7 @@ class downloader {
       throw new Error("No Ep id found!");
     }
 
-    let { mp4, ts, SegmentsFolder } = await this.CreateFolderAndFiles(
-      this.directory,
-      this.Epnum
-    );
-
-    this.mp4 = mp4;
-    this.ts = ts;
-    this.SegmentsFolder = SegmentsFolder;
+    await this.CreateFolderAndFiles(this.directory, this.Epnum);
 
     if (!this.streamUrl || this.streamUrl.length <= 0) {
       throw new Error("No Stream Url Provided");
@@ -83,7 +75,7 @@ class downloader {
       this.currentSegments = 0;
 
       if (this.subtitles && this.subtitles.length > 0) {
-        this.extraSegments = this.subtitles.length;
+        this.totalSegments = this.subtitles.length;
       }
     }
   }
@@ -93,7 +85,7 @@ class downloader {
       let concurrencyBefore = this.concurrency;
       while (this.Segments.length > 0) {
         let LastBatchSpeed = this.concurrency;
-        this.SegmentsBatchSizeInMB = 0;
+        this.SegmentsBatchSizeInKB = 0;
         let startTime = Date.now();
         let batch = this.Segments.splice(0, this.concurrency);
         await Promise.all(
@@ -101,27 +93,42 @@ class downloader {
         );
 
         let endTime = Date.now();
-        const speedMBps =
-          this.SegmentsBatchSizeInMB / ((endTime - startTime) / 1000);
+        const speedKBps =
+          this.SegmentsBatchSizeInKB / ((endTime - startTime) / 1000);
 
-        if (speedMBps > 10) {
-          this.concurrency += 2;
-        } else if (speedMBps > 5) {
+        // Increase concurrency
+        if (speedKBps > 10240) {
+          this.concurrency += 10;
+        } else if (speedKBps > 8192) {
+          this.concurrency += 5;
+        } else if (speedKBps > 6144) {
+          this.concurrency += 3;
+        } else if (speedKBps > 5120) {
           this.concurrency += 1;
-        } else if (speedMBps < 1) {
+        }
+
+        // Decrease concurrency
+        else if (speedKBps < 1024) {
+          this.concurrency -= 10;
+        } else if (speedKBps < 2048) {
           this.concurrency -= 5;
+        } else if (speedKBps < 3072) {
+          this.concurrency -= 3;
+        } else if (speedKBps < 4096) {
+          this.concurrency -= 1;
         }
 
         this.concurrency = Math.min(
-          Math.max(parseInt(this.concurrency), 1),
+          Math.max(parseInt(this.concurrency), 10),
           100
         );
+
         if (LastBatchSpeed !== this.concurrency) {
           logger.info(
-            `Current Concurrency : ${this.concurrency} download speed ${speedMBps}`
+            `Current Concurrency : ${this.concurrency} download speed ${speedKBps}`
           );
           console.log(
-            `Current Concurrency : ${this.concurrency} download speed ${speedMBps}`
+            `Current Concurrency : ${this.concurrency} download speed ${speedKBps}`
           );
         }
       }
@@ -130,7 +137,7 @@ class downloader {
       if (concurrencyBefore !== this.concurrency) {
         logger.info(`Updating Concurrency To : ${this.concurrency}`);
         console.log(`Updating Concurrency To : ${this.concurrency}`);
-        fetch(`http:localhost:${global.PORT}/api/settings`, {
+        fetch(`http://localhost:${global.PORT}/api/settings`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -162,36 +169,46 @@ class downloader {
         fs.mkdirSync(episodeDir, { recursive: true });
       }
 
-      for (const { url, lang } of this.subtitles) {
-        if (lang === "Thumbnails") continue;
+      const downloadPromises = this.subtitles
+        .filter(({ lang }) => lang !== "Thumbnails")
+        .map(async ({ url, lang }) => {
+          let subtitlePath = path.join(
+            episodeDir,
+            `${this.Epnum}_${lang}.${url.split(".").pop()}`
+          );
 
-        let subtitlePath = path.join(
-          episodeDir,
-          `${this.Epnum}_${lang}.${url.split(".").pop()}`
-        );
+          if (
+            this.ChangeTosrt &&
+            subtitlePath.endsWith(".ttv") &&
+            !this.MergeSubtitles
+          ) {
+            subtitlePath = subtitlePath.replace(".ttv", ".srt");
+          }
 
-        if (
-          this.ChangeTosrt &&
-          subtitlePath.endsWith(".ttv") &&
-          !this.MergeSubtitles
-        ) {
-          subtitlePath = subtitlePath.replace(".ttv", ".srt");
-        }
+          try {
+            const response = await axios.get(url, { responseType: "text" });
+            let subtitleData = response.data;
 
-        const response = await axios.get(url, { responseType: "text" });
-        let subtitleData = response.data;
+            if (this.ChangeTosrt && !this.MergeSubtitles) {
+              subtitleData = this.convertToSRT(subtitleData);
+            }
 
-        if (this.ChangeTosrt && !this.MergeSubtitles) {
-          subtitleData = this.convertToSRT(subtitleData);
-        }
-
-        await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
-
-        this.downloadedPaths.push(subtitlePath);
-      }
+            await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
+            this.downloadedPaths.push(subtitlePath);
+          } catch (err) {
+            logger.info(
+              `Failed to download subtitle (${lang}): ${err.message}`
+            );
+            console.log(
+              `Failed to download subtitle (${lang}): ${err.message}`
+            );
+          }
+        });
+      await Promise.all(downloadPromises);
+      this.currentSegments += this.subtitles.length;
     } catch (err) {
-      logger.info(`Failed to download subtitle: ${err.message}`);
-      console.log(`Failed to download subtitle: ${err.message}`);
+      logger.info(`Failed to process subtitles: ${err.message}`);
+      console.log(`Failed to process subtitles: ${err.message}`);
     }
   }
 
@@ -292,6 +309,9 @@ class downloader {
         });
       });
 
+      this.currentSegments++;
+      await this.logProgress();
+
       // Cleanup
       await this.DeleteSegmentsFolder();
     } catch (err) {
@@ -306,13 +326,19 @@ class downloader {
         this.SegmentsFolder,
         SegmentUrl.split("/").pop()
       );
+      await this.AxiosGetSegments(SegmentUrl, SegmentFileName, this.maxRetries);
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
 
-      this.SegmentsDownloaded.push(SegmentFileName);
-
-      const response = await httpClient({
+  async AxiosGetSegments(SegmentUrl, SegmentFileName, maxRetries) {
+    try {
+      let response = await this.httpClient({
         method: "get",
         url: SegmentUrl,
         responseType: "stream",
+        timeout: 5000,
       });
 
       const writer = fs.createWriteStream(SegmentFileName);
@@ -323,27 +349,29 @@ class downloader {
         writer.on("error", reject);
       });
 
-      this.SegmentsBatchSizeInMB +=
-        (await fs.promises.stat(SegmentFileName)).size / (1024 * 1024);
+      this.SegmentsBatchSizeInKB +=
+        (await fs.promises.stat(SegmentFileName)).size / 1024;
 
       this.currentSegments++;
       this.logProgress();
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
 
-  async AxiosGetSegments(SegmentUrl, maxRetries) {
-    try {
-      let response = await axios.get(SegmentUrl);
-      return response.data;
+      this.SegmentsDownloaded.push(SegmentFileName);
     } catch (err) {
+      console.log(maxRetries);
+      if (maxRetries === this.maxRetries) {
+        this.concurrency -= 10;
+      }
+
       if (maxRetries > 0) {
         const cooldown = Math.floor(Math.random() * 1000) + 1000;
         console.log(`Retrying in ${cooldown / 1000} seconds...`);
         logger.info(`Retrying in ${cooldown / 1000} seconds...`);
         await new Promise((resolve) => setTimeout(resolve, cooldown));
-        return await this.AxiosGetSegments(SegmentUrl, maxRetries - 1);
+        return await this.AxiosGetSegments(
+          SegmentUrl,
+          SegmentFileName,
+          maxRetries - 1
+        );
       } else {
         logger.info(`Max Retries reached`);
         throw new Error("Max Retries reached");
@@ -376,10 +404,8 @@ class downloader {
     } catch (error) {
       await fs.promises.mkdir(SegmentsFolder, { recursive: true });
     }
-    return {
-      mp4,
-      SegmentsFolder,
-    };
+    this.mp4 = mp4;
+    this.SegmentsFolder = SegmentsFolder;
   }
 
   async DeleteSegmentsFolder() {
@@ -414,15 +440,20 @@ class downloader {
     }
   }
 
-  logProgress() {
-    fetch(`http:localhost:${global.PORT}/api/logger`, {
+  async logProgress() {
+    let caption = this.caption;
+    if (this.currentSegments >= this.totalSegments - 3) {
+      caption = caption.replace("Downloading", "Merging");
+    }
+
+    await fetch(`http://localhost:${global.PORT}/api/logger`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        caption: this.caption,
-        totalSegments: this.totalSegments,
+        caption: caption,
+        totalSegments: this.totalSegments + 1,
         currentSegments: this.currentSegments,
         epid: this.EpID,
       }),

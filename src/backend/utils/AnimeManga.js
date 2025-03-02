@@ -1,3 +1,8 @@
+const JSZip = require("jszip");
+const fs = require("fs");
+const axios = require("axios");
+const HLSLogger = require("./logger");
+
 //====================================== Anime ================================
 // find popular anime
 async function latestAnime(provider, page) {
@@ -70,10 +75,6 @@ async function fetchEpisodeSources(provider, episodeId) {
 }
 
 //====================================== Manga ================================
-const JSZip = require("jszip");
-const fs = require("fs");
-const axios = require("axios");
-const HLSLogger = require("./logger");
 
 // Latest Manga
 async function latestMangas(provider, Page = 1) {

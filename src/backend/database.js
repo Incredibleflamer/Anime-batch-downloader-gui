@@ -113,10 +113,7 @@ async function downloadep(Videoconfig, Title, EpNum, AnimeEpId) {
       AnimeEpId
     );
   } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    await removeQueue(AnimeEpId);
+    throw err;
   }
 }
 
@@ -171,9 +168,6 @@ async function downloadEpisodeByQuality(
       throw new Error("No source link found.");
     }
   } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(`Error downloading episode: ${err.message}`);
     throw err;
   }
 }
@@ -205,10 +199,7 @@ async function downloadVideo(
       ChangeTosrt: subtitleFormat,
     });
   } catch (err) {
-    console.log(err);
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    throw new Error("Failed To Download");
+    throw new Error(`Failed To Download \n${err}`);
   }
 }
 
@@ -240,10 +231,7 @@ async function downloadMangaChapters(
       ChapterId
     );
   } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    await removeQueue(Title, EpNum, ChapterId);
+    throw err;
   }
 }
 

@@ -48,8 +48,8 @@ async function updateQueue(epid, totalSegments, currentSegments) {
     AnimeQueue[indexToUpdate].currentSegments = parseFloat(currentSegments);
     if (parseFloat(currentSegments) === parseFloat(totalSegments)) {
       AnimeQueue.splice(indexToUpdate, 1);
+      await saveQueue();
     }
-    await saveQueue();
   }
 }
 
