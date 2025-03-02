@@ -116,6 +116,7 @@ appExpress.post("/api/settings", async (req, res) => {
     //   return res.status(400).json({ error: "Enter a valid status." });
 
     if (
+      quality &&
       quality !== "1080p" &&
       quality !== "720p" &&
       quality !== "360p"
@@ -126,7 +127,7 @@ appExpress.post("/api/settings", async (req, res) => {
     // if (autotrack !== "on" && autotrack !== "off" && status !== null)
     //   return res.status(400).json({ error: "Enter on / off in autotracking." });
 
-    if (CustomDownloadLocation !== null)
+    if (CustomDownloadLocation && CustomDownloadLocation !== null)
       await ensureDirectoryExists(CustomDownloadLocation);
 
     await settingupdate({

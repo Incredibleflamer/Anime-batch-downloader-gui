@@ -5,6 +5,11 @@ const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
 
+const httpClient = axios.create({
+  timeout: 10000,
+  headers: { Connection: "keep-alive" },
+});
+
 // ffmpeg path fix for bundled application
 const ffmpegPath = ffmpeg.replace("app.asar", "app.asar.unpacked");
 
@@ -22,7 +27,7 @@ class downloader {
     ChangeTosrt = false,
   }) {
     // storing in object
-    this.concurrency = parseInt(concurrency) || 1;
+    this.concurrency = Math.min(Math.max(parseInt(concurrency) || 1, 1), 100);
     this.maxRetries = parseInt(maxRetries) || 10;
     this.directory = directory;
     this.streamUrl = streamUrl;
@@ -85,30 +90,58 @@ class downloader {
 
   async DownloadStart() {
     try {
-      let minConcurrency = 5;
-      let maxConcurrency = 100;
-      let currentConcurrency = Math.min(this.concurrency, maxConcurrency);
-      let lastAdjustTime = Date.now();
-
+      let concurrencyBefore = this.concurrency;
       while (this.Segments.length > 0) {
-        let batch = this.Segments.splice(0, currentConcurrency);
+        let LastBatchSpeed = this.concurrency;
+        this.SegmentsBatchSizeInMB = 0;
         let startTime = Date.now();
-
+        let batch = this.Segments.splice(0, this.concurrency);
         await Promise.all(
           batch.map((segment) => this.DownloadSegment(segment))
         );
 
         let endTime = Date.now();
-        let duration = endTime - startTime;
+        const speedMBps =
+          this.SegmentsBatchSizeInMB / ((endTime - startTime) / 1000);
 
-        if (Date.now() - lastAdjustTime > 10000) {
-          if (duration < 5000 && currentConcurrency < maxConcurrency) {
-            currentConcurrency += 5;
-          } else if (duration > 9000 && currentConcurrency > minConcurrency) {
-            currentConcurrency -= 5;
-          }
-          lastAdjustTime = Date.now();
+        if (speedMBps > 10) {
+          this.concurrency += 2;
+        } else if (speedMBps > 5) {
+          this.concurrency += 1;
+        } else if (speedMBps < 1) {
+          this.concurrency -= 5;
         }
+
+        this.concurrency = Math.min(
+          Math.max(parseInt(this.concurrency), 1),
+          100
+        );
+        if (LastBatchSpeed !== this.concurrency) {
+          logger.info(
+            `Current Concurrency : ${this.concurrency} download speed ${speedMBps}`
+          );
+          console.log(
+            `Current Concurrency : ${this.concurrency} download speed ${speedMBps}`
+          );
+        }
+      }
+
+      // Updating Concurrency
+      if (concurrencyBefore !== this.concurrency) {
+        logger.info(`Updating Concurrency To : ${this.concurrency}`);
+        console.log(`Updating Concurrency To : ${this.concurrency}`);
+        fetch(`http:localhost:${global.PORT}/api/settings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            concurrentDownloads: this.concurrency,
+          }),
+        }).catch((err) => {
+          logger.info("Error updating concurrency:", err);
+          console.log("Error updating concurrency:", err);
+        });
       }
     } catch (err) {
       throw new Error(err);
@@ -276,7 +309,7 @@ class downloader {
 
       this.SegmentsDownloaded.push(SegmentFileName);
 
-      const response = await axios({
+      const response = await httpClient({
         method: "get",
         url: SegmentUrl,
         responseType: "stream",
@@ -289,6 +322,10 @@ class downloader {
         writer.on("finish", resolve);
         writer.on("error", reject);
       });
+
+      this.SegmentsBatchSizeInMB +=
+        (await fs.promises.stat(SegmentFileName)).size / (1024 * 1024);
+
       this.currentSegments++;
       this.logProgress();
     } catch (err) {

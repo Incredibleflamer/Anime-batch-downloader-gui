@@ -33,8 +33,9 @@
           <h2>Utils Settings</h2>
           <div class="settings-div">
             <label for="concurrent-downloads">Concurrent download:</label>
-            <input id="concurrent-downloads" type="number" min="1" step="1" value="<%= settings.concurrentDownloads !== null ? settings.concurrentDownloads : 5 %>"/>
-    
+            <input id="concurrent-downloads" oninput="checkConcurrent(this)" type="number" min="1" max="100" step="1"
+            value="<%= settings.concurrentDownloads !== null ? settings.concurrentDownloads : 5 %>" />
+     
             <label for="download-location">Download Location:</label>
             <input id="download-location" type="text" placeholder="Enter your custom download path" value="<%= settings.CustomDownloadLocation !== null ? settings.CustomDownloadLocation : '' %>"/>
           </div>
@@ -199,6 +200,17 @@
         SubtitlesFormat.style.display = selectedProvider === "hianime" && mergeSubtitlesValue === "on" ? "block" : "none";
       }
 
+      function checkConcurrent(input) {
+        let val = parseInt(input.value, 10);
+        
+        if (isNaN(val)) {
+          input.value = 1;
+        } else if (val < 1) {
+          input.value = 1;
+        } else if (val > 100) {
+          input.value = 100;
+        }
+      }
     
       document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll("input, select").forEach((input) => {
