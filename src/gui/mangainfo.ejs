@@ -257,8 +257,9 @@
     <script>
       let Chapters = JSON.parse(`<%- JSON.stringify(data.chapters) %>`);
       let DownloadedChapters = JSON.parse(
-        `<%- JSON.stringify(data.DownloadedChapters) %>`
+        `<%- JSON.stringify(data?.DownloadedChapters && data?.DownloadedChapters?.length > 0 ? data.DownloadedChapters : []) %>`
       );
+
       let Internet =
         "<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>" ===
         "true";

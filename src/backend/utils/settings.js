@@ -6,6 +6,7 @@ const {
   getDownloadsFolder,
   ensureDirectoryExists,
 } = require("./DirectoryMaker");
+const { MalRefreshTokenGen, MalLogin } = require("./mal.js");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
 const userDataPath = app.getPath("userData");
@@ -28,36 +29,35 @@ const Manga_providers = {
 // update the settings
 async function settingupdate({
   quality = null,
-  // mal_on_off = null,
-  // status = null,
-  // malToken = null,
-  // autotrack = null,
+  mal_on_off = null,
+  status = null,
+  malToken = null,
+  autotrack = null,
   CustomDownloadLocation = null,
   Animeprovider = null,
   Mangaprovider = null,
   mergeSubtitles = null,
   subtitleFormat = null,
   Pagination = null,
-  concurrentDownloads = null,
   subDub = null,
   autoLoadNextChapter = null,
 }) {
   const currentSettings = settings.get("config");
 
-  // if (mal_on_off === "logout") {
-  //   mal_on_off = false;
-  //   malToken = null;
-  // } else {
-  //   if (malToken === null) malToken = currentSettings?.malToken || null;
-  //   if (malToken !== null) {
-  //     mal_on_off = true;
-  //   } else {
-  //     mal_on_off = false;
-  //   }
-  // }
+  if (mal_on_off === "logout") {
+    mal_on_off = false;
+    malToken = null;
+  } else {
+    if (malToken === null) malToken = currentSettings?.malToken || null;
+    if (malToken !== null) {
+      mal_on_off = true;
+    } else {
+      mal_on_off = false;
+    }
+  }
 
-  // if (autotrack === null) autotrack = currentSettings?.autotrack || "off";
-  // if (status === null) status = currentSettings?.status || "plan_to_watch";
+  if (autotrack === null) autotrack = currentSettings?.autotrack || "off";
+  if (status === null) status = currentSettings?.status || "plan_to_watch";
 
   if (quality === null) {
     quality = currentSettings.quality || "1080p";
@@ -83,12 +83,6 @@ async function settingupdate({
     Pagination = currentSettings?.Pagination || "off";
   }
 
-  if (concurrentDownloads === null) {
-    concurrentDownloads = currentSettings?.concurrentDownloads || 5;
-  } else {
-    concurrentDownloads = parseInt(concurrentDownloads) || 5;
-  }
-
   if (subtitleFormat === null) {
     subtitleFormat = currentSettings?.subtitleFormat || "ttv";
   }
@@ -98,16 +92,15 @@ async function settingupdate({
   }
 
   config.quality = quality;
-  // config.mal_on_off = mal_on_off;
-  // config.status = status;
-  // config.malToken = malToken;
-  // config.autotrack = autotrack;
+  config.mal_on_off = mal_on_off;
+  config.status = status;
+  config.malToken = malToken;
+  config.autotrack = autotrack;
   config.CustomDownloadLocation = CustomDownloadLocation;
   config.Animeprovider = Animeprovider;
   config.Mangaprovider = Mangaprovider;
   config.mergeSubtitles = mergeSubtitles;
   config.Pagination = Pagination;
-  config.concurrentDownloads = concurrentDownloads;
   config.subtitleFormat = subtitleFormat;
   config.subDub = subDub;
   config.autoLoadNextChapter = autoLoadNextChapter;
@@ -115,14 +108,13 @@ async function settingupdate({
   await settingSave();
   return {
     quality,
-    // mal_on_off,
-    // status,
-    // autotrack,
+    mal_on_off,
+    status,
+    autotrack,
     Animeprovider,
     Mangaprovider,
     mergeSubtitles,
     Pagination,
-    concurrentDownloads,
     subtitleFormat,
     subDub,
     autoLoadNextChapter,
@@ -220,9 +212,9 @@ async function SettingsLoad() {
         ? storedConfig
         : {
             quality: "1080p",
-            // mal_on_off: false,
-            // status: "plan_to_watch",
-            // malToken: null,
+            mal_on_off: false,
+            status: "plan_to_watch",
+            malToken: null,
             CustomDownloadLocation: getDownloadsFolder(),
             Animeprovider: "hianime",
             Mangaprovider: "weebcentral",
@@ -230,14 +222,13 @@ async function SettingsLoad() {
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
-            concurrentDownloads: 5,
             subDub: "sub",
           };
 
-    // if (config.malToken != null) {
-    //   await refresh_token(config.malToken);
-    //   await MalLogin(token);
-    // }
+    if (config.malToken != null) {
+      let Tosave = await MalRefreshTokenGen(config.malToken);
+      await settingupdate(Tosave);
+    }
     await settingSave();
   } catch (err) {
     console.log(err);

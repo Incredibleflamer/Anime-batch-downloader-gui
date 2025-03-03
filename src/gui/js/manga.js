@@ -1,6 +1,6 @@
 let pagination = "";
 let catagorie = "";
-let ApiCall = "";
+let local = true;
 let currentPage = 1;
 let isFetching = false;
 let totalPages = false;
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // download
 async function download(ep, start, end) {
   try {
-    const response = await fetch("/api/mangadownload", {
+    const response = await fetch("/api/download/Manga", {
       method: "POST",
       body: JSON.stringify({
         ep: ep,
@@ -105,12 +105,12 @@ function isScrolledToBottom() {
 
 async function fetchPageData(page) {
   try {
-    const response = await fetch(ApiCall, {
+    const response = await fetch(`/api/discover/Manga`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ page: page, title: catagorie }),
+      body: JSON.stringify({ page: page, title: catagorie, local: local }),
     });
     if (!response.ok) {
       throw new Error("Failed to fetch data");
@@ -288,8 +288,7 @@ async function handlePagination(targetPage) {
 async function init(paginationInput, catagorieInput, hasNextPageInput) {
   pagination = paginationInput;
   catagorie = catagorieInput;
-  ApiCall =
-    catagorie === "Latest Updated" ? "/api/manga/latest" : "/api/findmanga";
+  ApiCall = catagorie === "Local Manga Library" ? true : false;
   hasNextPage = hasNextPageInput;
 
   if (pagination === "on") {

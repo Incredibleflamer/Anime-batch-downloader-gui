@@ -1,6 +1,6 @@
 let pagination = "off";
 let catagorie = "";
-let ApiCall = "";
+let local = true;
 let currentPage = 1;
 let isFetching = false;
 let totalPages = null;
@@ -13,12 +13,12 @@ function isScrolledToBottom() {
 
 async function fetchPageData(page) {
   try {
-    const response = await fetch(ApiCall, {
+    const response = await fetch(`/api/discover/Anime`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ page: page, title: catagorie }),
+      body: JSON.stringify({ page: page, title: catagorie, local: local }),
     });
     if (!response.ok) {
       throw new Error("Failed to fetch data");
@@ -214,13 +214,7 @@ async function handlePagination(targetPage) {
 async function init(paginationInput, catagorieInput, hasNextPageInput) {
   pagination = paginationInput;
   catagorie = catagorieInput;
-  ApiCall =
-    catagorie === "Recent Episodes"
-      ? "/api/latest"
-      : catagorie === "Local Anime Library"
-      ? "/api/local/anime"
-      : "/api/findanime";
-
+  local = catagorie === "Local Anime Library" ? true : false;
   hasNextPage = hasNextPageInput;
 
   if (pagination === "on") {

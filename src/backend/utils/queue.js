@@ -51,6 +51,7 @@ async function updateQueue(epid, totalSegments, currentSegments) {
       await saveQueue();
     }
   }
+  return AnimeQueue;
 }
 
 // Get Queue

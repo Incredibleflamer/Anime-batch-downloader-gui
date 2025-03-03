@@ -27,8 +27,18 @@
         <!-- Queue items will be injected here -->
       </div>
     </div>
-    <script src="/js/downloads.js"></script>
     <script src="/js/libs/loading-bar.js"></script>
+    <script src="/js/downloads.js"></script>
+    <script>
+      UpdateBar({
+        data: {
+          caption: `<%= caption %>`,
+          queue: <%- queue %>,
+          totalSegments: parseInt(`<%= totalSegments %>` ?? 0),
+          currentSegments: parseInt(`<%= currentSegments %>` ?? 0),
+        },
+      });
+    </script>
     <script src="/js/libs/jquery.js"></script>
     <script src="/js/libs/bootstrap.js"></script>
   </body>

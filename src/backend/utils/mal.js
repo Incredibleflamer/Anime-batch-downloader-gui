@@ -1,9 +1,4 @@
-// libs
-const axios = require("axios");
 const { Mal } = require("node-myanimelist");
-// functions
-const { settingupdate } = require("./settings");
-// variables
 const auth = Mal.auth("d0b22d129a541dac4d28207f77b15b5f");
 let account = null;
 let pkce;
@@ -21,7 +16,10 @@ async function MalVerifyToken(code) {
   const data = await auth.authorizeWithCode(code, pkce.code_challenge);
   token = data.stringifyToken();
   await MalLogin(token);
-  await settingupdate(null, true, null, token);
+  return {
+    mal_on_off: true,
+    malToken: token,
+  };
 }
 
 // refresh the token
@@ -30,7 +28,10 @@ async function MalRefreshTokenGen(json) {
   const data = await auth.authorizeWithRefreshToken(refresh_token);
   token = data.stringifyToken();
   await MalLogin(token);
-  await settingupdate(null, true, null, token);
+  return {
+    mal_on_off: true,
+    malToken: token,
+  };
 }
 
 // login to mal
@@ -65,19 +66,10 @@ async function MalAddToList(malid, status) {
   }
 }
 
-// // gogo to mal
-// async function MalGogo(AnimeID) {
-//   const { data } = await axios.get(
-//     `https://api.malsync.moe/page/Gogoanime/${AnimeID}`
-//   );
-//   return data.malId;
-// }
-
 module.exports = {
   MalCreateUrl,
   MalVerifyToken,
   MalRefreshTokenGen,
   MalLogin,
-  // MalGogo,
   MalAddToList,
 };

@@ -16,7 +16,7 @@ const {
   removeQueue,
   SaveQueueData,
 } = require("./utils/queue");
-const { settingfetch, providerFetch } = require("./utils/settings");
+const { providerFetch } = require("./utils/settings");
 
 // queue start
 async function continuousExecution() {
@@ -162,7 +162,8 @@ async function downloadEpisodeByQuality(
         epid,
         sourcesArray?.subtitles ?? [],
         config?.mergeSubtitles === "on" ? true : false,
-        (config?.subtitleFormat ?? "ttv") === "srt"
+        (config?.subtitleFormat ?? "ttv") === "srt",
+        provider.provider_name
       );
     } else {
       throw new Error("No source link found.");
@@ -185,10 +186,7 @@ async function downloadVideo(
   subtitleFormat = false
 ) {
   try {
-    const config = await settingfetch();
     await download({
-      concurrency: config?.concurrentDownloads ?? 50,
-      maxRetries: 10,
       directory: directoryPath,
       Epnum: episodeNumber,
       streamUrl: Url,

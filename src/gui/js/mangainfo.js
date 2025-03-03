@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // download
 async function download(ep, start, end) {
   try {
-    const response = await fetch("/api/mangadownload", {
+    const response = await fetch("/api/download/Manga", {
       method: "POST",
       body: JSON.stringify({
         ep: ep,

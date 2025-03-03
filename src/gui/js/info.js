@@ -45,7 +45,7 @@ async function download(ep, start, end) {
     start = parseInt(start);
     end = parseInt(end);
 
-    const response = await fetch("/api/download", {
+    const response = await fetch("/api/download/Anime", {
       method: "POST",
       body: JSON.stringify({
         ep: ep,
