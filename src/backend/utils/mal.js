@@ -85,7 +85,6 @@ async function MalRefreshTokenGen(json) {
       };
     }
     MalAcount = JsonToken;
-    await MalAddToList("59361", "anime");
     return {
       mal_on_off: true,
       malToken: json,
@@ -101,7 +100,7 @@ async function MalRefreshTokenGen(json) {
 }
 
 // Add To List
-async function MalAddToList(malid, type, status, NumWatchedEp) {
+async function MalAddToList(type, malid, status, NumWatchedEp) {
   try {
     if (!MalAcount?.access_token)
       throw new Error("No access token please login");
