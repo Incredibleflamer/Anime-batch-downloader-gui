@@ -1,9 +1,6 @@
-const MalAppID = "d0b22d129a541dac4d28207f77b15b5f";
 const axios = require("axios");
-
 const { logger } = require("./AppLogger");
-const { Mal } = require("node-myanimelist");
-const auth = Mal.auth("d0b22d129a541dac4d28207f77b15b5f");
+const MalAppID = "d0b22d129a541dac4d28207f77b15b5f";
 let MalAcount = null;
 let pkce;
 
