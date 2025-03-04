@@ -19,7 +19,7 @@ class downloader {
     MergeSubtitles = false,
     ChangeTosrt = false,
   }) {
-    this.concurrency = Math.min(Math.max(parseInt(concurrency) || 5, 1), 100);
+    this.concurrency = 10;
     this.directory = directory;
     this.streamUrl = streamUrl;
     this.Epnum = parseInt(Epnum);
@@ -124,19 +124,6 @@ class downloader {
           Math.max(parseInt(this.concurrency), 5),
           100
         );
-
-        if (LastBatchConcurrency !== this.concurrency) {
-          logger.info(
-            `Current Concurrency : ${
-              this.concurrency
-            } download speed ${speedKBps.toFixed(1)}`
-          );
-          console.log(
-            `Current Concurrency : ${
-              this.concurrency
-            } download speed ${speedKBps.toFixed(1)}`
-          );
-        }
       }
     } catch (err) {
       throw new Error(err);
