@@ -6,7 +6,7 @@ const {
   getDownloadsFolder,
   ensureDirectoryExists,
 } = require("./DirectoryMaker");
-const { MalRefreshTokenGen, MalLogin } = require("./mal.js");
+const { MalRefreshTokenGen } = require("./mal.js");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
 const userDataPath = app.getPath("userData");

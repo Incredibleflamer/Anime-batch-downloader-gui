@@ -51,6 +51,12 @@ const tables = {
     image: "BLOB",
     last_updated: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   },
+  // Mappings: {
+  //   id: "TEXT PRIMARY KEY",
+  //   pahe: "TEXT",
+  //   hianime: "TEXT",
+  //   animekai: "TEXT",
+  // },
 };
 
 // Create tables & update schema
@@ -270,6 +276,7 @@ function MetadataRemove(type, id) {
   }
 }
 
+// Get All Metadata
 async function getAllMetadata(type, baseDir, page = 1) {
   if (!tables[type]) {
     throw new Error(`Invalid table: ${type}`);
@@ -371,6 +378,7 @@ async function getAllMetadata(type, baseDir, page = 1) {
   }
 }
 
+// Get Metadata By id
 async function getMetadataById(type, baseDir, id) {
   if (!tables[type]) {
     throw new Error(`Invalid table: ${type}`);
@@ -453,6 +461,7 @@ async function getMetadataById(type, baseDir, id) {
   }
 }
 
+// Get Local Source By id
 async function getSourceById(type, baseDir, id, number) {
   if (!tables[type]) {
     throw new Error(`Invalid table: ${type}`);
@@ -491,6 +500,7 @@ async function getSourceById(type, baseDir, id, number) {
   }
 }
 
+// Get Pahe Fetch All Anime Episodes
 async function FetchAllEpisodesAnimepaheAndSave(id, last_page) {
   let EpisodesLists = [];
   for (let i = 1; i <= last_page; i++) {
@@ -519,6 +529,7 @@ async function FetchAllEpisodesAnimepaheAndSave(id, last_page) {
   }
 }
 
+// Helper function
 function timeAgo(timestamp) {
   const now = new Date();
   const past = new Date(timestamp + " UTC");
@@ -541,6 +552,16 @@ function timeAgo(timestamp) {
     }
   }
   return "just now";
+}
+
+// Mapping For Mal , AnimePahe , AnimeKai , HiAnime
+async function AddMapping(Malid, { animekai, hianime, pahe }) {
+  const existingRecord = db
+    .prepare(`SELECT * FROM Mappings WHERE id = ?`)
+    .get(Malid);
+
+  if (existingRecord) {
+  }
 }
 
 module.exports = {

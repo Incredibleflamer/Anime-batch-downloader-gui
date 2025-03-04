@@ -26,7 +26,7 @@ const {
   providerFetch,
 } = require("./utils/settings");
 const { getQueue, updateQueue, removeQueue } = require("./utils/queue");
-const { MalCreateUrl, MalVerifyToken } = require("./utils/mal");
+const { MalCreateUrl, MalVerifyToken, MalFetchList } = require("./utils/mal");
 const {
   getAllMetadata,
   getMetadataById,
