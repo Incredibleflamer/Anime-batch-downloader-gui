@@ -82,14 +82,29 @@ async function addchild(data) {
             catagorie === "Local Manga Library" ? "localmangaid" : "mangaid"
           }=${result.id}">
             <div class="anime-item">
-              <img src="${result.image}" alt="${
+              <img 
+              src="./images/loading-image.png"
+              data-src="${result.image}" alt="${
         result.title
-      }" onerror="this.onerror=null; this.src='./images/image404.png';" class="thumbnail" />
+      }" onerror="this.onerror=null; this.src='./images/image-404.png';" class="thumbnail lazy-image" />
               <div class="overlay">${result.title}</div>
               </div>
           </a>
         `;
       animeGrid.appendChild(animeCard);
+    });
+    const lazyImages = document.querySelectorAll(".lazy-image");
+    lazyImages.forEach((img) => {
+      const tempImage = new Image();
+      tempImage.src = img.getAttribute("data-src");
+
+      tempImage.onload = function () {
+        img.src = tempImage.src;
+      };
+
+      tempImage.onerror = function () {
+        img.src = "./images/image404.png";
+      };
     });
   }
 }
