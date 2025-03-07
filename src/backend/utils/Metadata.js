@@ -182,10 +182,9 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
     if (valuesToAdd?.ImageUrl) {
       let data;
 
-      if (valuesToAdd.ImageUrl.startsWith("/proxy/image?url=")) {
-        valuesToAdd.ImageUrl = valuesToAdd.ImageUrl.replace(
-          "/proxy/image?url=",
-          ""
+      if (valuesToAdd?.ImageUrl?.startsWith("/proxy/image?pahe=")) {
+        valuesToAdd.ImageUrl = decodeURIComponent(
+          valuesToAdd.ImageUrl.replace("/proxy/image?pahe=", "")
         );
 
         const response = await ddosGuardRequest(valuesToAdd.ImageUrl, {
@@ -193,7 +192,13 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
         });
         data = response.data;
       } else {
-        const response = await axios.get(valuesToAdd.ImageUrl, {
+        let Imageurl = valuesToAdd?.ImageUrl;
+        if (Imageurl?.startsWith("/proxy/image?url=")) {
+          Imageurl = decodeURIComponent(
+            valuesToAdd.ImageUrl.replace("/proxy/image?url=", "")
+          );
+        }
+        const response = await axios.get(Imageurl, {
           responseType: "arraybuffer",
         });
         data = response.data;

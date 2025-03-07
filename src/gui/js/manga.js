@@ -146,7 +146,7 @@ async function addchild(data) {
       animeCard.innerHTML = `
           <a href="/mangainfo?mangaid=${result.id}">
             <div class="anime-item">
-              <img src="${result.image}" alt="${result.title}" />
+              <img src="${result.image}" alt="${result.title}" onerror="this.onerror=null; this.src='./images/image404.png';" />
               <div class="overlay">${result.title}</div>
               </div>
           </a>

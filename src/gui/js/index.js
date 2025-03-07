@@ -59,6 +59,7 @@ async function addchild(data) {
               <img 
                 src="${result.image}" 
                 alt="${result.title}" 
+                onerror="this.onerror=null; this.src='./images/image404.png';"
                 class="thumbnail" />
               ${
                 result?.totalEpisodes && result?.DownloadedEpisodes

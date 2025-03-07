@@ -5,7 +5,6 @@ const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
 
-// ffmpeg path fix for bundled application
 const ffmpegPath = ffmpeg.replace("app.asar", "app.asar.unpacked");
 
 class downloader {
@@ -19,7 +18,7 @@ class downloader {
     MergeSubtitles = false,
     ChangeTosrt = false,
   }) {
-    this.concurrency = 10;
+    this.concurrency = 5;
     this.directory = directory;
     this.streamUrl = streamUrl;
     this.Epnum = parseInt(Epnum);
@@ -76,7 +75,6 @@ class downloader {
 
   async DownloadStart() {
     try {
-      let concurrencyBefore = this.concurrency;
       while (this.Segments.length > 0) {
         let LastBatchConcurrency = this.concurrency;
         this.SegmentsBatchSizeInKB = 0;
@@ -124,6 +122,12 @@ class downloader {
           Math.max(parseInt(this.concurrency), 5),
           100
         );
+
+        if (LastBatchConcurrency !== this.concurrency) {
+          logger.info(
+            `Current concurrency : ${this.concurrency} | Speed : ${speedKBps}/KBps`
+          );
+        }
       }
     } catch (err) {
       throw new Error(err);
@@ -391,16 +395,11 @@ class downloader {
     const SegmentsFolder = path.join(this.directory, `Temp_${this.Epnum}`);
 
     try {
-      await fs.promises.access(mp4);
-    } catch (error) {
-      await fs.promises.writeFile(mp4, "");
-    }
-
-    try {
       await fs.promises.access(SegmentsFolder);
     } catch (error) {
       await fs.promises.mkdir(SegmentsFolder, { recursive: true });
     }
+
     this.mp4 = mp4;
     this.SegmentsFolder = SegmentsFolder;
   }
@@ -464,13 +463,14 @@ class downloader {
 }
 
 async function download(args) {
+  let obj = new downloader(args);
   try {
-    let obj = new downloader(args);
     await obj.DownloadsChecking();
     await obj.DownloadStart();
     await obj.CheckSubtitles();
     await obj.MergeSegments();
   } catch (err) {
+    obj.DeleteSegmentsFolder();
     console.log(err);
     logger.error(err);
     throw new Error(err);

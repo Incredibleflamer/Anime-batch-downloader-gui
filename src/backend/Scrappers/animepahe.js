@@ -38,7 +38,9 @@ async function SearchAnime(query) {
       results: data.data.map((item) => ({
         id: `${item.session}`,
         title: item.title,
-        image: `/proxy/image?url=${item.poster}`,
+        image: item?.poster
+          ? `/proxy/image?pahe=${encodeURIComponent(item?.poster)}`
+          : null,
       })),
     };
     return res;
@@ -60,7 +62,9 @@ async function fetchRecentEpisodes(page = 1) {
       results: data.data.map((item) => ({
         id: `${item.anime_session}`,
         title: item.anime_title,
-        image: `/proxy/image?url=${item.snapshot}`,
+        image: item?.snapshot
+          ? `/proxy/image?pahe=${encodeURIComponent(item?.snapshot)}`
+          : null,
       })),
     };
     return res;
@@ -90,10 +94,15 @@ async function AnimeInfo(id, { fetch_info = true, page = 1 } = {}) {
       const $ = (0, cheerio.load)(response.data);
 
       animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
-      animeInfo.image =
-        `/proxy/image?url=` + $("div.anime-poster a").attr("href");
-      animeInfo.cover =
-        `/proxy/image?url=` + `https:${$("div.anime-cover").attr("data-src")}`;
+      let image = $("div.anime-poster a").attr("href") ?? null;
+      animeInfo.image = image
+        ? `/proxy/image?pahe=${encodeURIComponent(image)}`
+        : null;
+
+      let cover = $("div.anime-cover").attr("data-src") ?? null;
+      animeInfo.cover = cover
+        ? `/proxy/image?pahe=${encodeURIComponent(cover)}`
+        : null;
       animeInfo.description = $("div.anime-summary").text();
       animeInfo.genres = $("div.anime-genre ul li")
         .map((i, el) => $(el).find("a").attr("title"))

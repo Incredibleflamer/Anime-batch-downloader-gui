@@ -30,10 +30,11 @@
     <script src="/js/libs/loading-bar.js"></script>
     <script src="/js/downloads.js"></script>
     <script>
+      let queue = <%- queue %>
       UpdateBar({
         data: {
           caption: `<%= caption %>`,
-          queue: <%- queue %>,
+          queue: queue,
           totalSegments: parseInt(`<%= totalSegments %>` ?? 0),
           currentSegments: parseInt(`<%= currentSegments %>` ?? 0),
         },

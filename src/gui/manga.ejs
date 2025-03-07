@@ -22,6 +22,7 @@
             <img
               src="<%= result.image %>"
               alt="<%= result.title %>"
+              onerror="this.onerror=null; this.src='./images/image404.png';"
               class="thumbnail"
             />
             <% if (result?.totalChapters && result?.Downloaded) { %>

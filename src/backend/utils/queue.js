@@ -42,12 +42,29 @@ async function SaveQueueData(QueueData) {
 
 // update the queue [ for storing how much downloaded ]
 async function updateQueue(epid, totalSegments, currentSegments) {
+  let Tosave = false;
+  totalSegments = parseInt(totalSegments);
+  currentSegments = parseInt(currentSegments);
+
   const indexToUpdate = AnimeQueue.findIndex((item) => item.epid === epid);
   if (indexToUpdate !== -1) {
-    AnimeQueue[indexToUpdate].totalSegments = parseFloat(totalSegments);
-    AnimeQueue[indexToUpdate].currentSegments = parseFloat(currentSegments);
-    if (parseFloat(currentSegments) === parseFloat(totalSegments)) {
+    AnimeQueue[indexToUpdate].totalSegments = totalSegments;
+    AnimeQueue[indexToUpdate].currentSegments = currentSegments;
+
+    const progressPercentage = Math.floor(
+      (currentSegments / totalSegments) * 100
+    );
+
+    if (progressPercentage % 10 === 0 || progressPercentage >= 98) {
+      Tosave = true;
+    }
+
+    if (currentSegments === totalSegments) {
       AnimeQueue.splice(indexToUpdate, 1);
+      Tosave = true;
+    }
+
+    if (Tosave) {
       await saveQueue();
     }
   }

@@ -60,7 +60,11 @@ async function scrapeCards($, page) {
       const baseId =
         Anime.find("a.poster").attr("href")?.split("/watch/")[1] || null;
       const title = Anime.find("a.title").text().trim() || null;
-      const image = Anime.find("a.poster > div > img").attr("data-src") || null;
+      const imageSrc =
+        Anime.find("a.poster > div > img").attr("data-src") ?? null;
+      const image = imageSrc
+        ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
+        : null;
 
       if (!baseId || !title || !image) return null;
 
@@ -114,10 +118,15 @@ async function AnimeInfo(id) {
     const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
     const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
 
+    const imageSrc = main.find("div.poster-wrap img").attr("src") ?? null;
+    const image = imageSrc
+      ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
+      : null;
+
     return {
       id: id,
       malid: watchSection.attr("data-mal-id") || "",
-      image: main.find("div.poster-wrap img").attr("src") || "",
+      image: image,
       title: mainEntity.find("div.title").text().trim() || "Unknown",
       dubs: dub,
       subs: sub,

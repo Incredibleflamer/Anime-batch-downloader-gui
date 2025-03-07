@@ -1,5 +1,6 @@
 // Libs
 const express = require("express");
+const axios = require("axios");
 const JSZip = require("jszip");
 const https = require("https");
 const fs = require("fs");
@@ -852,18 +853,29 @@ router.get("/downloads", async (req, res) => {
 
 // proxy for images
 router.get("/proxy/image", async (req, res) => {
-  const imageUrl = req.query.url;
-
-  if (!imageUrl) {
-    return res.status(400).send("Missing 'url' query parameter.");
-  }
+  const PaheImageUrl = req?.query?.pahe
+    ? decodeURIComponent(req?.query?.pahe)
+    : null;
 
   try {
-    const response = await ddosGuardRequest(imageUrl, {
-      responseType: "arraybuffer",
-    });
-    res.set("Content-Type", response.headers["content-type"]);
-    res.send(response.data);
+    if (PaheImageUrl) {
+      const response = await ddosGuardRequest(PaheImageUrl, {
+        responseType: "arraybuffer",
+      });
+      res.set("Content-Type", response.headers["content-type"]);
+      return res.send(response.data);
+    } else {
+      const imageUrl = req.query.url ? decodeURIComponent(req.query.url) : null;
+      if (!imageUrl) {
+        return res.status(400).send("Missing 'url' query parameter.");
+      }
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+      });
+      res.set("Content-Type", response.headers["content-type"]);
+      return res.send(response.data);
+    }
+    throw new Error("");
   } catch (error) {
     console.error("Error fetching image:", error);
     res.status(500).send("Internal server error.");
