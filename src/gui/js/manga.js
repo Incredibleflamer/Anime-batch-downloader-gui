@@ -7,76 +7,6 @@ let totalPages = false;
 let allDataFetched = false;
 let hasNextPage = false;
 
-document.addEventListener("DOMContentLoaded", function () {
-  const downloadFormButton = document.getElementById("download-form-button");
-  const totalEpisodes = downloadFormButton.dataset.totalEpisodes;
-  const epdata = downloadFormButton.dataset.ep;
-
-  function showModal() {
-    $("#downloadModal").modal("toggle");
-  }
-
-  downloadFormButton.addEventListener("click", showModal);
-
-  const downloadForm = document.getElementById("download-form");
-  downloadForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    const startEpisode = parseInt(
-      document.getElementById("start-episode").value
-    );
-    const endEpisode = parseInt(document.getElementById("end-episode").value);
-    if (
-      startEpisode > endEpisode ||
-      startEpisode < 1 ||
-      endEpisode > totalEpisodes ||
-      startEpisode === 0 ||
-      endEpisode === 0
-    ) {
-      alert("Invalid episode range. Please enter a valid range.");
-      return;
-    }
-    await download(epdata, startEpisode, endEpisode);
-    $("#downloadModal").modal("toggle");
-  });
-});
-
-// download
-async function download(ep, start, end) {
-  try {
-    const response = await fetch("/api/download/Manga", {
-      method: "POST",
-      body: JSON.stringify({
-        ep: ep,
-        start: start,
-        end: end,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
-    const responseData = await response.json();
-    if (response.status === 400) {
-      swal("Something Went Wrong..", `${responseData.message}`, "error");
-    } else if (!response.ok) {
-      swal(
-        "Request Failed",
-        `There are ${responseData.queue} Anime in Queue. 
-    Error: ${responseData.message}`,
-        "error"
-      );
-    } else {
-      swal(
-        `Added To Queue Current Queue Size : ${responseData.queue}!`,
-        `${responseData.message}`,
-        "success"
-      );
-    }
-  } catch (err) {
-    console.log(err);
-    swal("Couldnt add to queue...", `Error: ${err}`, "error");
-  }
-}
-
 // Tongle Read / Download
 function tongledownloadread() {
   const downloadContainer = document.getElementById("downloadContainer");
@@ -110,7 +40,11 @@ async function fetchPageData(page) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ page: page, title: catagorie, local: local }),
+      body: JSON.stringify({
+        page: page,
+        local: local,
+        ...(catagorie.startsWith("Results For") ? { title: catagorie } : {}),
+      }),
     });
     if (!response.ok) {
       throw new Error("Failed to fetch data");
@@ -144,9 +78,13 @@ async function addchild(data) {
       const animeCard = document.createElement("div");
       animeCard.classList.add("anime-card");
       animeCard.innerHTML = `
-          <a href="/mangainfo?mangaid=${result.id}">
+          <a href="/mangainfo?${
+            catagorie === "Local Manga Library" ? "localmangaid" : "mangaid"
+          }=${result.id}">
             <div class="anime-item">
-              <img src="${result.image}" alt="${result.title}" onerror="this.onerror=null; this.src='./images/image404.png';" />
+              <img src="${result.image}" alt="${
+        result.title
+      }" onerror="this.onerror=null; this.src='./images/image404.png';" class="thumbnail" />
               <div class="overlay">${result.title}</div>
               </div>
           </a>
@@ -288,14 +226,11 @@ async function handlePagination(targetPage) {
 async function init(paginationInput, catagorieInput, hasNextPageInput) {
   pagination = paginationInput;
   catagorie = catagorieInput;
-  ApiCall = catagorie === "Local Manga Library" ? true : false;
+  local = catagorie === "Local Manga Library" ? true : false;
   hasNextPage = hasNextPageInput;
 
-  if (pagination === "on") {
-    document.body.innerHTML += '<div id="pagination-controls"></div>';
-  }
-
   if (pagination === "on" && hasNextPage) {
+    document.body.innerHTML += '<div id="pagination-controls"></div>';
     addPaginationControls();
   } else {
     window.addEventListener("scroll", handleScroll);

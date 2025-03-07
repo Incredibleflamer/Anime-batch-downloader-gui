@@ -5,7 +5,7 @@ let currentPage = 1;
 let isFetching = false;
 let totalPages = null;
 let allDataFetched = false;
-let hasNextPage = "";
+let hasNextPage = false;
 
 function isScrolledToBottom() {
   return window.innerHeight + window.scrollY >= document.body.offsetHeight;
@@ -18,7 +18,11 @@ async function fetchPageData(page) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ page: page, title: catagorie, local: local }),
+      body: JSON.stringify({
+        page: page,
+        local: local,
+        ...(catagorie.startsWith("Results For") ? { title: catagorie } : {}),
+      }),
     });
     if (!response.ok) {
       throw new Error("Failed to fetch data");
@@ -100,6 +104,7 @@ async function handleScroll() {
 function addPaginationControls() {
   const paginationContainer = document.getElementById("pagination-controls");
   paginationContainer.innerHTML = "";
+  console.log(hasNextPage);
   if (hasNextPage) {
     const inputField = `<input type="number" id="pageInput" min="1" max="${
       totalPages || ""
@@ -218,12 +223,10 @@ async function init(paginationInput, catagorieInput, hasNextPageInput) {
   local = catagorie === "Local Anime Library" ? true : false;
   hasNextPage = hasNextPageInput;
 
-  if (pagination === "on") {
-    document.body.innerHTML += '<div id="pagination-controls"></div>';
-  }
-
   if (pagination === "on" && hasNextPage) {
+    document.body.innerHTML += '<div id="pagination-controls"></div>';
     addPaginationControls();
+    console.log("adding controls!");
   } else {
     window.addEventListener("scroll", handleScroll);
   }

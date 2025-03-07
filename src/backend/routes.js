@@ -231,7 +231,8 @@ router.post("/api/download/:type", async (req, res) => {
 // Handles Latest , Local , Search Anime & Manga
 router.post("/api/discover/:type", async (req, res) => {
   const { type } = req.params;
-  const { page, title, local } = req.body;
+  let { page, title, local } = req.body;
+
   try {
     let data = null;
     if (type === "Anime") {
@@ -251,11 +252,11 @@ router.post("/api/discover/:type", async (req, res) => {
         );
       }
     } else if (type === "Manga") {
-      if (title && title.length > 0) {
+      if (title && title.length > 0 && !local) {
         title = title.replace("Results For", "");
         const provider = await providerFetch("Manga");
         data = await MangaSearch(provider.provider, title, page);
-      } else if (!local) {
+      } else if (!local && !title) {
         const provider = await providerFetch("Manga");
         data = await latestMangas(provider.provider, page);
       } else {
@@ -269,7 +270,7 @@ router.post("/api/discover/:type", async (req, res) => {
     }
 
     if (!data) throw new Error(`No data found for ${type} | ${page}`);
-    res.status(200).json(resentep);
+    res.status(200).json(data);
   } catch (err) {
     console.log(err);
     logger.error(`Error Fetching ${type} page : ${page ?? 0}: \n${err}`);

@@ -45,7 +45,9 @@ async function scrapeCards($, page) {
         .last()
         .find("a")
         .attr("href")
-        ?.split("?page=")[1] || page
+        ?.split("page=")[1]
+        ?.split("?")[0]
+        ?.split(" ")[0] ?? page
     );
 
     res.hasNextPage = LastPage > page;
