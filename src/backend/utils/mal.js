@@ -1,8 +1,13 @@
-const axios = require("axios");
 const { logger } = require("./AppLogger");
+const NodeCache = require("node-cache");
+const axios = require("axios");
+
 const MalAppID = "d0b22d129a541dac4d28207f77b15b5f";
 let MalAcount = null;
 let pkce;
+global.MalLoggedIn = false;
+
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
 // Create A url
 async function MalCreateUrl() {
@@ -32,6 +37,7 @@ async function MalVerifyToken(code) {
     MalAcount = data;
 
     let token = JSON.stringify(data);
+    global.MalLoggedIn = true;
 
     return {
       mal_on_off: true,
@@ -40,6 +46,8 @@ async function MalVerifyToken(code) {
   } catch (err) {
     console.log(`Error getting MAL token: \n ${err.response?.data} || ${err}`);
     logger.error(`Error getting MAL token: \n ${err.response?.data} || ${err}`);
+    global.MalLoggedIn = false;
+
     return {
       mal_on_off: false,
       malToken: null,
@@ -78,13 +86,17 @@ async function MalRefreshTokenGen(json) {
 
       MalAcount = data;
       let token = JSON.stringify(data);
+      global.MalLoggedIn = true;
 
       return {
         mal_on_off: true,
         malToken: token,
       };
     }
+
     MalAcount = JsonToken;
+    global.MalLoggedIn = true;
+
     return {
       mal_on_off: true,
       malToken: json,
@@ -92,6 +104,8 @@ async function MalRefreshTokenGen(json) {
   } catch (err) {
     logger.error("Failed to refresh token:", err);
     console.log("Failed to refresh token:", err);
+    global.MalLoggedIn = false;
+
     return {
       mal_on_off: false,
       malToken: null,
@@ -149,23 +163,49 @@ async function MalAddToList(type, malid, status, NumWatchedEp) {
 }
 
 // Fetch Anime / Manga List
-async function MalFetchList(type, page = 1) {
+async function MalFetchList(page = 1) {
   try {
-    throw new Error("Soon ™️ :3");
     if (!MalAcount?.access_token)
       throw new Error("No access token please login");
 
-    const offset = page > 1 ? (page - 1) * 1000 : 0;
+    const cacheKey = `mal_list_${page}`;
+    const cachedData = cache.get(cacheKey);
 
-    // checking in mal if entrie there
-    const Mylist = await axios.get(
-      `https://api.myanimelist.net/v2/users/@me/${type}list?fields=list_status,updated_at&status=watching&limit=1000&offset=${offset}`,
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const offset = (page - 1) * 30;
+
+    let { data } = await axios.get(
+      `https://api.myanimelist.net/v2/users/@me/animelist?nsfw=true&limit=30&offset=${offset}&status=watching&sort=list_updated_at&fields=list_status,num_episodes`,
       {
         headers: {
           Authorization: `Bearer ${MalAcount.access_token}`,
         },
       }
     );
+
+    let AnimeList = data.data.map((items) => ({
+      title: items?.node?.title,
+      id: items?.node?.id,
+      image:
+        items?.node?.main_picture?.medium ??
+        items?.node?.main_picture?.large ??
+        null,
+      totalEpisodes: items?.node?.num_episodes,
+      watched: items?.list_status?.num_episodes_watched,
+    }));
+
+    cache.set(cacheKey, {
+      hasNextPage: data?.paging?.next ?? false,
+      results: AnimeList,
+    });
+
+    return {
+      hasNextPage: data?.paging?.next ? true : false,
+      results: AnimeList,
+    };
   } catch (err) {
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);

@@ -33,6 +33,7 @@ const {
   getMetadataById,
   getSourceById,
   MetadataAdd,
+  FindMapping,
 } = require("./utils/Metadata");
 
 // ===================== API routes =====================
@@ -231,7 +232,7 @@ router.post("/api/download/:type", async (req, res) => {
 // Handles Latest , Local , Search Anime & Manga
 router.post("/api/discover/:type", async (req, res) => {
   const { type } = req.params;
-  let { page, title, local } = req.body;
+  let { page, title, local, mal } = req.body;
 
   try {
     let data = null;
@@ -239,10 +240,12 @@ router.post("/api/discover/:type", async (req, res) => {
       if (title && title.length > 0) {
         title = title.replace("Results For", "");
         const provider = await providerFetch("Anime");
-        data = await animesearch(provider.provider, title, page);
+        data = await animesearch(provider, title, page);
+      } else if (mal) {
+        data = await MalFetchList(page);
       } else if (!local) {
         const provider = await providerFetch("Anime");
-        data = await latestAnime(provider.provider, page);
+        data = await latestAnime(provider, page);
       } else {
         const config = await settingfetch();
         data = await getAllMetadata(
@@ -255,10 +258,10 @@ router.post("/api/discover/:type", async (req, res) => {
       if (title && title.length > 0 && !local) {
         title = title.replace("Results For", "");
         const provider = await providerFetch("Manga");
-        data = await MangaSearch(provider.provider, title, page);
+        data = await MangaSearch(provider, title, page);
       } else if (!local && !title) {
         const provider = await providerFetch("Manga");
-        data = await latestMangas(provider.provider, page);
+        data = await latestMangas(provider, page);
       } else {
         const config = await settingfetch();
         data = await getAllMetadata(
@@ -347,22 +350,19 @@ router.post("/api/watch", async (req, res) => {
 
       if (provider?.provider_name === "pahe") {
         let currentPage = Math.ceil(epNum / 30);
-        animedata = await animeinfo(provider.provider, ep, {
+        animedata = await animeinfo(provider, ep, {
           page: currentPage,
           fetch_info: false,
         });
       } else {
-        animedata = await animeinfo(provider.provider, ep);
+        animedata = await animeinfo(provider, ep);
       }
 
       let AnimeEpId = animedata.episodes.find(
         (item) => item.number === parseInt(epNum)
       );
       if (!AnimeEpId?.id) throw new Error("Episode Not Found");
-      const sourcesArray = await fetchEpisodeSources(
-        provider.provider,
-        AnimeEpId?.id
-      );
+      const sourcesArray = await fetchEpisodeSources(provider, AnimeEpId?.id);
       res.status(200).json(sourcesArray);
     } else {
       const config = await settingfetch();
@@ -482,7 +482,7 @@ router.post("/api/read", async (req, res) => {
       }
     } else {
       const provider = await providerFetch("Manga");
-      const chapters = await MangaChapterFetch(provider.provider, chapterID);
+      const chapters = await MangaChapterFetch(provider, chapterID);
       return res.status(200).json(chapters);
     }
   } catch (err) {
@@ -510,7 +510,7 @@ router.post("/api/sync/local", async (req, res) => {
 
       let provider = await providerFetch("Anime", data?.provider);
       if (provider) {
-        const animedata = await animeinfo(provider.provider, animeid);
+        const animedata = await animeinfo(provider, animeid);
 
         if (
           provider.provider_name === "animekai" ||
@@ -561,7 +561,7 @@ router.post("/api/sync/local", async (req, res) => {
       let provider = await providerFetch("Manga", data?.provider);
 
       if (provider) {
-        const mangainfo = await MangaInfo(provider.provider, mangaid);
+        const mangainfo = await MangaInfo(provider, mangaid);
         await MetadataAdd(
           "Manga",
           {
@@ -650,11 +650,30 @@ router.get("/local/manga", async (req, res) => {
 router.get("/anime", async (req, res) => {
   try {
     const provider = await providerFetch("Anime");
-    const resentep = await latestAnime(provider.provider, 1);
+    const resentep = await latestAnime(provider, 1);
     const config = await settingfetch();
     res.render("index.ejs", {
       data: resentep,
       catagorie: "Recent Episodes",
+      Pagination: config?.Pagination || "off",
+    });
+  } catch (err) {
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    console.log(err);
+    res.render("error.ejs");
+  }
+});
+
+// Mal Page Anime
+router.get("/mal/anime", async (req, res) => {
+  try {
+    const config = await settingfetch();
+    const data = await MalFetchList();
+
+    res.render("index.ejs", {
+      data: data,
+      catagorie: "MyAnimeList Library",
       Pagination: config?.Pagination || "off",
     });
   } catch (err) {
@@ -670,7 +689,7 @@ router.get("/manga", async (req, res) => {
   try {
     const provider = await providerFetch("Manga");
     const config = await settingfetch();
-    const data = await latestMangas(provider.provider, 1);
+    const data = await latestMangas(provider, 1);
 
     res.render("manga.ejs", {
       data: data,
@@ -706,7 +725,7 @@ router.get("/search", async (req, res) => {
     const mangaToSearch = req.query.mangatosearch;
     try {
       const provider = await providerFetch("Manga");
-      const data = await MangaSearch(provider.provider, mangaToSearch);
+      const data = await MangaSearch(provider, mangaToSearch);
       res.render("manga.ejs", {
         data: data,
         catagorie: `Results For ${mangaToSearch}`,
@@ -726,7 +745,7 @@ router.get("/search", async (req, res) => {
   } else if (animeToSearch) {
     try {
       const provider = await providerFetch("Anime");
-      const data = await animesearch(provider.provider, animeToSearch);
+      const data = await animesearch(provider, animeToSearch);
       res.render("index.ejs", {
         data: data,
         catagorie: `Results For ${animeToSearch}`,
@@ -756,11 +775,22 @@ router.get("/log", async (req, res) => {
 router.get("/info", async (req, res) => {
   try {
     const setting = await settingfetch();
+    const provider = await providerFetch("Anime");
 
-    if (req.query.animeid) {
-      const animeId = req.query.animeid.trim();
-      const provider = await providerFetch("Anime");
-      const data = await animeinfo(provider.provider, animeId);
+    let animeid = req?.query?.animeid;
+
+    if (req?.query?.malid) {
+      animeid = await FindMapping(
+        req.query.malid,
+        provider.provider_name,
+        setting?.subDub ?? "sub"
+      );
+    }
+
+    console.log(animeid);
+
+    if (animeid) {
+      const data = await animeinfo(provider, animeid.trim());
       return res.render("info.ejs", {
         data: data,
         subDub: setting?.subDub ?? "sub",
@@ -796,7 +826,7 @@ router.get("/mangainfo", async (req, res) => {
     if (req.query.mangaid) {
       const mangaid = req.query.mangaid.trim();
       const provider = await providerFetch("Manga");
-      const data = await MangaInfo(provider.provider, mangaid);
+      const data = await MangaInfo(provider, mangaid);
       return res.render("mangainfo.ejs", {
         data: data,
         autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",

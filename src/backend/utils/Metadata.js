@@ -1,4 +1,5 @@
 // libs
+const { logger } = require("./AppLogger");
 const {
   ddosGuardRequest,
   fetchEpisodesPages,
@@ -51,12 +52,18 @@ const tables = {
     image: "BLOB",
     last_updated: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   },
-  // Mappings: {
-  //   id: "TEXT PRIMARY KEY",
-  //   pahe: "TEXT",
-  //   hianime: "TEXT",
-  //   animekai: "TEXT",
-  // },
+  Mapping: {
+    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+    MalID: "TEXT",
+    AnimeKai: "TEXT",
+    HiAnime: "TEXT",
+    AnimePahe: "TEXT",
+  },
+  last_ran_Mapping: {
+    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+    last_ran: "TEXT",
+    last_fetched: "TEXT",
+  },
 };
 
 // Create tables & update schema
@@ -559,13 +566,125 @@ function timeAgo(timestamp) {
   return "just now";
 }
 
-// Mapping For Mal , AnimePahe , AnimeKai , HiAnime
-async function AddMapping(Malid, { animekai, hianime, pahe }) {
-  const existingRecord = db
-    .prepare(`SELECT * FROM Mappings WHERE id = ?`)
-    .get(Malid);
+// get last mapping updated time
+function getMappingLastRun() {
+  try {
+    const row = db
+      .prepare(
+        "SELECT last_ran, last_fetched FROM last_ran_Mapping WHERE id = 1"
+      )
+      .get();
+    return {
+      last_ran: row?.last_ran ?? "1970-01-01T00:00:00.000Z",
+      last_fetched: row?.last_fetched ?? null,
+    };
+  } catch (error) {
+    return {
+      last_ran: "1970-01-01T00:00:00.000Z",
+      last_fetched: null,
+    };
+  }
+}
 
-  if (existingRecord) {
+// save mapping data
+function SaveMappingDatabase(data, last_ran) {
+  db.exec("DROP TABLE IF EXISTS Mapping;");
+  db.exec(
+    `CREATE TABLE Mapping (${Object.entries(tables.Mapping)
+      .map(([col, definition]) => `${col} ${definition}`)
+      .join(", ")});`
+  );
+
+  const insert = db.prepare(
+    `INSERT INTO Mapping (MalID, AnimeKai, HiAnime, AnimePahe) VALUES (?, ?, ?, ?)`
+  );
+
+  const insertMany = db.transaction((entries) => {
+    for (const entry of entries) {
+      insert.run(
+        String(entry?.MalID) || null,
+        JSON.stringify(entry?.AnimeKai || []),
+        JSON.stringify(entry?.HiAnime || []),
+        JSON.stringify(entry?.AnimePahe || [])
+      );
+    }
+  });
+
+  insertMany(data);
+
+  db.prepare(
+    "INSERT OR REPLACE INTO last_ran_Mapping (id, last_ran, last_fetched) VALUES (1, ?, ?)"
+  ).run(last_ran, new Date().toISOString());
+}
+
+// fetch updates
+async function fetchAndUpdateMappingDatabase() {
+  const { last_ran, last_fetched } = getMappingLastRun();
+  console.log(last_ran);
+  console.log(last_fetched);
+
+  let timeDiffInHours = null;
+
+  if (last_fetched) {
+    const now = new Date();
+    const lastFetchedTime = new Date(last_fetched);
+    timeDiffInHours = (now - lastFetchedTime) / (1000 * 60 * 60);
+  }
+
+  if (!timeDiffInHours || timeDiffInHours > 1) {
+    try {
+      const response = await axios.post("http://194.164.125.5:6145/last_ran", {
+        last_ran: last_ran,
+      });
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
+        SaveMappingDatabase(response.data.data, response.data.last_ran);
+        console.log("saved");
+        logger.info("Saved All MalIDs!");
+      }
+    } catch (error) {
+      console.log(error);
+      logger.error("Failed To Fetch MalIDs Update", error);
+    }
+  }
+}
+
+// find mapping ids
+function FindMapping(id, provider_name, subDub = "sub") {
+  try {
+    const FoundRow = db
+      .prepare(
+        "SELECT * FROM Mapping WHERE MalID = ? OR AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
+      )
+      .get(id, `%${id}%`, `%${id}%`, `%${id}%`);
+
+    if (!FoundRow) return null;
+
+    console.log(FoundRow);
+
+    const HiAnime = FoundRow.HiAnime ? JSON.parse(FoundRow.HiAnime) : [];
+    const AnimePahe = FoundRow.AnimePahe ? JSON.parse(FoundRow.AnimePahe) : [];
+    const AnimeKai = FoundRow.AnimeKai ? JSON.parse(FoundRow.AnimeKai) : [];
+
+    switch (provider_name.toLowerCase()) {
+      case "hianime":
+        if (HiAnime.length > 0) return HiAnime[0].trim();
+        return null;
+      case "pahe":
+        if (AnimePahe.length > 0) return `${AnimePahe[0].trim()}-${subDub}`;
+        return null;
+      case "animekai":
+        if (AnimeKai.length > 0) return AnimeKai[0].trim();
+        return null;
+      default:
+        return null;
+    }
+  } catch (err) {
+    console.log(err);
+    return null;
   }
 }
 
@@ -576,4 +695,6 @@ module.exports = {
   getMetadataById,
   getSourceById,
   FetchAllEpisodesAnimepaheAndSave,
+  fetchAndUpdateMappingDatabase,
+  FindMapping,
 };

@@ -21,7 +21,11 @@ async function fetchPageData(page) {
       body: JSON.stringify({
         page: page,
         local: local,
-        ...(catagorie.startsWith("Results For") ? { title: catagorie } : {}),
+        ...(catagorie.startsWith("Results For")
+          ? { title: catagorie }
+          : catagorie.startsWith("MyAnimeList Library")
+          ? { mal: true }
+          : {}),
       }),
     });
     if (!response.ok) {
@@ -57,7 +61,11 @@ async function addchild(data) {
       animeCard.classList.add("anime-card");
       animeCard.innerHTML = `
           <a href="/info?${
-            catagorie === "Local Anime Library" ? "localanimeid" : "animeid"
+            catagorie === "Local Anime Library"
+              ? "localanimeid"
+              : catagorie === "MyAnimeList Library"
+              ? "malid"
+              : "animeid"
           }=${result.id}">
             <div class="anime-item">
               <img 
@@ -68,15 +76,9 @@ async function addchild(data) {
                 class="thumbnail lazy-image" />
               ${
                 result?.totalEpisodes && result?.DownloadedEpisodes
-                  ? `
-              <div class="episodes">
-                <div class="downloaded">
-                  <div class="material-symbols-rounded">download_done</div> ${result?.DownloadedEpisodes?.length}
-                  </div>
-               <div class="total">
-                  <div class="material-symbols-rounded">download</div> ${result?.totalEpisodes}
-                </div>
-              </div>`
+                  ? `<div class="episodes"><div class="downloaded"><div class="material-symbols-rounded">download_done</div> ${result?.DownloadedEpisodes?.length}</div><div class="total"><div class="material-symbols-rounded">download</div> ${result?.totalEpisodes}</div></div>`
+                  : result?.totalEpisodes && result?.watched
+                  ? `<div class="episodes"><div class="downloaded"><div class="material-symbols-rounded">visibility</div>${result.watched}</div><div class="total"><div class="material-symbols-rounded">movie</div>${result.totalEpisodes}</div></div>`
                   : ""
               } 
               <div class="overlay">${result.title}</div>

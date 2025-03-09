@@ -10,7 +10,7 @@
   </head>
   <body>
     <!-- navbar -->
-    <%- include("components/navbar") %>
+    <%- include("components/navbar", { MalLoggedIn: MalLoggedIn }) %>
 
     <!-- main content -->
     <main class="main-content">
@@ -19,7 +19,10 @@
       <section class="anime-grid" id="anime-grid">
         <% data.results.forEach(result => { %>
         <a
-          href="/info?<%= catagorie === 'Local Anime Library' ? 'localanimeid' : 'animeid' %>=<%= result.id %>"
+          href="/info?<%= 
+          catagorie === 'Local Anime Library' ? 'localanimeid' :
+          catagorie === 'MyAnimeList Library' ? 'malid' : 
+          'animeid' %>=<%= result.id %>"
         >
           <div class="anime-item">
             <img
@@ -40,7 +43,19 @@
                 <%= result?.totalEpisodes %>
               </div>
             </div>
+            <% } else if (result?.totalEpisodes && result?.watched) { %>
+            <div class="episodes">
+              <div class="downloaded">
+                <div class="material-symbols-rounded">visibility</div>
+                <%= result?.watched %>
+              </div>
+              <div class="total">
+                <div class="material-symbols-rounded">movie</div>
+                <%= result?.totalEpisodes %>
+              </div>
+            </div>
             <% } %>
+
             <div class="overlay"><%= result.title %></div>
           </div>
         </a>

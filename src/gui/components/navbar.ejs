@@ -43,13 +43,13 @@
         </a>
         <span class="nav-tooltip">Local Manga</span>
       </li>
-      <li class="nav-item" hidden>
+      <li class="nav-item" <%= MalLoggedIn ? "" : "hidden" %>>
         <a href="/mal/anime" class="nav-link">
           <span class="nav-icon material-symbols-rounded">subscriptions</span>
           <span class="nav-label">Mal Library</span>
         </a>
         <span class="nav-tooltip">Mal Library</span>
-      </li>
+      </li>      
       <li class="nav-item">
         <a href="/anime" class="nav-link">
           <span class="nav-icon material-symbols-rounded">movie</span>

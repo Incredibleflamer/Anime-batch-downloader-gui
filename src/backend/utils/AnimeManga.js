@@ -1,17 +1,28 @@
-const JSZip = require("jszip");
-const fs = require("fs");
-const axios = require("axios");
+const NodeCache = require("node-cache");
 const HLSLogger = require("./logger");
+const JSZip = require("jszip");
+const axios = require("axios");
+const fs = require("fs");
+
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
 //====================================== Anime ================================
 // find popular anime
-async function latestAnime(provider, page) {
-  const data = await provider.fetchRecentEpisodes(page);
+async function latestAnime(provider, page = 1) {
+  const cacheKey = `latestanime_${provider.provider_name}_${page}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const data = await provider.provider.fetchRecentEpisodes(page);
+  cache.set(cacheKey, data, 60);
   return data;
 }
+
 // search anime
-async function animesearch(provider, Anime_NAME, page) {
-  if (!page) page = 1;
+async function animesearch(provider, Anime_NAME, page = 1) {
   let dataarray = { results: [] };
   const formattedAnimeName = Anime_NAME.replace(/\w\S*/g, (word) => {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -51,26 +62,67 @@ async function animesearch(provider, Anime_NAME, page) {
   }
   return dataarray;
 }
+
 // find more anime
-async function findanime(provider, Anime_NAME, page) {
-  const data = await provider.SearchAnime(Anime_NAME, page);
+async function findanime(provider, Anime_NAME, page = 1) {
+  const cacheKey = `animesearch_${provider.provider_name}_${Anime_NAME}_${page}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const data = await provider.provider.SearchAnime(Anime_NAME, page);
+
   if (data.results.length <= 0) {
     throw new Error(`No Anime Found With This Name`);
-  } else
+  } else {
+    cache.set(
+      cacheKey,
+      {
+        data: data.results,
+        hasNextPage: data.hasNextPage,
+        currentPage: data.currentPage,
+      },
+      60
+    );
+
     return {
       data: data.results,
       hasNextPage: data.hasNextPage,
       currentPage: data.currentPage,
     };
+  }
 }
+
 // anime info
 async function animeinfo(provider, animeId, ExtraParameters = {}) {
-  const data = await provider.AnimeInfo(animeId, ExtraParameters);
+  const cacheKey = `animeinfo_${
+    provider.provider_name
+  }_${animeId}_${JSON.stringify(ExtraParameters)}`;
+
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const data = await provider.provider.AnimeInfo(animeId, ExtraParameters);
+  cache.set(cacheKey, data, 60);
   return data;
 }
+
 // fetch m3u8 links
 async function fetchEpisodeSources(provider, episodeId) {
-  const sources = await provider.fetchEpisodeSources(episodeId);
+  const cacheKey = `animeepisodesources_${provider.provider_name}_${episodeId}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const sources = await provider.provider.fetchEpisodeSources(episodeId);
+  cache.set(cacheKey, sources, 60);
   return sources;
 }
 
@@ -78,13 +130,31 @@ async function fetchEpisodeSources(provider, episodeId) {
 
 // Latest Manga
 async function latestMangas(provider, Page = 1) {
-  return await provider.latestManga(Page);
+  const cacheKey = `latestmanga_${provider.provider_name}_${Page}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  let data = await provider.provider.latestManga(Page);
+  cache.set(cacheKey, data, 60);
+  return data;
 }
 
 // Manga Search
 async function MangaSearch(provider, MANGA_NAME, PAGE = 1) {
   try {
-    return await provider.searchManga(MANGA_NAME, PAGE);
+    const cacheKey = `mangasearch_${provider.provider_name}_${MANGA_NAME}_${PAGE}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const data = await provider.provider.searchManga(MANGA_NAME, PAGE);
+    cache.set(cacheKey, data, 60);
+    return data;
   } catch (err) {
     throw new Error(`No Manga found.. ${err}`);
   }
@@ -92,14 +162,31 @@ async function MangaSearch(provider, MANGA_NAME, PAGE = 1) {
 
 // Manga Info
 async function MangaInfo(provider, MANGA_ID) {
-  let info = await provider.fetchMangaInfo(MANGA_ID);
+  const cacheKey = `mangainfo${provider.provider_name}_${MANGA_ID}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  let info = await provider.provider.fetchMangaInfo(MANGA_ID);
   info.chapters.reverse();
+  cache.set(cacheKey, info, 60);
   return info;
 }
 
 // Chapters Fetch
 async function MangaChapterFetch(provider, MangaChapterID) {
-  return await provider.fetchChapterPages(MangaChapterID);
+  const cacheKey = `mangachapterfetch_${provider.provider_name}_${page}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const data = await provider.provider.fetchChapterPages(MangaChapterID);
+  cache.set(cacheKey, data, 60);
+  return data;
 }
 
 // Download Chapters

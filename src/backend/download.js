@@ -27,7 +27,7 @@ async function downloadfunction(animeid, startep, endep) {
     provider.provider_name === "hianime"
   ) {
     let TryToDownload = [];
-    const animedata = await animeinfo(provider.provider, animeid);
+    const animedata = await animeinfo(provider, animeid);
     if (!animedata) throw new Error("no anime found with this id");
     let Title = animedata.title;
     if (!endep) {
@@ -134,7 +134,7 @@ async function downloadfunction(animeid, startep, endep) {
     }
   } else if (provider.provider_name === "pahe") {
     let currentPage = Math.ceil(startep / 30);
-    let animedata = await animeinfo(provider.provider, animeid, {
+    let animedata = await animeinfo(provider, animeid, {
       fetch_info: true,
       page: currentPage,
     });
@@ -156,7 +156,7 @@ async function downloadfunction(animeid, startep, endep) {
         let lastFetchedEp = Math.max(...allEpisodes.map((ep) => ep.number));
         let nextPage = currentPage + 1;
         while (lastFetchedEp < endep) {
-          const datanew = await animeinfo(provider.provider, animeid, {
+          const datanew = await animeinfo(provider, animeid, {
             fetch_info: false,
             page: nextPage,
           });
@@ -262,7 +262,7 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
   const config = await settingfetch();
   const provider = await providerFetch("Manga");
 
-  const mangainfo = await MangaInfo(provider.provider, mangaid);
+  const mangainfo = await MangaInfo(provider, mangaid);
   if (!mangainfo) throw new Error("no manga found with this id");
 
   let Title = mangainfo.title;

@@ -128,7 +128,7 @@ async function downloadEpisodeByQuality(
   try {
     let preferredQualities = ["1080p", "720p", "360p", "default", "backup"];
     const provider = await providerFetch("Anime", config.Animeprovider);
-    const sourcesArray = await fetchEpisodeSources(provider.provider, epid);
+    const sourcesArray = await fetchEpisodeSources(provider, epid);
 
     let selectedSource = sourcesArray?.sources.find(
       (source) => source?.quality === config?.quality ?? "1080p"
@@ -210,7 +210,7 @@ async function downloadMangaChapters(
   ChapterTitle
 ) {
   const provider = await providerFetch("Manga", config?.Mangaprovider);
-  const ChapterData = await MangaChapterFetch(provider.provider, ChapterId);
+  const ChapterData = await MangaChapterFetch(provider, ChapterId);
 
   if (!ChapterData || ChapterData?.length < 1) {
     await removeQueue(Title, EpNum, ChapterId);

@@ -31,6 +31,7 @@ const { logger } = require("./backend/utils/AppLogger");
 const { SettingsLoad } = require("./backend/utils/settings");
 const { loadQueue } = require("./backend/utils/queue");
 const { continuousExecution } = require("./backend/database");
+const { fetchAndUpdateMappingDatabase } = require("./backend/utils/Metadata");
 
 // Express Server
 const routes = require("./backend/routes");
@@ -39,7 +40,12 @@ appExpress.use(bodyParser.urlencoded({ extended: true }));
 appExpress.use(bodyParser.json());
 appExpress.use(express.static(path.join(__dirname, "gui")));
 appExpress.set("views", path.join(__dirname, "gui"));
+appExpress.use((req, res, next) => {
+  res.locals.MalLoggedIn = global.MalLoggedIn;
+  next();
+});
 appExpress.use(routes);
+
 getFreePort().then((PORT) => {
   global.PORT = PORT;
 
@@ -134,6 +140,7 @@ const createWindow = () => {
 };
 
 try {
+  fetchAndUpdateMappingDatabase();
   loadQueue();
   SettingsLoad();
   continuousExecution();
