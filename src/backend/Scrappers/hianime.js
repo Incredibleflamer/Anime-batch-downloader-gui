@@ -42,7 +42,7 @@ async function AnimeInfo(id) {
     info.description = $("div.film-description").text().trim();
     info.type = $("span.item").last().prev().prev().text().toUpperCase();
     info.subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
-    info.dataId = id.split("-").pop();
+    info.dataId = episodeId.split("-").pop();
     return info;
   } catch (err) {
     throw new Error(err.message);
@@ -85,6 +85,7 @@ async function fetchEpisode(id) {
       currentPage: 1,
     };
   } catch (err) {
+    console.log(err);
     return {
       episodes: [],
       total: 0,

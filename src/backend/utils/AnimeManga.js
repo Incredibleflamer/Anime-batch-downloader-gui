@@ -106,7 +106,7 @@ async function animeinfo(provider, animeId) {
   }
 
   let data = await provider.provider.AnimeInfo(animeId);
-  if (!malid) malid = await FindMapping(data.id);
+  if (!data?.malid) data.malid = await FindMapping(data.id);
 
   cache.set(cacheKey, data, 60);
   return data;

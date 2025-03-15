@@ -222,46 +222,6 @@ router.post("/api/download/:AnimeManga/:singleMulti", async (req, res) => {
       message: `Internal server error: ${err.message}`,
     });
   }
-
-  return;
-  try {
-    let errors = [],
-      info = [],
-      Success = [];
-    let responseMessage = "";
-
-    if (type === "Anime") {
-      ({ errors, info, Success } = await downloadfunction(ep, start, end));
-    } else if (type === "Manga") {
-      ({ errors, info, Success } = await MangaDownloadMain(ep, start, end));
-    } else {
-      return res.status(400).json({
-        message: "Not a valid type! Please provide 'Anime' or 'Manga'.",
-      });
-    }
-
-    if (errors.length > 0) {
-      responseMessage = `Error: \n${errors.join("\n")}\nInfo: \n${info.join(
-        "\n"
-      )}\nLogs: \n${Success.join("\n")}`;
-      return res
-        .status(400)
-        .json({ message: responseMessage, queue: queue.length ?? 0 });
-    } else {
-      responseMessage = `INFO: \n${info.join("\n")}\nLogs: \n${Success.join(
-        "\n"
-      )}`;
-      return res
-        .status(200)
-        .json({ message: responseMessage, queue: queue.length ?? 0 });
-    }
-  } catch (err) {
-    console.error(err);
-    logger.error(`Error Updating Download Queue: \n${err}`);
-    return res
-      .status(500)
-      .json({ message: `Internal server error: ${err.message}` });
-  }
 });
 
 // Fetchs Lists : Latest , Local , Search Anime & Manga

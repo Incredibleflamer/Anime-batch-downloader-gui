@@ -110,6 +110,12 @@ async function downloadAnimeSingle(
   }
 }
 
+// Handles Multiple Chapters Download
+async function downloadMangaMulti() {}
+
+// Handles Single Manga Download
+async function downloadMangaSingle() {}
+
 // main download manga
 async function MangaDownloadMain(mangaid, startchap, endchap) {
   if (!startchap || !mangaid)
