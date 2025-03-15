@@ -67,7 +67,7 @@ async function addchild(data) {
       const animeCard = document.createElement("div");
       animeCard.classList.add("anime-card");
       animeCard.innerHTML = `
-          <a href="/info?${infoapi}=${result.id}">
+          <a href="${infoapi}${encodeURIComponent(result.id)}">
             <div class="anime-item">
               <img 
                 src="./images/loading-image.png"
@@ -176,15 +176,13 @@ function addPaginationControls() {
         .getElementById("prevPage")
         .addEventListener("click", () => handlePagination(currentPage - 1));
     } else {
-      document
-        .getElementById("prevPage")
-        .addEventListener("click", () =>
-          swal(
-            "You Cannot Go Back",
-            `You trying to access page which doest exists!`,
-            "error"
-          )
-        );
+      document.getElementById("prevPage").addEventListener("click", () =>
+        Swal.fire({
+          icon: "error",
+          title: "Page Not Found",
+          text: ":P Page you looking for doesn't exists ( like my gf )",
+        })
+      );
     }
 
     if (hasNextPage) {
@@ -192,15 +190,13 @@ function addPaginationControls() {
         .getElementById("nextPage")
         .addEventListener("click", () => handlePagination(currentPage + 1));
     } else {
-      document
-        .getElementById("nextPage")
-        .addEventListener("click", () =>
-          swal(
-            "You Cannot Go Next",
-            `You trying to access page which doest exists!`,
-            "error"
-          )
-        );
+      document.getElementById("nextPage").addEventListener("click", () =>
+        Swal.fire({
+          icon: "error",
+          title: "Page Not Found",
+          text: ":P Page you looking for doesn't exists ( like my gf )",
+        })
+      );
     }
   }
 }

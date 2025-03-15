@@ -9,245 +9,105 @@ const {
 const { MetadataAdd } = require("./utils/Metadata");
 // const { MalAddToList, MalGogo } = require("./utils/mal");
 
-// main download function
-async function downloadfunction(animeid, startep, endep) {
-  startep = parseInt(startep);
-  endep = parseInt(endep);
-  if (!startep || !animeid) throw new Error("Something seems to be missing..");
-  if (!(startep > 0)) throw new Error("Start ep is 0");
-  const config = await settingfetch();
-  const provider = await providerFetch("Anime");
+// Handles Multiple Episodes Download
+async function downloadAnimeMulti(animeid, Episodes = [], Title) {
+  if (Episodes?.length <= 0)
+    return {
+      error: false,
+      message: `No Episode Provided To Download!`,
+    };
 
-  let info = [];
-  let errors = [];
-  let Success = [];
-  const animedata = await animeinfo(provider, animeid);
+  let Message = {
+    type: "info",
+    message: "",
+  };
 
-  MetadataAdd("Anime", {
-    id: animeid,
-    title: `${Title} ${animedata?.subOrDub}`,
-    provider: provider.provider_name,
-    subOrDub: animedata?.subOrDub ?? null,
-    type: animedata.type ?? null,
-    description: animedata.description ?? null,
-    status: animedata.status ?? null,
-    genres: animedata?.genres?.join(",") ?? null,
-    aired: animedata?.aired ?? null,
-    ImageUrl: animedata?.image,
-    EpisodesDataId: animedata?.dataId,
-  });
+  let success = 0;
 
-  if (
-    provider.provider_name === "animekai" ||
-    provider.provider_name === "hianime"
-  ) {
-    let TryToDownload = [];
-    if (!animedata) throw new Error("no anime found with this id");
-    let Title = animedata.title;
-    if (!endep) {
-      TryToDownload.push(startep - 1);
+  for (let i = 0; i < Episodes.length; i++) {
+    let Episode = Episodes[i];
+    let data = await downloadAnimeSingle(
+      animeid,
+      Episode.id,
+      Episode.number,
+      Title,
+      i === 0
+    );
+    // if any error change to error
+    if (data?.error) {
+      Message.error = true;
     } else {
-      if (startep > endep) throw new Error("Start ep is greater than End ep");
-      for (let i = startep; i <= endep; i++) {
-        TryToDownload.push(i - 1);
-      }
-    }
-
-    if (provider.provider_name === "hianime") {
-      // checking if ep are ther in sources
-      for (let i = 0; i < TryToDownload.length; i++) {
-        let epid = animedata.episodes[TryToDownload[i]].id;
-        if (!epid) {
-          return errors.push(
-            `${Title} | ${TryToDownload[i] + 1} Not Found [ skiped ]`
-          );
-        }
-
-        let true_false = await checkEpisodeDownload(epid);
-
-        if (true_false) {
-          errors.push(
-            `${Title} | ${TryToDownload[i] + 1} Already In Queue [ skiped ]`
-          );
-        } else {
-          await addToQueue({
-            Type: "Anime",
-            EpNum: TryToDownload[i] + 1,
-            id: animeid,
-            Title: animedata.title,
-            SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
-            config: {
-              Animeprovider: config?.Animeprovider,
-              quality: config?.quality,
-              mergeSubtitles: config?.mergeSubtitles,
-              subtitleFormat: config?.subtitleFormat,
-              CustomDownloadLocation: config?.CustomDownloadLocation,
-            },
-            image: animedata?.image ?? null,
-            epid: epid,
-            totalSegments: 0,
-            currentSegments: 0,
-          });
-          Success.push(`${Title} | ${TryToDownload[i] + 1} Added To queue`);
-        }
-      }
-    } else if (provider.provider_name === "animekai") {
-      for (const episode of animedata.episodes.filter((ep) =>
-        TryToDownload.includes(ep.number - 1)
-      )) {
-        let epid = episode?.id;
-        if (!epid) {
-          errors.push(`${Title} | ${episode.number} Not Found [ skipped ]`);
-          continue;
-        }
-
-        let alreadyQueued = await checkEpisodeDownload(epid);
-        if (alreadyQueued) {
-          errors.push(
-            `${Title} | ${episode.number} Already In Queue [ skipped ]`
-          );
-        } else {
-          await addToQueue({
-            Type: "Anime",
-            id: animeid,
-            EpNum: episode.number,
-            Title: animedata.title,
-            SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
-            config: {
-              Animeprovider: config?.Animeprovider,
-              quality: config?.quality,
-              mergeSubtitles: config?.mergeSubtitles,
-              subtitleFormat: config?.subtitleFormat,
-              CustomDownloadLocation: config?.CustomDownloadLocation,
-            },
-            image: animedata?.image ?? null,
-            epid: epid,
-            totalSegments: 0,
-            currentSegments: 0,
-          });
-
-          Success.push(`${Title} | ${episode.number} Added To Queue`);
-        }
-      }
-    }
-  } else if (provider.provider_name === "pahe") {
-    let currentPage = Math.ceil(startep / 30);
-    let animedata = await animeinfo(provider, animeid, {
-      fetch_info: true,
-      page: currentPage,
-    });
-    if (!animedata) throw new Error("no anime found with this id");
-    let Title = animedata.title;
-
-    let allEpisodes = [...animedata.episodes];
-    if (!endep) {
-      const episode = animedata.episodes.find((ep) => ep.number === startep);
-      if (episode) {
-        allEpisodes = [episode];
-      } else {
-        allEpisodes = [];
-        errors.push(`${Title} | ${startep} Not Found [skipped]`);
-      }
-    } else {
-      // finding more ep if needed
-      if (endep && endep > startep) {
-        let lastFetchedEp = Math.max(...allEpisodes.map((ep) => ep.number));
-        let nextPage = currentPage + 1;
-        while (lastFetchedEp < endep) {
-          const datanew = await animeinfo(provider, animeid, {
-            fetch_info: false,
-            page: nextPage,
-          });
-          if (!datanew || !datanew.episodes || datanew.episodes.length === 0) {
-            break;
-          }
-          allEpisodes = [...allEpisodes, ...datanew.episodes];
-          lastFetchedEp = Math.max(...allEpisodes.map((ep) => ep.number));
-          nextPage++;
-        }
-      }
-      // filtering ep
-      allEpisodes = allEpisodes
-        .filter((ep) => ep.number >= startep && ep.number <= endep)
-        .sort((a, b) => a.number - b.number);
-    }
-
-    // Saving in metadata
-    MetadataAdd("Anime", {
-      id: animeid,
-      title: `${Title} ${config?.subDub === "dub" ? "dub" : "sub"}`,
-      provider: provider.provider_name,
-      subOrDub: config?.subDub === "dub" ? "dub" : "sub",
-      type: animedata.type ?? null,
-      description: animedata.description ?? null,
-      status: animedata.status ?? null,
-      genres: animedata?.genres?.join(",") ?? null,
-      aired: animedata?.aired ?? null,
-      totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
-      last_page: parseInt(animedata?.last_page) ?? null,
-      episodes: JSON.stringify(animedata?.episodes) ?? null,
-      ImageUrl: animedata?.image,
-    });
-
-    // doing a foreach
-    if (allEpisodes.length > 0) {
-      for (let i = 0; i < allEpisodes.length; i++) {
-        let epid = allEpisodes[i].id;
-
-        if (!epid) {
-          return errors.push(
-            `${Title} | ${allEpisodes[i].number} Not Found [skipped]`
-          );
-        }
-
-        let true_false = await checkEpisodeDownload(epid);
-
-        if (true_false) {
-          errors.push(
-            `${Title} | ${allEpisodes[i].number} Already In Queue [ skiped ]`
-          );
-        } else {
-          await addToQueue({
-            Type: "Anime",
-            EpNum: allEpisodes[i].number,
-            id: animeid,
-            Title: animedata.title,
-            SubDub: `${config?.subDub === "dub" ? "dub" : "sub"}`,
-            config: {
-              Animeprovider: config?.Animeprovider,
-              quality: config?.quality,
-              mergeSubtitles: config?.mergeSubtitles,
-              subtitleFormat: config?.subtitleFormat,
-              CustomDownloadLocation: config?.CustomDownloadLocation,
-            },
-            epid: `${epid}`,
-            image: animedata?.image ?? null,
-            totalSegments: 0,
-            currentSegments: 0,
-          });
-          Success.push(`${Title} | ${allEpisodes[i].number} Added To queue`);
-        }
-      }
+      success++;
     }
   }
 
-  await saveQueue();
+  return `Added ${success} Episodes To Queue!`;
+}
 
-  // add to mal? TODO : FIX FOR ALL PROVIDERS
-  // if (config.mal_on_off == true && config.Animeprovider === "") {
-  //   try {
-  //     let malid = await MalGogo(animeid);
-  //     const true_false_added = await MalAddToList(malid, config.status);
-  //     if (true_false_added === true) {
-  //       Success.push(`Added ${Title} To ${config.status}.`);
-  //     } else {
-  //       info.push(`Couldnt Update ${Title} To ${config.status}`);
-  //     }
-  //   } catch (err) {
-  //     info.push(`Couldnt Add ${Title} To Mal [ Logout and Login Again. ]`);
-  //   }
-  // }
-  return { errors, info, Success };
+// Handles Single Episode Download
+async function downloadAnimeSingle(
+  animeid,
+  episodeid,
+  number,
+  Title,
+  saveinfo = false
+) {
+  try {
+    const config = await settingfetch();
+    const provider = await providerFetch("Anime");
+
+    if (saveinfo) {
+      const animedata = await animeinfo(provider, animeid);
+      MetadataAdd("Anime", {
+        id: animeid,
+        title: `${animedata.title} ${animedata?.subOrDub}`,
+        provider: provider.provider_name,
+        subOrDub: animedata?.subOrDub ?? null,
+        type: animedata.type ?? null,
+        description: animedata.description ?? null,
+        status: animedata.status ?? null,
+        genres: animedata?.genres?.join(",") ?? null,
+        aired: animedata?.aired ?? null,
+        ImageUrl: animedata?.image,
+        EpisodesDataId: animedata?.dataId,
+      });
+    }
+
+    let is_downloaded = await checkEpisodeDownload(episodeid);
+    if (is_downloaded) {
+      return {
+        error: true,
+        message: "Already downloaded",
+      };
+    } else {
+      await addToQueue({
+        Type: "Anime",
+        EpNum: number,
+        id: animeid,
+        Title: Title,
+        SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
+        config: {
+          Animeprovider: config?.Animeprovider,
+          quality: config?.quality,
+          mergeSubtitles: config?.mergeSubtitles,
+          subtitleFormat: config?.subtitleFormat,
+          CustomDownloadLocation: config?.CustomDownloadLocation,
+        },
+        epid: episodeid,
+        totalSegments: 0,
+        currentSegments: 0,
+      });
+      return {
+        error: false,
+        message: "Added To Queue!",
+      };
+    }
+  } catch (err) {
+    return {
+      error: true,
+      message: `${err.message}`,
+    };
+  }
 }
 
 // main download manga
@@ -339,6 +199,7 @@ async function MangaDownloadMain(mangaid, startchap, endchap) {
 }
 
 module.exports = {
-  downloadfunction,
   MangaDownloadMain,
+  downloadAnimeSingle,
+  downloadAnimeMulti,
 };

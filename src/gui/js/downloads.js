@@ -13,8 +13,12 @@ ipcRenderer.on("download-logger", (event, data) => {
   UpdateBar(data);
 });
 
-function UpdateBar(data) {
+async function UpdateBar() {
   try {
+    let QueueData = await fetch("/downloads", {
+      method: "POST",
+    });
+    let data = QueueData.json();
     if (!bar) return;
     var captionElement = document.getElementById("caption");
 
@@ -87,10 +91,18 @@ function removeAllFromQueue() {
   })
     .then((response) => response.json())
     .then((data) => {
-      swal(`Removed Everything From Queue!`, "success");
+      Swal.fire({
+        icon: "success",
+        title: "Queue Updated!",
+        text: "Removed Everything!",
+      });
     })
     .catch((err) => {
-      swal("Something Went Wrong..", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Failed To Update Queue",
+        text: "Something Went Wrong...",
+      });
     });
 }
 
@@ -100,9 +112,17 @@ function removeFromQueue(Title, startep, epdownload) {
   })
     .then((response) => response.json())
     .then((data) => {
-      swal(`Removed: ${Title} || ${startep} From Queue!`, "success");
+      Swal.fire({
+        icon: "success",
+        title: "Queue Updated!",
+        text: `Removed ${Title} | ${startep}!`,
+      });
     })
     .catch((err) => {
-      swal("Something Went Wrong..", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Failed To Update Queue",
+        text: "Something Went Wrong...",
+      });
     });
 }

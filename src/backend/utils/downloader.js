@@ -1,4 +1,3 @@
-// TODO SAVE EACH WEBSITES MAX SPEED!
 const { spawn } = require("child_process");
 const { logger } = require("./AppLogger");
 const ffmpeg = require("ffmpeg-static");

@@ -19,30 +19,31 @@ async function AnimeInfo(id) {
     ? "sub"
     : "dub";
 
-  const info = {
-    id: id,
-    title: "",
-  };
+  let info = {};
 
-  id = id.replace(/-(dub|sub|both)$/, "");
+  let episodeId = id.replace(/-(dub|sub|both)$/, "");
+
   try {
-    const { data } = await axios.get(`${baseUrl}/watch/${id}`);
+    const { data } = await axios.get(`${baseUrl}/watch/${episodeId}`);
     const $ = (0, cheerio.load)(data);
     const { mal_id } = JSON.parse($("#syncData").text());
-    info.malID = Number(mal_id);
+    let dub = parseInt(
+      $("div.film-stats div.tick div.tick-item.tick-dub").text()
+    );
+    let sub = parseInt(
+      $("div.film-stats div.tick div.tick-item.tick-sub").text()
+    );
+    let subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
+
+    info.id = SubDubBoth === "both" ? `${episodeId}-${subOrDub}` : `${id}`;
+    info.malid = Number(mal_id);
     info.title = $("h2.film-name > a.text-white").text();
     info.image = $("img.film-poster-img").attr("src");
     info.description = $("div.film-description").text().trim();
     info.type = $("span.item").last().prev().prev().text().toUpperCase();
-    info.dubs = parseInt(
-      $("div.film-stats div.tick div.tick-item.tick-dub").text()
-    );
-    info.subs = parseInt(
-      $("div.film-stats div.tick div.tick-item.tick-sub").text()
-    );
-    info.subOrDub = SubDubBoth;
+    info.subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
     info.dataId = id.split("-").pop();
-    return { ...info, ...Episodes };
+    return info;
   } catch (err) {
     throw new Error(err.message);
   }
@@ -79,14 +80,16 @@ async function fetchEpisode(id) {
 
     return {
       episodes: episodes,
-      last_page: 1,
+      totalPages: 1,
       total: episodes.length,
+      currentPage: 1,
     };
   } catch (err) {
     return {
       episodes: [],
-      last_page: 0,
       total: 0,
+      totalPages: 0,
+      currentPage: 1,
     };
   }
 }

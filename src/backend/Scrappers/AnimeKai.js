@@ -95,16 +95,12 @@ async function scrapeCards($, page) {
 
 async function AnimeInfo(id) {
   try {
-    let subOrDub = id.endsWith("sub")
-      ? "sub"
-      : id.endsWith("dub")
+    let subOrDub = id.endsWith("dub")
       ? "dub"
+      : id.endsWith("sub")
+      ? "sub"
       : "both";
-
-    let episodeId = id
-      .replace("-dub", "")
-      .replace("-sub", "")
-      .replace("-both", "");
+    let episodeId = id.replace(/-(dub|sub|both)$/, "");
 
     const { data } = await axios.get(`${baseUrl}/watch/${episodeId}`);
     const $ = cheerio.load(data);
@@ -119,13 +115,16 @@ async function AnimeInfo(id) {
     const image = imageSrc
       ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
       : null;
+    const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
+    const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
+    subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
 
     return {
-      id: id,
-      malid: watchSection.attr("data-mal-id") || "",
+      id: id?.endsWith("dub") ? `${episodeId}-${subOrDub}` : id,
+      malid: watchSection.attr("data-mal-id") || null,
       image: image,
       title: mainEntity.find("div.title").text().trim() || "Unknown",
-      subOrDub: subOrDub,
+      subOrDub: id?.endsWith("dub") ? subOrDub : id,
       type: dubsub.find("span > b").text().trim() || "Unknown",
       status: details.find("div:contains('Status:') > span").text() || "Unkown",
       genres: details
@@ -173,15 +172,17 @@ async function fetchEpisode(dataId) {
     });
 
     return {
-      episodes: episodes,
-      last_page: 1,
+      totalPages: 1,
       total: episodes.length,
+      episodes: episodes,
+      currentPage: 1,
     };
   } catch (err) {
     return {
-      episodes: [],
-      last_page: 0,
+      totalPages: 0,
       total: 0,
+      episodes: [],
+      currentPage: 1,
     };
   }
 }

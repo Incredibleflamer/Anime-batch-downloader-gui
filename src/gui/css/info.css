@@ -20,9 +20,16 @@ button {
   cursor: pointer;
 }
 
-.font {
-  font-family: "Poppins", sans-serif;
+@font-face {
+  font-family: "PressStart2P";
   font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/PressStart2P-Regular.ttf") format("truetype");
+}
+
+.font {
+  font-family: "PressStart2P", sans-serif;
 }
 
 .anime-info {
@@ -34,14 +41,19 @@ button {
 
 .anime-info-left {
   flex: 1;
-  max-width: 300px;
-  margin-right: 20px;
-  text-align: center;
+  max-width: 250px;
+  margin-left: 5rem;
+  text-align: left;
 }
 
 .anime-info-right {
   flex: 2;
-  margin-left: 20px;
+  margin-left: 10px;
+}
+
+#additional-info {
+  margin-bottom: 8px;
+  line-height: 1.6;
 }
 
 .anime-title {
@@ -60,8 +72,10 @@ button {
 }
 
 .anime-details {
+  margin-top: 1rem;
   display: flex;
   align-items: flex-start;
+  font-weight: 400;
 }
 
 .anime-image {
@@ -95,12 +109,13 @@ button {
 
 .genre {
   background-color: transparent;
-  color: #ffe9d3;
   align-items: center;
   border-radius: 1rem;
   padding: 0.3rem;
-  font-size: 0.7rem;
   border-color: transparent;
+  font-size: 0.85rem;
+  color: #cfcfcf;
+  font-weight: 500;
 }
 
 /* watch & read & sync container */
@@ -116,8 +131,8 @@ button {
 #toggle-container button,
 .watch-sync-container button {
   padding: 0.8rem;
-  background-color: #ceb5ff;
-  color: #0f1815;
+  background-color: #8c5aff;
+  color: #fff;
   width: fit-content;
   min-width: 5rem;
   border-radius: 0.5rem;
@@ -131,7 +146,7 @@ button {
 #toggle-container button:hover,
 .watch-sync-container button:hover {
   transform: translate(0, -3px);
-  box-shadow: 0 10px 80px -10px #ceb5ff;
+  box-shadow: 0 10px 80px -10px #7a4be8;
 }
 
 /* downloads heading */
@@ -163,14 +178,15 @@ button {
 }
 
 .pages button {
-  font-size: 1rem;
-  padding: 0.4rem;
   width: 3rem;
-  background-color: #9d9dcc;
-  color: #090933;
+  background-color: #8c5aff;
+  color: #fff;
   border-radius: 0.5rem;
   border: none;
   transition: transform ease 0.2s, box-shadow ease 0.2s;
+  font-size: 15px;
+  padding: 10px 14px;
+  margin: 5px;
 }
 
 .pages button:hover {
@@ -185,8 +201,8 @@ button {
   min-width: 4rem;
   border-radius: 0.5rem;
   width: fit-content;
-  background-color: #ceb5ff;
-  color: #090933;
+  background-color: #8c5aff;
+  color: #fff;
   border: none;
   transition: transform ease 0.2s;
 }
@@ -213,29 +229,30 @@ button {
   flex-direction: row;
   padding: 20px;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: 1.2rem;
+  margin-bottom: 20px;
 }
 
 .episode {
-  background-color: #9d9dcc;
-  color: #090933;
+  background-color: #8c5aff;
+  color: #fff;
   border: none;
-  padding: 12px 24px;
   font-size: 16px;
   font-weight: 500;
-  border-radius: 8px;
   width: 100%;
   text-align: center;
   transition: transform ease 0.2s, box-shadow ease 0.2s;
+  border-radius: 12px;
+  padding: 10px 15px;
 }
 
 .episode:hover {
   transform: translate(0, -3px);
-  box-shadow: 0 10px 80px -10px #9d9dcc;
+  box-shadow: 0 10px 80px -10px #7a4be8;
 }
 
 .episode:active {
-  background-color: #ceb5ff;
+  background-color: #7a4be8;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 

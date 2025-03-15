@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anime Downloader | Downloads</title>
-    <link rel="stylesheet" href="/css/libs/bootstrap.css" />
     <link rel="stylesheet" href="/css/downloads.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
   </head>
@@ -31,17 +30,7 @@
     <script src="/js/libs/loading-bar.js"></script>
     <script src="/js/downloads.js"></script>
     <script>
-      let queue = <%- queue %>
-      UpdateBar({
-        data: {
-          caption: `<%= caption %>`,
-          queue: queue,
-          totalSegments: parseInt(`<%= totalSegments %>` ?? 0),
-          currentSegments: parseInt(`<%= currentSegments %>` ?? 0),
-        },
-      });
+      UpdateBar();
     </script>
-    <script src="/js/libs/jquery.js"></script>
-    <script src="/js/libs/bootstrap.js"></script>
   </body>
 </html>

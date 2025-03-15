@@ -87,6 +87,10 @@ async function AnimeInfo(id) {
     const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
     const $ = (0, cheerio.load)(response.data);
 
+    let MalId =
+      parseInt($('meta[name="myanimelist"]').attr("content") ?? null) ?? null;
+
+    animeInfo.malid = MalId;
     animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
     let image = $("div.anime-poster a").attr("href") ?? null;
     animeInfo.image = image
@@ -122,6 +126,7 @@ async function AnimeInfo(id) {
       .trim();
 
     animeInfo.dataId = id;
+    animeInfo.subOrDub = suffix;
 
     return animeInfo;
   } catch (error) {
@@ -154,11 +159,12 @@ async function fetchEpisode(id, page = 1) {
 
     return {
       episodes: episodes,
-      last_page: last_page,
+      totalPages: last_page,
       total: total,
+      currentPage: page,
     };
   } catch (err) {
-    return { episodes: [], last_page: 0, totalEpisodes: 0 };
+    return { episodes: [], totalPages: 0, total: 0, currentPage: page };
   }
 }
 

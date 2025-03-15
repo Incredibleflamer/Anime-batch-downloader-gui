@@ -75,7 +75,7 @@ async function updateQueue(epid, totalSegments, currentSegments) {
 // Get Queue
 async function getQueue(currently_downloading = null) {
   return currently_downloading
-    ? AnimeQueue.filter((item) => item.epid !== currently_downloading)
+    ? AnimeQueue?.filter((item) => item.epid !== currently_downloading)
     : AnimeQueue;
 }
 

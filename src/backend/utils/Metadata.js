@@ -665,33 +665,15 @@ async function fetchAndUpdateMappingDatabase() {
 }
 
 // find mapping ids
-function FindMapping(id, provider_name, subDub = "sub") {
+function FindMapping(id) {
   try {
     const FoundRow = db
       .prepare(
-        "SELECT * FROM Mapping WHERE MalID = ? OR AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
+        "SELECT * FROM Mapping WHERE AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
       )
-      .get(id, `%${id}%`, `%${id}%`, `%${id}%`);
+      .get(`%${id}%`, `%${id}%`, `%${id}%`);
 
-    if (!FoundRow) return null;
-
-    const HiAnime = FoundRow.HiAnime ? JSON.parse(FoundRow.HiAnime) : [];
-    const AnimePahe = FoundRow.AnimePahe ? JSON.parse(FoundRow.AnimePahe) : [];
-    const AnimeKai = FoundRow.AnimeKai ? JSON.parse(FoundRow.AnimeKai) : [];
-
-    switch (provider_name.toLowerCase()) {
-      case "hianime":
-        if (HiAnime.length > 0) return HiAnime[0].trim();
-        return null;
-      case "pahe":
-        if (AnimePahe.length > 0) return `${AnimePahe[0].trim()}-${subDub}`;
-        return null;
-      case "animekai":
-        if (AnimeKai.length > 0) return AnimeKai[0].trim();
-        return null;
-      default:
-        return null;
-    }
+    return FoundRow?.MalID ?? null;
   } catch (err) {
     logger.error(`Error Fetching Mapping`);
     logger.error(`Error message: ${err.message}`);
@@ -895,7 +877,7 @@ async function MalPage(provider_name) {
         providerId = null;
       }
 
-      return providerId ? { ...anime, id: providerId } : null;
+      return providerId ? { ...anime, MalID: anime.id, id: providerId } : null;
     });
 
     let lists = filteredAnime.filter((anime) => anime !== null);

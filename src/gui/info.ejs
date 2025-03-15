@@ -4,7 +4,7 @@
     <base href="/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anime Downloader | <%= data.title %></title>
+    <title>Anime Downloader</title>
     <link rel="stylesheet" href="/css/info.css" />
     <link rel="stylesheet" href="/css/libs/video-js.css" />
     <link rel="stylesheet" href="/css/libs/video-js-quality.css" />
@@ -14,217 +14,22 @@
     <!-- navbar -->
     <%- include("components/navbar", { MalLoggedIn: MalLoggedIn }) %>
 
-    <!-- info of anime -->
+    <!-- Main Content -->
     <div class="container-fluids">
       <div class="anime-info">
-        <div class="anime-info-left">
-          <img
-            class="anime-image"
-            src="<%= data.image %>"
-            alt="<%= data.title %>"
-            onerror="this.onerror=null; this.src='./images/image-404.png';"
-          />
-
-          <div id="additional-info">
-            <!--  -->
-            <% if (data?.type) { %>
-            <br />
-            Type: <%= data.type %> <% if (data?.subOrDub) { %> ( <%=
-            data.subOrDub %> ) <% } %> <% } %>
-            <!--  -->
-            <% if (data?.totalEpisodes) { %>
-            <br />
-            Total Episodes: <%= data.totalEpisodes %> <% } %>
-            <!--  -->
-            <% if (data?.DownloadedEpisodes) { %>
-            <br />
-            Downloaded Episodes: <%= data.DownloadedEpisodes.length %> <% } %>
-            <!--  -->
-            <% if (data?.status) { %>
-            <br />
-            Status: <%= data.status %> <% } %>
-            <!--  -->
-            <% if (data?.subs && data.subs > 0) { %>
-            <br />
-            Subs Episodes: <%= data.subs %> <% } %>
-            <!--  -->
-            <% if (data?.dubs && data.dubs > 0) { %>
-            <br />
-            Dubs Episodes: <%= data.dubs %> <% } %>
-            <!--  -->
-            <% if (data?.aired) { %>
-            <br />
-            Aired On: <%= data.aired %> <% } %>
-            <!--  -->
-            <% if (data?.last_updated) { %>
-            <br />
-            Last Updated : <%= data.last_updated %> <% } %>
-            <!--  -->
-          </div>
-        </div>
-        <div class="anime-info-right">
-          <div class="anime-title font"><%= data.title %></div>
-          <div class="description"><%= data.description %></div>
-          <!-- genres -->
-          <div class="genres">
-            <% data?.genres?.forEach(genre => { %>
-            <button type="button" class="round"><%= genre %></button>
-            <% }); %>
-          </div>
-          <!-- watch & sync -->
-          <div class="genres">
-            <div class="watch-sync-container">
-              <button
-                id="watch-download-tongle"
-                class="btn btn-outline-info"
-                onclick="toggleDownloadWatch(`<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
-              `true`)"
-              >
-                Watch
-              </button>
-              <!--  -->
-              <% if (typeof Internet !== "undefined" && Internet !== false) { %>
-              <button
-                id="sync"
-                class="btn btn-outline-info"
-                onclick="SyncAnimeInfo('<%= data.id %>')"
-              >
-                Sync
-              </button>
-              <% } %>
-            </div>
-          </div>
-          <!-- download container -->
-          <div id="downloadContainer">
-            <div class="episodes">
-              <h2>Download Options</h2>
-
-              <!-- downloaded Episodes -->
-              <% if (data?.DownloadedEpisodes?.length > 0) { %>
-              <p>
-                [ Hidden episodes cuz already downloaded ] <br />
-                <%= data?.DownloadedEpisodes?.join(", ") %>
-              </p>
-              <% } %>
-            </div>
-
-            <!-- tongle for show dub -->
-            <div
-              class="toggle-container"
-              id="toggle-container"
-              style="display: none"
-            >
-              <button
-                id="toggleDownloadOptions"
-                class="btn btn-outline-info"
-                onclick="toggleDownloadOptions()"
-              >
-                Show Dub 🎥
-              </button>
-            </div>
-
-            <!-- download buttons -->
-            <div class="genres downloadOptions">
-              <div
-                class="subOptions"
-                id="subOptions"
-                style="display: none"
-              ></div>
-              <div
-                class="dubOptions"
-                id="dubOptions"
-                style="display: none"
-              ></div>
-            </div>
-          </div>
-          <!-- watch container -->
-          <div id="watchContainer" style="display: none">
-            <div class="video-player">
-              <div class="description" id="now_playing">Now Playing :</div>
-              <video
-                id="vid1"
-                class="video-js vjs-default-skin"
-                controls
-              ></video>
-              <br />
-              select video
-              <h4>Click on ep from below to start playing!</h4>
-
-              <!-- Playing From Downloads File  -->
-              <% if (data?.DownloadedEpisodes) { %>
-              <h5>Play From Downloads</h5>
-              <div class="d-grid gap-2 episode-container scrollable-ele">
-                <% data?.DownloadedEpisodes?.forEach(ep => { %>
-                <button
-                  class="btn btn-success round"
-                  type="button"
-                  onclick="Videoplay('<%= data.id %>', '<%= ep %>', true)"
-                >
-                  Watch ep <%= ep %>
-                </button>
-                <% }); %>
-              </div>
-              <% } %>
-              <!-- Online Player -->
-              <% if ((Array.isArray(data?.DownloadedEpisodes) && Internet) ||
-              !data?.DownloadedEpisodes) { %>
-              <h5>Play From Online</h5>
-              <div class="d-grid gap-2 episode-container scrollable-ele">
-                <% data.episodes.forEach(ep => { %> <% if
-                (!Array.isArray(data?.DownloadedEpisodes) ||
-                !data.DownloadedEpisodes.includes(ep.number)) { %>
-                <button
-                  class="btn btn-success round"
-                  type="button"
-                  onclick="Videoplay('<%= data.id %>', '<%= ep.number %>', false)"
-                >
-                  Watch Ep <%= ep.number %>
-                </button>
-                <% } %> <% }); %>
-              </div>
-              <% } else { %>
-              <br />
-              <h5>Online Player is Hidden!</h5>
-              <h5>Reason: No Internet Connection.</h5>
-              <br /><br /><br />
-              <% } %>
-              <!-- Online Player End -->
-            </div>
-          </div>
-          <!-- no internet container -->
-          <div id="nointernet">
-            <strong>No Internet Connection!</strong><br />
-            Download options are currently unavailable.<br />
-            Please check your connection and Revisit the page.
-          </div>
-        </div>
+        <div class="anime-info-left"></div>
+        <div class="anime-info-right"></div>
       </div>
     </div>
 
-    <!-- imports -->
-    <script src="/js/libs/jquery.js"></script>
-    <script src="/js/libs/bootstrap.js"></script>
     <script src="/js/info.js"></script>
     <script src="/js/libs/videojs-http-source-selector.js"></script>
     <script src="/js/libs/video.js"></script>
     <script src="/js/libs/videojs-contrib-quality-levels.js"></script>
     <script src="/js/player/quality.js"></script>
     <script src="/js/player/play.js"></script>
-
-    <!-- creating buttons -->
     <script>
-      const Internet =
-        `<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
-        `true`;
-
-      if (Internet) {
-        FetchEpisodesData();
-      } else {
-        const downloadContainer = document.getElementById("downloadContainer");
-        const Nointernet = document.getElementById("nointernet");
-        downloadContainer.style.display = "none";
-        Nointernet.style.display = "block";
-      }
+      init("<%= type %>", "<%= infoapi %>", "<%= id %>");
     </script>
   </body>
 </html>

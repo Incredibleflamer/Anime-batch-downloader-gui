@@ -1,3 +1,4 @@
+const { FindMapping } = require("./Metadata");
 const NodeCache = require("node-cache");
 const HLSLogger = require("./logger");
 const JSZip = require("jszip");
@@ -96,33 +97,35 @@ async function findanime(provider, Anime_NAME, page = 1) {
 }
 
 // anime info
-async function animeinfo(provider, animeId, ExtraParameters = {}) {
-  const cacheKey = `animeinfo_${
-    provider.provider_name
-  }_${animeId}_${JSON.stringify(ExtraParameters)}`;
-
+async function animeinfo(provider, animeId) {
+  const cacheKey = `animeinfo_${provider.provider_name}_${animeId}`;
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
     return cachedData;
   }
 
-  const data = await provider.provider.AnimeInfo(animeId, ExtraParameters);
+  let data = await provider.provider.AnimeInfo(animeId);
+  if (!malid) malid = await FindMapping(data.id);
+
   cache.set(cacheKey, data, 60);
   return data;
 }
 
 // anime fetch ep list
 async function fetchEpisode(provider, id, page = 1) {
-  const cacheKey = `animeeplist_${provider.provider_name}_${id}_${page}`;
-  const cachedData = cache.get(cacheKey);
-  if (cacheKey) {
-    return cachedData;
+  try {
+    const cacheKey = `animeeplist_${provider.provider_name}_${id}_${page}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+    const data = await provider.provider.fetchEpisode(id, page);
+    cache.set(cacheKey, data, 60);
+    return data;
+  } catch (err) {
+    throw err;
   }
-
-  const data = await provider.provider.animeinfo(id, page);
-  cache.set(cacheKey, data, 60);
-  return data;
 }
 
 // fetch m3u8 links
