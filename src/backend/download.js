@@ -21,13 +21,27 @@ async function downloadfunction(animeid, startep, endep) {
   let info = [];
   let errors = [];
   let Success = [];
+  const animedata = await animeinfo(provider, animeid);
+
+  MetadataAdd("Anime", {
+    id: animeid,
+    title: `${Title} ${animedata?.subOrDub}`,
+    provider: provider.provider_name,
+    subOrDub: animedata?.subOrDub ?? null,
+    type: animedata.type ?? null,
+    description: animedata.description ?? null,
+    status: animedata.status ?? null,
+    genres: animedata?.genres?.join(",") ?? null,
+    aired: animedata?.aired ?? null,
+    ImageUrl: animedata?.image,
+    EpisodesDataId: animedata?.dataId,
+  });
 
   if (
     provider.provider_name === "animekai" ||
     provider.provider_name === "hianime"
   ) {
     let TryToDownload = [];
-    const animedata = await animeinfo(provider, animeid);
     if (!animedata) throw new Error("no anime found with this id");
     let Title = animedata.title;
     if (!endep) {
@@ -38,22 +52,6 @@ async function downloadfunction(animeid, startep, endep) {
         TryToDownload.push(i - 1);
       }
     }
-
-    MetadataAdd("Anime", {
-      id: animeid,
-      title: `${Title} ${animedata?.subOrDub}`,
-      provider: provider.provider_name,
-      subOrDub: animedata?.subOrDub ?? null,
-      type: animedata.type ?? null,
-      description: animedata.description ?? null,
-      status: animedata.status ?? null,
-      genres: animedata?.genres?.join(",") ?? null,
-      aired: animedata?.aired ?? null,
-      totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
-      last_page: parseInt(animedata?.last_page) ?? null,
-      episodes: JSON.stringify(animedata?.episodes) ?? null,
-      ImageUrl: animedata?.image,
-    });
 
     if (provider.provider_name === "hianime") {
       // checking if ep are ther in sources
@@ -246,7 +244,6 @@ async function downloadfunction(animeid, startep, endep) {
   //       info.push(`Couldnt Update ${Title} To ${config.status}`);
   //     }
   //   } catch (err) {
-  //     console.log(err);
   //     info.push(`Couldnt Add ${Title} To Mal [ Logout and Login Again. ]`);
   //   }
   // }

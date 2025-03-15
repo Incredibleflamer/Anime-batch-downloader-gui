@@ -2,6 +2,7 @@
 const { app } = require("electron");
 const path = require("path");
 const SimplDB = require("simpl.db");
+const { logger } = require("./AppLogger");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
 const userDataPath = app.getPath("userData");
@@ -84,7 +85,7 @@ async function saveQueue() {
     await queue.set("queue", AnimeQueue);
     await queue.save();
   } catch (err) {
-    console.log(err);
+    logger.error("Failed To Save Queue");
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
   }

@@ -79,67 +79,14 @@ async function download(ep, start, end) {
   }
 }
 
-// download buttons
-function createDownloadButton(type, episodes, id) {
-  const togglecontainer = document.getElementById("toggle-container");
-
-  const specificEpisodesBtn = document.createElement("button");
-  specificEpisodesBtn.classList.add(
-    "btn",
-    "btn-outline-info",
-    `${type}Options`,
-    "download-form-button"
-  );
-
-  specificEpisodesBtn.textContent = `Download From Specific Episodes (${type.toUpperCase()})`;
-  specificEpisodesBtn.setAttribute(
-    "data-ep",
-    JSON.stringify(id.replace("-both", `-${type}`))
-  );
-  specificEpisodesBtn.setAttribute("data-total-episodes", episodes);
-  if (type === "dub") {
-    specificEpisodesBtn.style.display = "none";
+async function FetchEpisodesData(page = 1) {
+  try {
+  } catch (err) {
+    console.log(err);
   }
-  togglecontainer.appendChild(specificEpisodesBtn);
-
-  const downloadAllBtn = document.createElement("button");
-  downloadAllBtn.classList.add("btn", "btn-outline-info", `${type}Options`);
-  if (type === "dub") {
-    downloadAllBtn.style.display = "none";
-  }
-  downloadAllBtn.type = "button";
-  downloadAllBtn.textContent = `Download All Episodes (${type.toUpperCase()})`;
-  downloadAllBtn.setAttribute(
-    "onclick",
-    `download('${id.replace("-both", `-${type}`)}', 1, ${episodes})`
-  );
-  togglecontainer.appendChild(downloadAllBtn);
-
-  const container = document.getElementById(`${type}Options`);
-  const episodeWrapper = document.createElement("div");
-  episodeWrapper.classList.add("wrapper");
-  const episodeContainer = document.createElement("div");
-  episodeContainer.classList.add("episode-container");
-
-  for (let i = episodes - 1; i >= 0; i--) {
-    const episodeBtn = document.createElement("button");
-    episodeBtn.classList.add("episode");
-    episodeBtn.type = "button";
-    episodeBtn.textContent = `Download Episode ${
-      i + 1
-    } (${type.toUpperCase()})`;
-    episodeBtn.setAttribute(
-      "onclick",
-      `download('${id.replace("-both", `-${type}`)}', ${i + 1})`
-    );
-    episodeContainer.appendChild(episodeBtn);
-  }
-
-  episodeWrapper.appendChild(episodeContainer);
-  container.appendChild(episodeWrapper);
 }
 
-function createDownloadButton_with_episodes_array(episodes, id) {
+function CreateButtonsFromData(episodes, id) {
   try {
     const { subs, dubs } = episodes.reduce(
       (acc, item) => {

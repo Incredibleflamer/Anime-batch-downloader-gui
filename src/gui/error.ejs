@@ -9,13 +9,14 @@
   </head>
   <body>
     <!-- navbar -->
-    <%- include("components/navbar") %>
+    <%- include("components/navbar", { MalLoggedIn: MalLoggedIn }) %>
+
     <!-- main content -->
     <div class="content">
       <h1>Oops! Something went wrong.</h1>
       <p>
-        It looks like you have lost your internet connection, or the page you're
-        looking for doesn't exist.
+        <%= error ? error : "It looks like you have lost your internet
+        connection, or the page you're looking for doesn't exist." %>
       </p>
     </div>
   </body>

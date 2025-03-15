@@ -1,41 +1,39 @@
 let pagination = "off";
-let catagorie = "";
-let local = true;
 let currentPage = 1;
 let isFetching = false;
 let totalPages = null;
 let allDataFetched = false;
-let hasNextPage = false;
-
-function isScrolledToBottom() {
-  return window.innerHeight + window.scrollY >= document.body.offsetHeight;
-}
+let hasNextPage = true;
+let api = null;
+let infoapi = null;
 
 async function fetchPageData(page) {
   try {
-    const response = await fetch(`/api/discover/Anime`, {
+    if (isFetching || (page > 1 && !hasNextPage) || allDataFetched) return;
+    isFetching = true;
+
+    const response = await fetch(`${api}/${page}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        page: page,
-        local: local,
-        ...(catagorie.startsWith("Results For")
-          ? { title: catagorie }
-          : catagorie.startsWith("MyAnimeList Library")
-          ? { mal: true }
-          : {}),
-      }),
     });
+
     if (!response.ok) {
       throw new Error("Failed to fetch data");
     }
+
     const data = await response.json();
-    if (data?.currentPage) {
-      currentPage = data?.currentPage;
+
+    if (page === 1 && data?.hasNextPage) {
+      if (pagination === "on") {
+        document.body.innerHTML += '<div id="pagination-controls"></div>';
+        addPaginationControls();
+      } else {
+        window.addEventListener("scroll", handleScroll);
+      }
     } else {
-      currentPage += 1;
+      hasNextPage = false;
     }
 
     if (data?.hasNextPage) {
@@ -43,7 +41,16 @@ async function fetchPageData(page) {
     } else if (!data?.hasNextPage || data?.hasNextPage === false) {
       hasNextPage = false;
     }
-    return data;
+
+    currentPage = page;
+
+    if (data && data.results && data.results.length > 0) {
+      await addchild(data);
+    } else {
+      allDataFetched = true;
+    }
+
+    isFetching = false;
   } catch (err) {
     console.error("Error fetching data:", err);
     return null;
@@ -60,13 +67,7 @@ async function addchild(data) {
       const animeCard = document.createElement("div");
       animeCard.classList.add("anime-card");
       animeCard.innerHTML = `
-          <a href="/info?${
-            catagorie === "Local Anime Library"
-              ? "localanimeid"
-              : catagorie === "MyAnimeList Library"
-              ? "malid"
-              : "animeid"
-          }=${result.id}">
+          <a href="/info?${infoapi}=${result.id}">
             <div class="anime-item">
               <img 
                 src="./images/loading-image.png"
@@ -104,24 +105,9 @@ async function addchild(data) {
   }
 }
 
-async function handleScroll() {
-  if (!allDataFetched && !isFetching && isScrolledToBottom()) {
-    isFetching = true;
-    const data = await fetchPageData(currentPage + 1);
-    if (data && data.results && data.results.length > 0) {
-      currentPage++;
-      await addchild(data);
-    } else {
-      allDataFetched = true;
-    }
-    isFetching = false;
-  }
-}
-
 function addPaginationControls() {
   const paginationContainer = document.getElementById("pagination-controls");
   paginationContainer.innerHTML = "";
-  console.log(hasNextPage);
   if (hasNextPage) {
     const inputField = `<input type="number" id="pageInput" min="1" max="${
       totalPages || ""
@@ -222,29 +208,25 @@ function addPaginationControls() {
 async function handlePagination(targetPage) {
   targetPage = Math.max(1, parseInt(targetPage, 10));
   if (totalPages) targetPage = Math.min(totalPages, targetPage);
-  if (targetPage !== currentPage && !isFetching) {
-    isFetching = true;
-    const data = await fetchPageData(targetPage);
-    if (data) {
-      currentPage = targetPage;
-      await addchild(data);
-      addPaginationControls();
-    }
-    isFetching = false;
+  if (targetPage !== currentPage) {
+    await fetchPageData(targetPage);
   }
 }
 
-async function init(paginationInput, catagorieInput, hasNextPageInput) {
-  pagination = paginationInput;
-  catagorie = catagorieInput;
-  local = catagorie === "Local Anime Library" ? true : false;
-  hasNextPage = hasNextPageInput;
+function isScrolledToBottom() {
+  return window.innerHeight + window.scrollY >= document.body.offsetHeight;
+}
 
-  if (pagination === "on" && hasNextPage) {
-    document.body.innerHTML += '<div id="pagination-controls"></div>';
-    addPaginationControls();
-    console.log("adding controls!");
-  } else {
-    window.addEventListener("scroll", handleScroll);
+async function handleScroll() {
+  if (!isFetching && isScrolledToBottom()) {
+    await fetchPageData(currentPage + 1);
   }
+}
+
+async function init(paginationInput, apiInput, infoapiInput) {
+  pagination = paginationInput;
+  api = apiInput;
+  infoapi = infoapiInput;
+  await fetchPageData(1);
+  document.getElementById("loading-container").hidden = true;
 }

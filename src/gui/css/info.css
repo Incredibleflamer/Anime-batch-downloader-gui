@@ -16,15 +16,13 @@ body {
   padding: 2rem;
 }
 
+button {
+  cursor: pointer;
+}
+
 .font {
   font-family: "Poppins", sans-serif;
   font-style: normal;
-}
-
-.container-fluids {
-  width: 100%;
-  padding-right: 15px;
-  padding-left: 50px;
 }
 
 .anime-info {
@@ -47,9 +45,12 @@ body {
 }
 
 .anime-title {
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: 700;
   margin-bottom: 10px;
+  background-image: linear-gradient(#7676ff, white);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .anime-type {
@@ -76,46 +77,166 @@ body {
   max-height: 100px;
   overflow-y: auto;
   overflow-x: hidden;
-  color: #fff;
+  font-size: 0.9rem;
 }
 
+/* genres */
 .genres {
+  height: 4rem;
   display: flex;
+  gap: 0.2rem;
   padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+  overflow: auto;
+  align-items: center;
+  align-self: center;
+}
+
+.genre {
+  background-color: transparent;
+  color: #ffe9d3;
+  align-items: center;
+  border-radius: 1rem;
+  padding: 0.3rem;
+  font-size: 0.7rem;
+  border-color: transparent;
+}
+
+/* watch & read & sync container */
+#toggle-container,
+.watch-sync-container {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#toggle-container button,
+.watch-sync-container button {
+  padding: 0.8rem;
+  background-color: #ceb5ff;
+  color: #0f1815;
+  width: fit-content;
+  min-width: 5rem;
+  border-radius: 0.5rem;
+  transition: transform ease 0.2s, box-shadow ease 0.2s;
+  display: inline-block;
+  font-size: 0.8rem;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+#toggle-container button:hover,
+.watch-sync-container button:hover {
+  transform: translate(0, -3px);
+  box-shadow: 0 10px 80px -10px #ceb5ff;
+}
+
+/* downloads heading */
+#downloadContainer h2 {
+  margin-top: 1rem;
+}
+
+/* downloaded episodes info */
+#downloaded-episodes-info {
+  margin-top: 1rem;
+}
+
+#downloaded-episodes-info p {
+  margin-top: 0.5rem;
+  font-size: small;
+}
+
+/* pages */
+.pages {
+  padding: 1rem;
+  height: auto;
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.pages button {
+  font-size: 1rem;
+  padding: 0.4rem;
+  width: 3rem;
+  background-color: #9d9dcc;
+  color: #090933;
+  border-radius: 0.5rem;
+  border: none;
+  transition: transform ease 0.2s, box-shadow ease 0.2s;
+}
+
+.pages button:hover {
+  transform: translate(0, -3px);
+}
+
+#pageInput,
+.totalPages {
+  font-size: 1rem;
+  text-align: center;
+  padding: 0.4rem;
+  min-width: 4rem;
+  border-radius: 0.5rem;
+  width: fit-content;
+  background-color: #ceb5ff;
+  color: #090933;
+  border: none;
+  transition: transform ease 0.2s;
+}
+
+.totalPages {
+  padding: 0.1rem;
+  padding-right: 2rem;
+}
+
+#pageInput::-webkit-outer-spin-button,
+#pageInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
   margin: 0;
 }
 
-.wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-  width: 100%;
+#pageInput {
+  -moz-appearance: textfield;
 }
 
-.episode-container {
-  display: flex;
+/* downloads options */
+.downloadOptions {
+  margin-top: 1rem;
+  display: grid;
   flex-direction: row;
-  align-items: center;
-  width: 100%;
-  max-height: 250px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.round {
-  align-items: center;
-  border-radius: 50px;
-  margin-bottom: 15px;
-}
-
-.episodes {
-  margin-top: 20px;
+  padding: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
 }
 
 .episode {
-  margin-bottom: 10px;
+  background-color: #9d9dcc;
+  color: #090933;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  width: 100%;
+  text-align: center;
+  transition: transform ease 0.2s, box-shadow ease 0.2s;
+}
+
+.episode:hover {
+  transform: translate(0, -3px);
+  box-shadow: 0 10px 80px -10px #9d9dcc;
+}
+
+.episode:active {
+  background-color: #ceb5ff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .video-player {
@@ -133,89 +254,21 @@ body {
   background-color: black;
 }
 
-.episode {
-  background-color: #1e88e5;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  width: 100%;
-  text-align: center;
-  transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
-}
-
-.episode:hover {
-  background-color: #1565c0;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.4);
-}
-
-.episode:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 600px) {
-  .episode {
-    font-size: 14px;
-    padding: 10px 20px;
-  }
-}
-
-.toggle-container,
-.watch-sync-container {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.toggle-container button,
-.watch-sync-container button {
-  margin: 5px;
-  padding: 10px 15px;
-  font-size: 14px;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
-}
-
-.toggle-container button:hover,
-.watch-sync-container button:hover {
-  background-color: #007bff;
-  color: white;
-}
-
 .description::-webkit-scrollbar,
+.genres::-webkit-scrollbar,
 .episode-container::-webkit-scrollbar {
-  width: 12px;
+  width: 0.5rem;
 }
 
 .episode-container::-webkit-scrollbar-track,
+.genres::-webkit-scrollbar-track,
 .description::-webkit-scrollbar-track {
   background: #333;
 }
 
 .episode-container::-webkit-scrollbar-thumb,
+.genres::-webkit-scrollbar-thumb,
 .description::-webkit-scrollbar-thumb {
   background-color: #555;
   border-radius: 20px;
-}
-
-#nointernet {
-  display: none;
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-  background-color: #ff4c4c;
-  padding: 15px;
-  border-radius: 8px;
-  max-width: 600px;
-  margin: 20px auto;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
 }

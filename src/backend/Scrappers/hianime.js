@@ -23,68 +23,71 @@ async function AnimeInfo(id) {
     id: id,
     title: "",
   };
+
   id = id.replace(/-(dub|sub|both)$/, "");
   try {
     const { data } = await axios.get(`${baseUrl}/watch/${id}`);
     const $ = (0, cheerio.load)(data);
-    const { mal_id, anilist_id } = JSON.parse($("#syncData").text());
+    const { mal_id } = JSON.parse($("#syncData").text());
     info.malID = Number(mal_id);
-    info.alID = Number(anilist_id);
     info.title = $("h2.film-name > a.text-white").text();
-    info.japaneseTitle = $("div.anisc-info div:nth-child(2) span.name").text();
     info.image = $("img.film-poster-img").attr("src");
     info.description = $("div.film-description").text().trim();
-    // Movie, TV, OVA, ONA, Special, Music
     info.type = $("span.item").last().prev().prev().text().toUpperCase();
-    info.url = `${baseUrl}/${id}`;
-
     info.dubs = parseInt(
       $("div.film-stats div.tick div.tick-item.tick-dub").text()
     );
-
     info.subs = parseInt(
       $("div.film-stats div.tick div.tick-item.tick-sub").text()
     );
-
     info.subOrDub = SubDubBoth;
+    info.dataId = id.split("-").pop();
+    return { ...info, ...Episodes };
+  } catch (err) {
+    throw new Error(err.message);
+  }
+}
+
+async function fetchEpisode(id) {
+  try {
     const episodesAjax = await axios.get(
-      `${baseUrl}/ajax/v2/episode/list/${id.split("-").pop()}`
+      `${baseUrl}/ajax/v2/episode/list/${id}`
     );
-    const $$ = (0, cheerio.load)(episodesAjax.data.html);
-    info.totalEpisodes = $$("div.detail-infor-content > div > a").length;
-    info.episodes = [];
-    $$("div.detail-infor-content > div > a").each((i, el) => {
-      var _a, _b, _c, _d;
-      const episodeId =
-        (_c =
-          (_b =
-            (_a = $$(el).attr("href")) === null || _a === void 0
-              ? void 0
-              : _a.split("/")[2]) === null || _b === void 0
-            ? void 0
-            : _b.replace("?ep=", "$episode$")) === null || _c === void 0
-          ? void 0
-          : SubDubBoth !== "both"
-          ? _c.concat(`-${SubDubBoth}`)
-          : _c.concat(`-both`);
-      const number = parseInt($$(el).attr("data-number"));
-      const title = $$(el).attr("title");
-      const url = baseUrl + $$(el).attr("href");
-      const isFiller = $$(el).hasClass("ssl-item-filler");
-      (_d = info.episodes) === null || _d === void 0
-        ? void 0
-        : _d.push({
-            id: episodeId,
+    const $ = (0, cheerio.load)(episodesAjax.data.html);
+    let episodes = [];
+
+    $("div.detail-infor-content > div > a").each((i, el) => {
+      let EpisodesID =
+        $(el).attr("href")?.split("/")?.[2]?.replace("?ep=", "$episode$") ??
+        null;
+
+      if (EpisodesID) {
+        const number = parseInt($(el).attr("data-number"));
+        const title = $(el).attr("title");
+        const isFiller = $(el).hasClass("ssl-item-filler");
+        if (number && title) {
+          episodes.push({
+            id: EpisodesID,
             number: number,
             title: title,
             isFiller: isFiller,
-            url: url,
+            lang: "both",
           });
+        }
+      }
     });
-    return info;
+
+    return {
+      episodes: episodes,
+      last_page: 1,
+      total: episodes.length,
+    };
   } catch (err) {
-    console.log(err);
-    throw new Error(err.message);
+    return {
+      episodes: [],
+      last_page: 0,
+      total: 0,
+    };
   }
 }
 
@@ -159,7 +162,6 @@ async function fetchEpisodeSources(episodeId) {
       return await fetchSource(subOrDub[0]);
     }
   } catch (err) {
-    console.log(err);
     throw err;
   }
 }
@@ -356,4 +358,5 @@ module.exports = {
   AnimeInfo,
   fetchRecentEpisodes,
   fetchEpisodeSources,
+  fetchEpisode,
 };

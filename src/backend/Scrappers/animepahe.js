@@ -74,12 +74,8 @@ async function fetchRecentEpisodes(page = 1) {
 }
 
 // Animeinfo
-async function AnimeInfo(id, { fetch_info = true, page = 1 } = {}) {
-  let suffix = id.endsWith("both")
-    ? "both"
-    : id.endsWith("dub")
-    ? "dub"
-    : "sub";
+async function AnimeInfo(id) {
+  let suffix = id.endsWith("dub") ? "dub" : id.endsWith("sub") ? "sub" : "both";
   id = id.replace(/-(dub|sub|both)$/, "");
 
   const animeInfo = {
@@ -88,61 +84,44 @@ async function AnimeInfo(id, { fetch_info = true, page = 1 } = {}) {
   };
 
   try {
-    if (fetch_info) {
-      const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
+    const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
+    const $ = (0, cheerio.load)(response.data);
 
-      const $ = (0, cheerio.load)(response.data);
-
-      animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
-      let image = $("div.anime-poster a").attr("href") ?? null;
-      animeInfo.image = image
-        ? `/proxy/image?pahe=${encodeURIComponent(image)}`
-        : null;
-
-      let cover = $("div.anime-cover").attr("data-src") ?? null;
-      animeInfo.cover = cover
-        ? `/proxy/image?pahe=${encodeURIComponent(cover)}`
-        : null;
-      animeInfo.description = $("div.anime-summary").text();
-      animeInfo.genres = $("div.anime-genre ul li")
-        .map((i, el) => $(el).find("a").attr("title"))
-        .get();
-      switch (
-        $('div.col-sm-4.anime-info p:icontains("Status:") a').text().trim()
-      ) {
-        case "Currently Airing":
-          animeInfo.status = "Ongoing";
-          break;
-        case "Finished Airing":
-          animeInfo.status = "Completed";
-          break;
-        default:
-          animeInfo.status = "Unknown";
-      }
-
-      animeInfo.type = $('div.col-sm-4.anime-info p:icontains("Type") a')
-        .text()
-        .trim()
-        .toUpperCase();
-
-      animeInfo.aired = $('div.col-sm-4.anime-info p:icontains("Aired")')
-        .text()
-        .replace("Aired:", "")
-        .replaceAll("\n", " ")
-        .replaceAll("  ", "")
-        .trim();
+    animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
+    let image = $("div.anime-poster a").attr("href") ?? null;
+    animeInfo.image = image
+      ? `/proxy/image?pahe=${encodeURIComponent(image)}`
+      : null;
+    animeInfo.description = $("div.anime-summary").text();
+    animeInfo.genres = $("div.anime-genre ul li")
+      .map((i, el) => $(el).find("a").attr("title"))
+      .get();
+    switch (
+      $('div.col-sm-4.anime-info p:icontains("Status:") a').text().trim()
+    ) {
+      case "Currently Airing":
+        animeInfo.status = "Ongoing";
+        break;
+      case "Finished Airing":
+        animeInfo.status = "Completed";
+        break;
+      default:
+        animeInfo.status = "Unknown";
     }
 
-    const { episodes, last_page, total_episodes } = await fetchEpisodesPages(
-      id,
-      page,
-      suffix
-    );
+    animeInfo.type = $('div.col-sm-4.anime-info p:icontains("Type") a')
+      .text()
+      .trim()
+      .toUpperCase();
 
-    animeInfo.totalEpisodes = total_episodes;
-    animeInfo.last_page = last_page;
-    animeInfo.episodes = episodes;
-    animeInfo.Animeprovider = "pahe";
+    animeInfo.aired = $('div.col-sm-4.anime-info p:icontains("Aired")')
+      .text()
+      .replace("Aired:", "")
+      .replaceAll("\n", " ")
+      .replaceAll("  ", "")
+      .trim();
+
+    animeInfo.dataId = id;
 
     return animeInfo;
   } catch (error) {
@@ -152,7 +131,7 @@ async function AnimeInfo(id, { fetch_info = true, page = 1 } = {}) {
 }
 
 // Fetching Episodes Pages
-async function fetchEpisodesPages(id, page, suffix) {
+async function fetchEpisode(id, page = 1) {
   try {
     let episodes = [];
 
@@ -164,49 +143,22 @@ async function fetchEpisodesPages(id, page, suffix) {
 
     data.forEach((item) => {
       let hasEngAudio = item?.audio && item?.audio?.toLowerCase() === "eng";
-      let epSuffix = hasEngAudio ? "both" : "sub";
-
-      if (suffix === "dub" && hasEngAudio) {
-        episodes.push({
-          id: `${id}/${item.session}-dub`,
-          number: item.episode,
-          title: item.title,
-          duration: item.duration,
-        });
-      } else if (suffix === "sub") {
-        episodes.push({
-          id: `${id}/${item.session}-sub`,
-          number: item.episode,
-          title: item.title,
-          duration: item.duration,
-        });
-      } else if (suffix === "both") {
-        episodes.push({
-          id: `${id}/${item.session}-${epSuffix}`,
-          number: item.episode,
-          title: item.title,
-          duration: item.duration,
-        });
-      }
+      episodes.push({
+        id: `${id}/${item.session}`,
+        number: item.episode,
+        title: item.title,
+        duration: item.duration,
+        lang: hasEngAudio ? "both" : "sub",
+      });
     });
-
-    if (page === 1 && last_page > 1) {
-      const {
-        data: { data },
-      } = await ddosGuardRequest(
-        `${baseUrl}/api?m=release&id=${id}&sort=episode_asc&page=${last_page}`
-      );
-      last_page = data[0]?.episode ?? last_page;
-    }
 
     return {
       episodes: episodes,
       last_page: last_page,
-      total_episodes: total,
+      total: total,
     };
   } catch (err) {
-    console.log(err);
-    return { episodes: [], last_page: 0, total_episodes: 0 };
+    return { episodes: [], last_page: 0, totalEpisodes: 0 };
   }
 }
 
@@ -307,31 +259,21 @@ function saveCookies() {
 }
 
 async function getNewCookie(url) {
-  console.log("Attempting to solve DDos-GUARD challenge...");
   try {
     const jsResponse = await client.get(
       "https://check.ddos-guard.net/check.js"
     );
     const jsContent = jsResponse.data;
-
     const wellKnownPath = jsContent.match(/'([^']+)'/)[1];
     if (!wellKnownPath) throw new Error("Failed to parse well-known path.");
-
     const challengeUrl = `${url.protocol}//${url.host}${wellKnownPath}`;
-    console.log("Challenge URL:", challengeUrl);
-
     const challengeResponse = await client.get(challengeUrl);
     const setCookieHeader = challengeResponse.headers["set-cookie"];
-
     if (!setCookieHeader) throw new Error("No set-cookie header found.");
-    console.log("Challenge solved, new cookies received.");
-
     setCookieHeader.forEach((cookie) => {
       jar.setCookieSync(cookie, challengeUrl);
     });
-
     saveCookies();
-
     return true;
   } catch (error) {
     console.error("Failed to solve DDos-GUARD challenge:", error.message);
@@ -343,12 +285,8 @@ async function ddosGuardRequest(url, options = {}) {
   try {
     return await client.get(url, { ...options, withCredentials: true });
   } catch (error) {
-    console.log("DDos-GUARD detected. Attempting to bypass...");
-
     const solved = await getNewCookie(new URL(url));
     if (!solved) throw new Error("Failed to bypass DDos-GUARD.");
-
-    console.log("Retrying request...");
     return await client.get(url, { ...options, withCredentials: true });
   }
 }
@@ -357,7 +295,7 @@ module.exports = {
   SearchAnime,
   AnimeInfo,
   fetchEpisodeSources,
-  fetchEpisodesPages,
   fetchRecentEpisodes,
   ddosGuardRequest,
+  fetchEpisode,
 };

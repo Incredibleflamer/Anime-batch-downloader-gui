@@ -109,7 +109,6 @@ async function MangaDir(title, customdir) {
     await fs.promises.access(customdirneko);
     destination = customdirneko;
   } catch (err) {
-    console.log(err);
     if (err.code === "ENOENT") {
       destination = path.join(
         process.env.PORTABLE_EXECUTABLE_DIR || process.cwd()

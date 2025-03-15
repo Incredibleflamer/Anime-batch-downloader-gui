@@ -112,6 +112,19 @@ async function animeinfo(provider, animeId, ExtraParameters = {}) {
   return data;
 }
 
+// anime fetch ep list
+async function fetchEpisode(provider, id, page = 1) {
+  const cacheKey = `animeeplist_${provider.provider_name}_${id}_${page}`;
+  const cachedData = cache.get(cacheKey);
+  if (cacheKey) {
+    return cachedData;
+  }
+
+  const data = await provider.provider.animeinfo(id, page);
+  cache.set(cacheKey, data, 60);
+  return data;
+}
+
 // fetch m3u8 links
 async function fetchEpisodeSources(provider, episodeId) {
   const cacheKey = `animeepisodesources_${provider.provider_name}_${episodeId}`;
@@ -249,6 +262,7 @@ module.exports = {
   animesearch,
   animeinfo,
   fetchEpisodeSources,
+  fetchEpisode,
   latestMangas,
   MangaSearch,
   MangaInfo,

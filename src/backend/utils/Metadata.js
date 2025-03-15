@@ -1,10 +1,7 @@
 // libs
-const { logger } = require("./AppLogger");
-const {
-  ddosGuardRequest,
-  fetchEpisodesPages,
-} = require("../Scrappers/animepahe");
+const { ddosGuardRequest, fetchEpisode } = require("../Scrappers/animepahe");
 const BetterSqlite3 = require("better-sqlite3");
+const { logger } = require("./AppLogger");
 const { app } = require("electron");
 const axios = require("axios");
 const path = require("path");
@@ -28,6 +25,7 @@ const tables = {
     genres: "TEXT",
     aired: "TEXT",
     // EPISODES
+    EpisodesDataId: "TEXT",
     totalEpisodes: "INTEGER",
     last_page: "INTEGER",
     episodes: "TEXT",
@@ -58,11 +56,21 @@ const tables = {
     AnimeKai: "TEXT",
     HiAnime: "TEXT",
     AnimePahe: "TEXT",
+    NextEpisodes: "TEXT",
+  },
+  MyAnimeList: {
+    id: "TEXT UNIQUE",
+    title: "TEXT",
+    image: "TEXT",
+    totalEpisodes: "INTEGER",
+    watched: "INTEGER",
+    sortOrder: "INTEGER",
   },
   last_ran_Mapping: {
     id: "INTEGER PRIMARY KEY AUTOINCREMENT",
     last_ran: "TEXT",
     last_fetched: "TEXT",
+    last_Sync_Mal: "TEXT",
   },
 };
 
@@ -183,7 +191,9 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
         );
       }
     } catch (err) {
-      console.log(err);
+      logger.error(`Failed To Update Metadata`);
+      logger.error(`Error message: ${err.message}`);
+      logger.error(`Stack trace: ${err.stack}`);
     }
   } else if (!existingRecord) {
     if (valuesToAdd?.ImageUrl) {
@@ -197,6 +207,7 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
         const response = await ddosGuardRequest(valuesToAdd.ImageUrl, {
           responseType: "arraybuffer",
         });
+
         data = response.data;
       } else {
         let Imageurl = valuesToAdd?.ImageUrl;
@@ -256,21 +267,14 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
       throw new Error(`Error inserting into ${type}: ${error.message}`);
     }
 
-    // Fetching all episodes from AnimePahe
-    try {
-      if (
-        valuesToAdd?.provider === "pahe" &&
-        valuesToAdd?.last_page &&
-        valuesToAdd?.last_page > 1 &&
-        Updating
-      ) {
-        FetchAllEpisodesAnimepaheAndSave(
-          valuesToAdd?.id,
-          valuesToAdd?.last_page
-        );
+    if (valuesToAdd?.EpisodesDataId) {
+      try {
+        await FetchAllEpisodes(valuesToAdd.EpisodesDataId);
+      } catch (err) {
+        logger.error(`Error Fetching All Episodes`);
+        logger.error(`Error message: ${err.message}`);
+        logger.error(`Stack trace: ${err.stack}`);
       }
-    } catch (err) {
-      console.log(err);
     }
   }
 }
@@ -356,7 +360,6 @@ async function getAllMetadata(type, baseDir, page = 1) {
           .filter(Boolean)
           .sort((a, b) => a - b);
       } else if (type === "Manga") {
-        console.log("testing");
         content = filesAndFolders
           .filter(
             (file) =>
@@ -410,7 +413,6 @@ async function getMetadataById(type, baseDir, id) {
       try {
         metadata.genres = metadata?.genres?.split(",") ?? [];
       } catch (error) {
-        console.log("Failed to parse genres JSON:", error);
         metadata.genres = [];
       }
     }
@@ -419,7 +421,6 @@ async function getMetadataById(type, baseDir, id) {
       try {
         metadata.episodes = JSON.parse(metadata.episodes);
       } catch (error) {
-        console.log("Failed to parse episodes JSON:", error);
         metadata.episodes = [];
       }
     }
@@ -428,7 +429,6 @@ async function getMetadataById(type, baseDir, id) {
       try {
         metadata.chapters = JSON.parse(metadata.chapters);
       } catch (error) {
-        console.log("Failed to parse chapters JSON:", error);
         metadata.chapters = [];
       }
     }
@@ -512,29 +512,28 @@ async function getSourceById(type, baseDir, id, number) {
   }
 }
 
-// Get Pahe Fetch All Anime Episodes
-async function FetchAllEpisodesAnimepaheAndSave(id, last_page) {
-  let EpisodesLists = [];
-  for (let i = 1; i <= last_page; i++) {
-    let suffix = id.endsWith("both")
-      ? "both"
-      : id.endsWith("dub")
-      ? "dub"
-      : "sub";
-    id = id.replace(/-(dub|sub|both)$/, "");
+// Fetch All Anime Episodes
+async function FetchAllEpisodes(EpisodesDataId) {
+  let Episodes = await fetchEpisode(EpisodesDataId, 1);
 
-    const data = await fetchEpisodesPages(id, i, suffix);
-    if (data && data.episodes && data.episodes.length > 0) {
-      EpisodesLists.push(...data.episodes);
+  if (Episodes && Episodes?.episodes?.length > 0) {
+    if (Episodes?.last_page && Episodes?.last_page > 1) {
+      for (let i = 2; i <= Episodes.last_page; i++) {
+        let nextPageData = await fetchEpisode(EpisodesDataId, i);
+        if (nextPageData?.episodes?.length > 0) {
+          Episodes.episodes?.push(...nextPageData?.episodes);
+        } else {
+          break;
+        }
+      }
     }
-  }
 
-  if (EpisodesLists.length > 0) {
     await MetadataAdd(
       "Anime",
       {
-        id: id,
-        episodes: JSON.stringify(EpisodesLists),
+        last_page: Episodes.last_page,
+        totalEpisodes: Episodes.episodes.length ?? 0,
+        episodes: Episodes?.episodes,
       },
       true
     );
@@ -586,6 +585,19 @@ function getMappingLastRun() {
   }
 }
 
+// get last malsync updated time
+async function getMALLastSync() {
+  try {
+    const row = db
+      .prepare("SELECT last_Sync_Mal FROM last_ran_Mapping WHERE id = 1")
+      .get();
+
+    return row?.last_Sync_Mal ?? null;
+  } catch (error) {
+    return null;
+  }
+}
+
 // save mapping data
 function SaveMappingDatabase(data, last_ran) {
   db.exec("DROP TABLE IF EXISTS Mapping;");
@@ -594,18 +606,19 @@ function SaveMappingDatabase(data, last_ran) {
       .map(([col, definition]) => `${col} ${definition}`)
       .join(", ")});`
   );
-
+  db.exec("DELETE FROM sqlite_sequence WHERE name = 'Mapping';");
   const insert = db.prepare(
-    `INSERT INTO Mapping (MalID, AnimeKai, HiAnime, AnimePahe) VALUES (?, ?, ?, ?)`
+    `INSERT INTO Mapping (MalID , AnimeKai, HiAnime, AnimePahe, NextEpisodes) VALUES (?, ?, ?, ?, ?)`
   );
 
   const insertMany = db.transaction((entries) => {
     for (const entry of entries) {
       insert.run(
-        String(entry?.MalID) || null,
+        String(entry?.MalId) || null,
         JSON.stringify(entry?.AnimeKai || []),
         JSON.stringify(entry?.HiAnime || []),
-        JSON.stringify(entry?.AnimePahe || [])
+        JSON.stringify(entry?.AnimePahe || []),
+        JSON.stringify(entry?.NextEpisodes || [])
       );
     }
   });
@@ -620,8 +633,6 @@ function SaveMappingDatabase(data, last_ran) {
 // fetch updates
 async function fetchAndUpdateMappingDatabase() {
   const { last_ran, last_fetched } = getMappingLastRun();
-  console.log(last_ran);
-  console.log(last_fetched);
 
   let timeDiffInHours = null;
 
@@ -641,13 +652,14 @@ async function fetchAndUpdateMappingDatabase() {
         response.data.data &&
         response.data.data.length > 0
       ) {
+        logger.info("[MAL-LIST] NEW MAPPING FOUND");
         SaveMappingDatabase(response.data.data, response.data.last_ran);
-        console.log("saved");
-        logger.info("Saved All MalIDs!");
+        logger.info("[MAL-LIST] MAPPING UPDATED");
       }
     } catch (error) {
-      console.log(error);
-      logger.error("Failed To Fetch MalIDs Update", error);
+      logger.error("[MAL-LIST] MAPPING FAILED");
+      logger.error(`Error message: ${err.message}`);
+      logger.error(`Stack trace: ${err.stack}`);
     }
   }
 }
@@ -662,8 +674,6 @@ function FindMapping(id, provider_name, subDub = "sub") {
       .get(id, `%${id}%`, `%${id}%`, `%${id}%`);
 
     if (!FoundRow) return null;
-
-    console.log(FoundRow);
 
     const HiAnime = FoundRow.HiAnime ? JSON.parse(FoundRow.HiAnime) : [];
     const AnimePahe = FoundRow.AnimePahe ? JSON.parse(FoundRow.AnimePahe) : [];
@@ -683,8 +693,229 @@ function FindMapping(id, provider_name, subDub = "sub") {
         return null;
     }
   } catch (err) {
-    console.log(err);
+    logger.error(`Error Fetching Mapping`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
     return null;
+  }
+}
+
+// Map MAL
+async function MalEpMap(data = []) {
+  try {
+    if (!data.length) return;
+
+    let InsertOrUpdateQuery = db.prepare(`
+      INSERT INTO MyAnimeList (id, title, image, totalEpisodes, watched)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET 
+        title = excluded.title,
+        image = excluded.image,
+        totalEpisodes = excluded.totalEpisodes,
+        watched = excluded.watched
+    `);
+
+    const insertMany = db.transaction((entries) => {
+      for (const entry of entries) {
+        InsertOrUpdateQuery.run(
+          entry.id.toString(),
+          entry.title,
+          entry.image,
+          parseInt(entry.totalEpisodes ?? 0),
+          parseInt(entry.watched ?? 0)
+        );
+      }
+    });
+
+    insertMany(data);
+  } catch (err) {
+    logger.error(`Failed To Update MyAnimeList`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+  }
+}
+
+// Mal Sort
+async function processAndSortMyAnimeList() {
+  try {
+    let animeList = db.prepare(`SELECT * FROM MyAnimeList`).all();
+    if (animeList.length === 0) return;
+
+    let malIds = animeList.map((anime) => anime.id);
+
+    let mappingData = db
+      .prepare(
+        `SELECT MalID, NextEpisodes FROM Mapping WHERE MalID IN (${malIds
+          .map(() => "?")
+          .join(",")})`
+      )
+      .all(...malIds);
+
+    let mappingMap = new Map();
+    for (let { MalID, NextEpisodes } of mappingData) {
+      if (NextEpisodes && NextEpisodes !== "[]") {
+        try {
+          let parsedEpisodes = JSON.parse(NextEpisodes);
+          if (parsedEpisodes.length) {
+            mappingMap.set(MalID, parsedEpisodes);
+          }
+        } catch (e) {
+          // skip :3
+        }
+      }
+    }
+
+    let now = Date.now();
+
+    let animeData = animeList.map((anime) => {
+      let totalEpisodes = parseInt(anime.totalEpisodes) || 0;
+
+      let NextEpisodes =
+        mappingMap
+          ?.get(anime.id)
+          ?.filter((item) => item?.Episode > totalEpisodes) ?? [];
+
+      if (NextEpisodes.length > 0) {
+        let lastEpisode = NextEpisodes[0].Episode - 1;
+        let lastDate = parseInt(NextEpisodes[0].date) * 1000;
+        return {
+          ...anime,
+          hasNext: true,
+          lastEpisode: lastEpisode,
+          lastDate: lastDate,
+          daysLeft: Math.floor((lastDate - now) / (1000 * 60 * 60 * 24)),
+          watchedLast: anime.watched === lastEpisode,
+          isCompleted: anime.watched >= totalEpisodes,
+        };
+      } else {
+        return {
+          ...anime,
+          hasNext: false,
+        };
+      }
+    });
+
+    animeData.sort((a, b) => {
+      if (a.hasNext !== b.hasNext) return Number(b.hasNext) - Number(a.hasNext);
+      if (a.watchedLast !== b.watchedLast)
+        return Number(b.watchedLast) - Number(a.watchedLast);
+
+      if (a.lastDate && b.lastDate) {
+        let isWithin14DaysA = a.daysLeft >= 1 && a.daysLeft <= 14;
+        let isWithin14DaysB = b.daysLeft >= 1 && b.daysLeft <= 14;
+
+        if (isWithin14DaysA !== isWithin14DaysB)
+          return Number(isWithin14DaysB) - Number(isWithin14DaysA);
+
+        return a.daysLeft - b.daysLeft;
+      } else if (a.lastDate) {
+        return -1;
+      } else if (b.lastDate) {
+        return 1;
+      }
+
+      if (a.isCompleted !== b.isCompleted)
+        return Number(a.isCompleted) - Number(b.isCompleted);
+
+      return 0;
+    });
+
+    let updateQuery = db.prepare(`
+      UPDATE MyAnimeList 
+      SET title = ?, image = ?, totalEpisodes = ?, watched = ?, sortOrder = ? 
+      WHERE id = ?
+    `);
+
+    animeData.forEach((entry, index) => {
+      updateQuery.run(
+        entry.title,
+        entry.image,
+        entry.totalEpisodes,
+        entry.watched,
+        index,
+        entry.id
+      );
+    });
+
+    db.prepare(
+      "INSERT OR REPLACE INTO last_ran_Mapping (id, last_Sync_Mal) VALUES (1, ?)"
+    ).run(new Date().toISOString());
+
+    logger.info(`[MyAnimeList] Successfully Sorted!`);
+  } catch (err) {
+    logger.error(`Error processing MyAnimeList`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+  }
+}
+
+// Mal Retrive Pages
+async function MalPage(provider_name) {
+  try {
+    let animeList = db.prepare(`SELECT * FROM MyAnimeList`).all();
+
+    if (animeList.length === 0) return [];
+
+    let malIds = animeList.map((anime) => anime.id);
+
+    let mappingData = db
+      .prepare(
+        `SELECT MalID, AnimeKai, HiAnime, AnimePahe FROM Mapping WHERE MalID IN (${malIds
+          .map(() => "?")
+          .join(",")})`
+      )
+      .all(...malIds);
+
+    let filteredAnime = animeList.map((anime) => {
+      let mapping = mappingData.find((map) => map.MalID === anime.id);
+      if (!mapping) return null;
+
+      let providerId = null;
+
+      switch (provider_name) {
+        case "animekai":
+          providerId = mapping.AnimeKai;
+          break;
+        case "hianime":
+          providerId = mapping.HiAnime;
+          break;
+        case "pahe":
+          providerId = mapping.AnimePahe;
+          break;
+      }
+
+      if (providerId && providerId !== "[]") {
+        providerId = JSON.parse(providerId);
+        if (providerId?.length > 0) {
+          providerId = providerId[0];
+        } else {
+          providerId = null;
+        }
+      } else {
+        providerId = null;
+      }
+
+      return providerId ? { ...anime, id: providerId } : null;
+    });
+
+    let lists = filteredAnime.filter((anime) => anime !== null);
+
+    return {
+      totalPages: 1,
+      currentPage: 1,
+      hasNextPage: false,
+      totalItems: lists.length,
+      results: lists,
+    };
+  } catch (err) {
+    console.log("Error in MalPage:", err);
+    return {
+      totalPages: 0,
+      currentPage: 1,
+      hasNextPage: false,
+      totalItems: 0,
+      results: [],
+    };
   }
 }
 
@@ -694,7 +925,10 @@ module.exports = {
   getAllMetadata,
   getMetadataById,
   getSourceById,
-  FetchAllEpisodesAnimepaheAndSave,
   fetchAndUpdateMappingDatabase,
   FindMapping,
+  MalEpMap,
+  processAndSortMyAnimeList,
+  getMALLastSync,
+  MalPage,
 };

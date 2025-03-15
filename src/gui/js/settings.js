@@ -34,7 +34,6 @@ function submitSettings(event) {
       document.getElementById("download-location")?.value || null,
     mergeSubtitles:
       document.getElementById("merge-subtitles-select")?.value || null,
-    subDub: document.getElementById("subdub-option-select")?.value || null,
     Pagination: document.getElementById("pagination")?.value || null,
     subtitleFormat:
       document.getElementById("subtitle-format-select")?.value || null,
@@ -71,14 +70,11 @@ function submitSettings(event) {
 
 function handleProviderChange() {
   const selectedProvider = document.getElementById("anime-provider")?.value;
-  const subDubOption = document.getElementById("subdub-option");
   const mergeSubtitles = document.getElementById("merge-subtitles");
   const mergeSubtitlesValue = document.getElementById(
     "merge-subtitles-select"
   )?.value;
   const SubtitlesFormat = document.getElementById("subtitle-format");
-
-  subDubOption.style.display = selectedProvider === "pahe" ? "block" : "none";
 
   mergeSubtitles.style.display =
     selectedProvider === "hianime" ? "block" : "none";
@@ -127,10 +123,6 @@ function init(url, settings) {
   // Anime Subtitle Format
   document.getElementById("subtitle-format-select").value =
     settings?.subtitleFormat ?? "ttv";
-
-  // Anime Sub / Dub
-  document.getElementById("subdub-option-select").value =
-    settings?.subDub ?? "sub";
 
   // Manga Provider
   document.getElementById("manga-provider").value =

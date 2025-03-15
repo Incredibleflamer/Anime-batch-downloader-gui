@@ -1,3 +1,4 @@
+// TODO SAVE EACH WEBSITES MAX SPEED!
 const { spawn } = require("child_process");
 const { logger } = require("./AppLogger");
 const ffmpeg = require("ffmpeg-static");
@@ -97,24 +98,11 @@ class downloader {
           this.SegmentsBatchSizeInKB / ((endTime - startTime) / 1000);
 
         // Increase concurrency
-        if (speedKBps > 10240) {
-          this.concurrency += 10;
-        } else if (speedKBps > 8192) {
-          this.concurrency += 5;
-        } else if (speedKBps > 6144) {
-          this.concurrency += 3;
-        } else if (speedKBps > 5120) {
+        if (speedKBps > 5120) {
           this.concurrency += 1;
         }
-
         // Decrease concurrency
-        else if (speedKBps < 1024) {
-          this.concurrency -= 10;
-        } else if (speedKBps < 2048) {
-          this.concurrency -= 5;
-        } else if (speedKBps < 3072) {
-          this.concurrency -= 3;
-        } else if (speedKBps < 4096) {
+        else if (speedKBps < 4096) {
           this.concurrency -= 1;
         }
 
@@ -175,19 +163,17 @@ class downloader {
             await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
             this.downloadedPaths.push(subtitlePath);
           } catch (err) {
-            logger.info(
-              `Failed to download subtitle (${lang}): ${err.message}`
-            );
-            console.log(
-              `Failed to download subtitle (${lang}): ${err.message}`
-            );
+            logger.error(`Failed to download subtitle (${lang})`);
+            logger.error(`Error message: ${err.message}`);
+            logger.error(`Stack trace: ${err.stack}`);
           }
         });
       await Promise.all(downloadPromises);
       this.currentSegments += this.subtitles.length;
     } catch (err) {
-      logger.info(`Failed to process subtitles: ${err.message}`);
-      console.log(`Failed to process subtitles: ${err.message}`);
+      logger.error(`Failed to process subtitles`);
+      logger.error(`Error message: ${err.message}`);
+      logger.error(`Stack trace: ${err.stack}`);
     }
   }
 
@@ -309,9 +295,6 @@ class downloader {
       logger.info(
         `Failed To Download Segment! [ Re-downloading in next batch ] Continuing in 5s`
       );
-      console.log(
-        `Failed To Download Segment! [ Re-downloading in next batch ] Continuing in 5s`
-      );
       this.logProgress("<br> Retrying After 5s");
       await new Promise((resolve) => setTimeout(resolve, 5000));
       this.logProgress("<br> Retrying Now");
@@ -431,8 +414,9 @@ class downloader {
         }
       }
     } catch (err) {
-      logger.info("Failed to delete SegmentsFolder or Subtitles folder:", err);
-      console.log("Failed to delete SegmentsFolder or Subtitles folder:", err);
+      logger.error("Failed to delete SegmentsFolder or Subtitles folder");
+      logger.error(`Error message: ${err.message}`);
+      logger.error(`Stack trace: ${err.stack}`);
     }
   }
 
@@ -456,8 +440,9 @@ class downloader {
         epid: this.EpID,
       }),
     }).catch((err) => {
-      logger.info("Error updating download progress:", err);
-      console.log("Error updating download progress:", err);
+      logger.error("Error updating download progress");
+      logger.error(`Error message: ${err.message}`);
+      logger.error(`Stack trace: ${err.stack}`);
     });
   }
 }

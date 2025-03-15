@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anime Downloader | <%= data.title %></title>
-    <link rel="stylesheet" href="/css/libs/bootstrap.css" />
     <link rel="stylesheet" href="/css/info.css" />
     <link rel="stylesheet" href="/css/libs/video-js.css" />
     <link rel="stylesheet" href="/css/libs/video-js-quality.css" />
@@ -13,59 +12,7 @@
   </head>
   <body>
     <!-- navbar -->
-    <%- include("components/navbar") %>
-
-    <!-- Modal -->
-    <div
-      class="modal fade"
-      id="downloadModal"
-      tabindex="-1"
-      role="dialog"
-      aria-labelledby="downloadModalLabel"
-      aria-hidden="true"
-    >
-      <div
-        class="modal-dialog modal-dialog-centered"
-        role="document"
-        style="color: black"
-      >
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="downloadModalLabel">
-              Download Episodes
-            </h5>
-          </div>
-          <div class="modal-body">
-            <form id="download-form">
-              <div class="form-group">
-                <label for="start-episode">Start Episode:</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  id="start-episode"
-                  name="start-episode"
-                  min="1"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label for="end-episode">End Episode:</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  id="end-episode"
-                  name="end-episode"
-                  min="1"
-                  max="<%= data.totalEpisodes %>"
-                  required
-                />
-              </div>
-              <button type="submit" class="btn btn-primary">Download</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <%- include("components/navbar", { MalLoggedIn: MalLoggedIn }) %>
 
     <!-- info of anime -->
     <div class="container-fluids">
@@ -118,13 +65,13 @@
         <div class="anime-info-right">
           <div class="anime-title font"><%= data.title %></div>
           <div class="description"><%= data.description %></div>
+          <!-- genres -->
           <div class="genres">
             <% data?.genres?.forEach(genre => { %>
-            <button type="button" class="btn btn-outline-warning round btn-sm">
-              <%= genre %>
-            </button>
+            <button type="button" class="round"><%= genre %></button>
             <% }); %>
           </div>
+          <!-- watch & sync -->
           <div class="genres">
             <div class="watch-sync-container">
               <button
@@ -147,20 +94,26 @@
               <% } %>
             </div>
           </div>
+          <!-- download container -->
           <div id="downloadContainer">
             <div class="episodes">
               <h2>Download Options</h2>
+
+              <!-- downloaded Episodes -->
               <% if (data?.DownloadedEpisodes?.length > 0) { %>
-              <h6>
-                Hidden episodes already downloaded: <%=
-                data?.DownloadedEpisodes?.join(", ") %>
-              </h6>
+              <p>
+                [ Hidden episodes cuz already downloaded ] <br />
+                <%= data?.DownloadedEpisodes?.join(", ") %>
+              </p>
               <% } %>
             </div>
 
-            <% if (data.id.includes('both')) { %>
-            <!-- Toggle Button -->
-            <div class="toggle-container" id="toggle-container">
+            <!-- tongle for show dub -->
+            <div
+              class="toggle-container"
+              id="toggle-container"
+              style="display: none"
+            >
               <button
                 id="toggleDownloadOptions"
                 class="btn btn-outline-info"
@@ -170,53 +123,21 @@
               </button>
             </div>
 
-            <!-- Download Options (hidden initially) -->
+            <!-- download buttons -->
             <div class="genres downloadOptions">
-              <div class="subOptions" id="subOptions"></div>
+              <div
+                class="subOptions"
+                id="subOptions"
+                style="display: none"
+              ></div>
               <div
                 class="dubOptions"
                 id="dubOptions"
                 style="display: none"
               ></div>
             </div>
-            <% } else { %>
-            <div class="genres">
-              <div class="toggle-container">
-                <button
-                  data-ep="<%= data.id %>"
-                  data-total-episodes="<%= data.totalEpisodes %>"
-                  class="btn btn-outline-info subOptions download-form-button"
-                >
-                  Download From Specific Episodes
-                </button>
-                <button
-                  id="downloadall"
-                  type="button"
-                  class="btn btn-outline-info dubOptions"
-                  onclick='download("<%= data.id %>", 1, "<%= data.totalEpisodes %>")'
-                >
-                  Download All Episodes
-                </button>
-              </div>
-            </div>
-
-            <div id="modal-root"></div>
-            <div class="wrapper">
-              <div class="episode-container">
-                <% for (let i = 1; i <= data.totalEpisodes; i++) { %> <% if
-                (data?.DownloadedEpisodes?.includes(i)) { continue; } %>
-                <button
-                  class="episode"
-                  type="button"
-                  onclick="download('<%= data.id %>', '<%= i %>')"
-                >
-                  Download Episode <%= i %>
-                </button>
-                <% } %>
-              </div>
-            </div>
-            <% } %>
           </div>
+          <!-- watch container -->
           <div id="watchContainer" style="display: none">
             <div class="video-player">
               <div class="description" id="now_playing">Now Playing :</div>
@@ -244,7 +165,6 @@
                 <% }); %>
               </div>
               <% } %>
-              <!-- Playing From Downloads File End -->
               <!-- Online Player -->
               <% if ((Array.isArray(data?.DownloadedEpisodes) && Internet) ||
               !data?.DownloadedEpisodes) { %>
@@ -271,6 +191,7 @@
               <!-- Online Player End -->
             </div>
           </div>
+          <!-- no internet container -->
           <div id="nointernet">
             <strong>No Internet Connection!</strong><br />
             Download options are currently unavailable.<br />
@@ -292,35 +213,15 @@
 
     <!-- creating buttons -->
     <script>
-      let epsorted = "<%= data?.epsorted %>" === "true" ? true : false;
-      let subs = parseInt("<%= data?.subs %>");
-      let dubs = parseInt("<%= data?.dubs %>");
-      let DownloadedEpisodes = `<%- JSON.stringify(data?.DownloadedEpisodes) %>`;
-
       const Internet =
         `<%= typeof Internet === 'undefined' || Internet !== false ? 'true' : 'false' %>` ===
         `true`;
 
       if (Internet) {
-        if (epsorted && subs > 0 && dubs > 0) {
-          let episodesString = <%- JSON.stringify(data.episodes) %>;
-
-          createDownloadButton_with_episodes_array(
-            episodesString,
-            "<%= data.id %>"
-          );
-        } else {
-          if (subs > 0) {
-            createDownloadButton("sub", subs, "<%= data.id %>");
-          }
-          if (dubs > 0) {
-            createDownloadButton("dub", dubs, "<%= data.id %>");
-          }
-        }
+        FetchEpisodesData();
       } else {
         const downloadContainer = document.getElementById("downloadContainer");
         const Nointernet = document.getElementById("nointernet");
-
         downloadContainer.style.display = "none";
         Nointernet.style.display = "block";
       }

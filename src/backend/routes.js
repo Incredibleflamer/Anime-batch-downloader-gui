@@ -16,6 +16,7 @@ const {
   latestAnime,
   animeinfo,
   animesearch,
+  fetchEpisode,
   fetchEpisodeSources,
   MangaChapterFetch,
 } = require("./utils/AnimeManga");
@@ -27,13 +28,14 @@ const {
   providerFetch,
 } = require("./utils/settings");
 const { getQueue, updateQueue, removeQueue } = require("./utils/queue");
-const { MalCreateUrl, MalVerifyToken, MalFetchList } = require("./utils/mal");
+const { MalCreateUrl, MalVerifyToken } = require("./utils/mal");
 const {
   getAllMetadata,
   getMetadataById,
   getSourceById,
   MetadataAdd,
   FindMapping,
+  MalPage,
 } = require("./utils/Metadata");
 
 // ===================== API routes =====================
@@ -72,7 +74,6 @@ router.post("/api/settings", async (req, res) => {
     mergeSubtitles,
     Pagination,
     subtitleFormat,
-    subDub,
     autoLoadNextChapter,
   } = req.body;
   try {
@@ -108,7 +109,6 @@ router.post("/api/settings", async (req, res) => {
       mergeSubtitles: mergeSubtitles,
       subtitleFormat: subtitleFormat,
       Pagination: Pagination,
-      subDub: subDub,
       autoLoadNextChapter: autoLoadNextChapter,
     });
 
@@ -137,10 +137,6 @@ router.post("/api/settings", async (req, res) => {
 
     // Pagination
     message += `\nPagination : ${data.Pagination}`;
-
-    if (data.Animeprovider === "pahe") {
-      message += `\nsubDub : ${data.subDub}`;
-    }
 
     res.status(200).json({ message: message });
   } catch (err) {
@@ -176,8 +172,9 @@ router.post("/api/logger", async (req, res) => {
 
     res.status(200).json({ message: "Download progress received" });
   } catch (err) {
-    logger.error(`Error Logging Download Segment: \n${err}`);
-    console.log(err);
+    logger.error(`Error Logging Download Segment`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -186,10 +183,9 @@ router.post("/api/logger", async (req, res) => {
 router.post("/api/download/:type", async (req, res) => {
   const { type } = req.params;
   const { ep, start, end } = req.body;
-  try {
-    let queue = await getQueue();
-    queue = queue.filter((item) => item.totalSegments <= 0);
+  let queue = await getQueue();
 
+  try {
     let errors = [],
       info = [],
       Success = [];
@@ -229,54 +225,80 @@ router.post("/api/download/:type", async (req, res) => {
   }
 });
 
-// Handles Latest , Local , Search Anime & Manga
-router.post("/api/discover/:type", async (req, res) => {
-  const { type } = req.params;
-  let { page, title, local, mal } = req.body;
-
+// Fetchs Lists : Latest , Local , Search Anime & Manga
+router.post("/api/:AnimeManga/:LocalMalProvider/:page", async (req, res) => {
+  const { AnimeManga, LocalMalProvider } = req.params;
+  let { page } = req.params;
+  page = parseInt(page) || 1;
   try {
-    let data = null;
-    if (type === "Anime") {
-      if (title && title.length > 0) {
-        title = title.replace("Results For", "");
-        const provider = await providerFetch("Anime");
-        data = await animesearch(provider, title, page);
-      } else if (mal) {
-        data = await MalFetchList(page);
-      } else if (!local) {
-        const provider = await providerFetch("Anime");
-        data = await latestAnime(provider, page);
-      } else {
-        const config = await settingfetch();
+    if (!AnimeManga || !LocalMalProvider) {
+      return res.status(400).json({ error: "Missing parameters" });
+    }
+
+    const config = await settingfetch();
+    data = null;
+
+    if (AnimeManga === "Anime") {
+      if (LocalMalProvider === "local") {
         data = await getAllMetadata(
           "Anime",
           config?.CustomDownloadLocation,
           page
         );
+      } else if (LocalMalProvider === "mal") {
+        data = await MalPage(config.Animeprovider);
+      } else if (LocalMalProvider === "provider") {
+        const provider = await providerFetch("Anime");
+        data = await latestAnime(provider, page);
+      } else if (LocalMalProvider === "search") {
+        const provider = await providerFetch("Anime");
+        data = await MangaSearch(provider, req?.query?.query);
       }
-    } else if (type === "Manga") {
-      if (title && title.length > 0 && !local) {
-        title = title.replace("Results For", "");
-        const provider = await providerFetch("Manga");
-        data = await MangaSearch(provider, title, page);
-      } else if (!local && !title) {
-        const provider = await providerFetch("Manga");
-        data = await latestMangas(provider, page);
-      } else {
-        const config = await settingfetch();
+    } else if (AnimeManga === "Manga") {
+      if (LocalMalProvider === "local") {
         data = await getAllMetadata(
           "Manga",
           config?.CustomDownloadLocation,
           page
         );
+      } else if (LocalMalProvider === "provider") {
+        const provider = await providerFetch("Manga");
+        data = await latestMangas(provider, page);
+      } else if (LocalMalProvider === "search") {
+        const provider = await providerFetch("Manga");
+        data = await MangaSearch(provider, req?.query?.query);
       }
     }
 
-    if (!data) throw new Error(`No data found for ${type} | ${page}`);
-    res.status(200).json(data);
+    if (!data) throw new Error(`No ${AnimeManga} Found in ${LocalMalProvider}`);
+    return res.json(data);
   } catch (err) {
-    console.log(err);
-    logger.error(`Error Fetching ${type} page : ${page ?? 0}: \n${err}`);
+    logger.error(
+      `Failed To Fetch ${LocalMalProvider} ${AnimeManga} page ${page}`
+    );
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    res.json({
+      data: {
+        totalPages: 0,
+        currentPage: 1,
+        hasNextPage: false,
+        totalItems: 0,
+        results: [],
+      },
+    });
+  }
+});
+
+router.post("/api/episodes", async (req, res) => {
+  const { id, page } = req.body;
+  try {
+    const provider = await providerFetch("Anime");
+    const data = await fetchEpisode(provider, id, page);
+  } catch (err) {
+    logger.error(`Error Fetching '${id}' Episdoes page : ${page ?? 0}:`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
     res.status(200).json([]);
   }
 });
@@ -302,7 +324,7 @@ router.get("/api/download/remove", async (req, res) => {
         } else {
           global.win.webContents.send("download-logger", {
             queue,
-            message: "No items with totalSegments > 0 in the queue",
+            message: "Queue is empty",
           });
         }
       } else {
@@ -328,10 +350,9 @@ router.get("/api/download/remove", async (req, res) => {
 
     res.json({ message: "All items removed" });
   } catch (err) {
-    logger.error(
-      `Error Removing ${req?.query?.AnimeEpId ? "Ep" : "Ep(s)"} : \n${err}`
-    );
-    console.log(err);
+    logger.error(`Error Removing ${req?.query?.AnimeEpId ? "Ep" : "Ep(s)"} `);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
     res.status(500).json({
       message: `Error Removing ${req?.query?.AnimeEpId ? "Ep" : "Ep(s)"}`,
       err,
@@ -393,9 +414,9 @@ router.post("/api/watch", async (req, res) => {
     }
   } catch (err) {
     // logging
+    logger.error(`Error Fetching M3U8 Playlist`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     res.status(200).json({
       sources: [],
     });
@@ -486,9 +507,9 @@ router.post("/api/read", async (req, res) => {
       return res.status(200).json(chapters);
     }
   } catch (err) {
+    logger.error(`Failed To Fetch Manga Chapters`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     res.status(200).json([]);
   }
 });
@@ -578,9 +599,9 @@ router.post("/api/sync/local", async (req, res) => {
     }
     throw new Error("Invalid type must be manga / anime");
   } catch (err) {
+    logger.error(`Failed To Sync`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     res.status(400).json({
       error: err.message,
       Success: false,
@@ -592,116 +613,57 @@ router.post("/api/sync/local", async (req, res) => {
 
 // Local Anime Page
 router.get(["/", "/local/anime"], async (req, res) => {
-  try {
-    const config = await settingfetch();
-    let data = await getAllMetadata("Anime", config?.CustomDownloadLocation, 1);
-    res.render("index.ejs", {
-      data: data,
-      catagorie: "Local Anime Library",
-      Pagination: config?.Pagination || "off",
-    });
-  } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    res.render("index.ejs", {
-      data: {
-        totalPages: 0,
-        currentPage: 1,
-        hasNextPage: false,
-        totalItems: 0,
-        results: [],
-      },
-      catagorie: "Local Anime Library",
-      Pagination: "off",
-    });
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "Local Anime's",
+    api: "/api/Anime/local",
+    infoapi: "/info/Anime/local?id=",
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // Local Manga Page
 router.get("/local/manga", async (req, res) => {
-  try {
-    const config = await settingfetch();
-    let data = await getAllMetadata("Manga", config?.CustomDownloadLocation, 1);
-    res.render("manga.ejs", {
-      data: data,
-      catagorie: "Local Manga Library",
-      Pagination: config?.Pagination || "off",
-    });
-  } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    res.render("manga.ejs", {
-      data: {
-        totalPages: 0,
-        currentPage: 1,
-        hasNextPage: false,
-        totalItems: 0,
-        results: [],
-      },
-      catagorie: "Local Manga Library",
-      Pagination: "off",
-    });
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "Local Manga's",
+    api: "/api/Manga/local",
+    infoapi: "/info/Manga/local?id=",
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // home page anime
 router.get("/anime", async (req, res) => {
-  try {
-    const provider = await providerFetch("Anime");
-    const resentep = await latestAnime(provider, 1);
-    const config = await settingfetch();
-    res.render("index.ejs", {
-      data: resentep,
-      catagorie: "Recent Episodes",
-      Pagination: config?.Pagination || "off",
-    });
-  } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    res.render("error.ejs");
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "Recent Anime's",
+    api: "/api/Anime/provider",
+    infoapi: "/info/Anime/provider?id=",
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // Mal Page Anime
 router.get("/mal/anime", async (req, res) => {
-  try {
-    const config = await settingfetch();
-    const data = await MalFetchList();
-
-    res.render("index.ejs", {
-      data: data,
-      catagorie: "MyAnimeList Library",
-      Pagination: config?.Pagination || "off",
-    });
-  } catch (err) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    res.render("error.ejs");
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "MyAnimelist Anime's",
+    api: "/api/Anime/mal",
+    infoapi: "/info/anime/mal?id=",
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // home page manga
 router.get("/manga", async (req, res) => {
-  try {
-    const provider = await providerFetch("Manga");
-    const config = await settingfetch();
-    const data = await latestMangas(provider, 1);
-
-    res.render("manga.ejs", {
-      data: data,
-      catagorie: "Latest Updated",
-      Pagination: data?.hasNextPage ? config?.Pagination || "off" : "off",
-    });
-  } catch (error) {
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    res.render("error.ejs");
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "Latest Manga's",
+    api: "/api/Manga/provider",
+    infoapi: "/info/Manga/mal?id=",
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // settings
@@ -717,52 +679,18 @@ router.get("/setting", async (req, res) => {
 
 // search anime
 router.get("/search", async (req, res) => {
-  const animeToSearch = req?.query?.animetosearch;
-  const mangaToSearch = req?.query?.mangatosearch;
-  const config = await settingfetch();
+  const anime = req?.query?.animetosearch;
+  const manga = req?.query?.mangatosearch;
 
-  if (mangaToSearch) {
-    const mangaToSearch = req.query.mangatosearch;
-    try {
-      const provider = await providerFetch("Manga");
-      const data = await MangaSearch(provider, mangaToSearch);
-      res.render("manga.ejs", {
-        data: data,
-        catagorie: `Results For ${mangaToSearch}`,
-        Pagination: config?.Pagination || "off",
-      });
-    } catch (err) {
-      // logging
-      logger.error(`Error message: ${err.message}`);
-      logger.error(`Stack trace: ${err.stack}`);
-      console.log(err);
-      res.render("manga.ejs", {
-        catagorie: "no results found..",
-        data: null,
-        Pagination: "off",
-      });
-    }
-  } else if (animeToSearch) {
-    try {
-      const provider = await providerFetch("Anime");
-      const data = await animesearch(provider, animeToSearch);
-      res.render("index.ejs", {
-        data: data,
-        catagorie: `Results For ${animeToSearch}`,
-        Pagination: config?.Pagination || "off",
-      });
-    } catch (err) {
-      // logging
-      logger.error(`Error message: ${err.message}`);
-      logger.error(`Stack trace: ${err.stack}`);
-      console.log(err);
-      res.render("index.ejs", {
-        catagorie: "no results found..",
-        data: null,
-        Pagination: "off",
-      });
-    }
-  }
+  const config = await settingfetch();
+  res.render("index.ejs", {
+    catagorie: "Results For  Manga's",
+    api: `/api/${anime ? "Anime" : "Manga"}/search?query=${
+      anime ? anime : manga
+    }`,
+    infoapi: `/info/${anime ? "Anime" : "Manga"}/provider?id=`,
+    Pagination: config?.Pagination || "off",
+  });
 });
 
 // log page
@@ -787,8 +715,6 @@ router.get("/info", async (req, res) => {
       );
     }
 
-    console.log(animeid);
-
     if (animeid) {
       const data = await animeinfo(provider, animeid.trim());
       return res.render("info.ejs", {
@@ -812,9 +738,9 @@ router.get("/info", async (req, res) => {
     }
     throw new Error("Something is missing in request /info");
   } catch (err) {
+    logger.error(`Failed To Fetch Anime Info`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     res.render("error.ejs");
   }
 });
@@ -839,7 +765,7 @@ router.get("/mangainfo", async (req, res) => {
         setting?.CustomDownloadLocation,
         localanimeid
       );
-      if (!data) throw new Error("Local Anime Not Found");
+      if (!data) throw new Error("Local Manga Not Found");
       return res.render("mangainfo.ejs", {
         data: data,
         autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
@@ -848,9 +774,9 @@ router.get("/mangainfo", async (req, res) => {
     }
     throw new Error("Something is missing in request /mangainfo");
   } catch (err) {
+    logger.error(`Failed to fetch local Manga Page`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     res.render("error.ejs");
   }
 });

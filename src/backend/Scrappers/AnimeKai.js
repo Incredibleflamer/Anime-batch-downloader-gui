@@ -99,14 +99,13 @@ async function AnimeInfo(id) {
       ? "sub"
       : id.endsWith("dub")
       ? "dub"
-      : id.endsWith("both")
-      ? "both"
       : "both";
 
     let episodeId = id
       .replace("-dub", "")
       .replace("-sub", "")
       .replace("-both", "");
+
     const { data } = await axios.get(`${baseUrl}/watch/${episodeId}`);
     const $ = cheerio.load(data);
     const main = $("main");
@@ -116,10 +115,6 @@ async function AnimeInfo(id) {
     const dubsub = mainEntity.find("div.info");
     const details = mainEntity.find("div.detail");
     const dataId = main.find("div.rate-box").attr("data-id");
-    const episodes = await fetchEpisode(dataId, subOrDub);
-    const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
-    const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
-
     const imageSrc = main.find("div.poster-wrap img").attr("src") ?? null;
     const image = imageSrc
       ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
@@ -130,8 +125,6 @@ async function AnimeInfo(id) {
       malid: watchSection.attr("data-mal-id") || "",
       image: image,
       title: mainEntity.find("div.title").text().trim() || "Unknown",
-      dubs: dub,
-      subs: sub,
       subOrDub: subOrDub,
       type: dubsub.find("span > b").text().trim() || "Unknown",
       status: details.find("div:contains('Status:') > span").text() || "Unkown",
@@ -144,9 +137,7 @@ async function AnimeInfo(id) {
         "Unkown",
       description:
         mainEntity.find("div.desc").text().trim() || "No description",
-      episodes: episodes,
-      epsorted: true,
-      totalEpisodes: episodes.length,
+      dataId: dataId,
     };
   } catch (err) {
     console.error("Error fetching anime info:", err.message);
@@ -154,42 +145,45 @@ async function AnimeInfo(id) {
   }
 }
 
-async function fetchEpisode(dataId, subOrDub) {
-  let { data } = await axios.get(
-    `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${GenerateToken(
-      dataId
-    )}`
-  );
+async function fetchEpisode(dataId) {
+  try {
+    let { data } = await axios.get(
+      `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${GenerateToken(
+        dataId
+      )}`
+    );
 
-  const $ = cheerio.load(data.result);
+    const $ = cheerio.load(data.result);
+    let episodes = [];
 
-  const episodes = $("a")
-    .map((i, el) => {
-      let lang = el.attribs["langs"];
-      if (lang === "1") {
-        lang = "sub";
-      } else if (lang === "3") {
-        lang = subOrDub;
-      } else {
-        lang = "dub";
-      }
-      if (subOrDub === lang || subOrDub === "both") {
-        return {
-          number: parseInt(el.attribs["num"]),
-          lang: lang,
-          slug: el.attribs["slug"],
-          title: $(el).find("span").text(),
-          id: `${el.attribs["token"]}-${lang}`,
-        };
-      } else {
-        return null;
-      }
-    })
-    .get()
-    .filter(Boolean)
-    .reverse();
+    $("a").each((i, el) => {
+      const num = parseInt(el.attribs["num"]) || null;
+      const slug = el.attribs["slug"] || null;
+      const title = $(el).find("span").text().trim() || "Unknown Title";
+      const token = el.attribs["token"] || null;
+      const lang = el.attribs["langs"];
+      if (!num || !slug || !token) return;
+      episodes.push({
+        number: num,
+        slug,
+        title,
+        id: token,
+        lang: lang === 1 ? "sub" : (lang === 2) === "dub" ? "dub" : "both",
+      });
+    });
 
-  return episodes;
+    return {
+      episodes: episodes,
+      last_page: 1,
+      total: episodes.length,
+    };
+  } catch (err) {
+    return {
+      episodes: [],
+      last_page: 0,
+      total: 0,
+    };
+  }
 }
 
 async function fetchEpisodeSources(episodeId) {
@@ -319,4 +313,5 @@ module.exports = {
   SearchAnime,
   AnimeInfo,
   fetchEpisodeSources,
+  fetchEpisode,
 };

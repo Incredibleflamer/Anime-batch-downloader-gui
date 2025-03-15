@@ -55,7 +55,6 @@ async function AnimeInfo(id) {
       description: $("div#summary_shortened").text() ?? "",
     };
   } catch (err) {
-    console.log(err);
     throw new Error(err.message);
   }
 }
