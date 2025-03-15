@@ -83,7 +83,6 @@ async function searchManga(query, page = 1) {
       results: results,
     };
   } catch (err) {
-    console.log(err);
     throw new Error(err.message);
   }
 }

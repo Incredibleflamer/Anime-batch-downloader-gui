@@ -108,17 +108,17 @@ const createWindow = () => {
     }
   });
 
-  global.win.webContents.on("context-menu", (event) => {
-    event.preventDefault();
-  });
+  // global.win.webContents.on("context-menu", (event) => {
+  //   event.preventDefault();
+  // });
 
-  global.win.webContents.on("before-input-event", (event, input) => {
-    if (input.control && input.key.toLowerCase() === "i") {
-      event.preventDefault();
-    }
-  });
-  const menu = Menu.buildFromTemplate([]);
-  Menu.setApplicationMenu(menu);
+  // global.win.webContents.on("before-input-event", (event, input) => {
+  //   if (input.control && input.key.toLowerCase() === "i") {
+  //     event.preventDefault();
+  //   }
+  // });
+  // const menu = Menu.buildFromTemplate([]);
+  // Menu.setApplicationMenu(menu);
 
   // max priority
   exec(
@@ -145,16 +145,13 @@ try {
   SettingsLoad();
   continuousExecution();
 } catch (err) {
-  console.log(err);
   logger.error(`Error message: ${err.message}`);
   logger.error(`Stack trace: ${err.stack}`);
 }
 
 app.whenReady().then(() => {
   createWindow();
-  globalShortcut.register("CommandOrControl+Shift+I", () => {
-    console.log("Dev tools disabled");
-  });
+  globalShortcut.register("CommandOrControl+Shift+I", () => {});
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -170,11 +167,7 @@ app.whenReady().then(() => {
         global.Miniwindow.loadURL(
           `http://localhost:${global.PORT}/mal/callback?code=${code}`
         );
-      } else {
-        console.log("Miniwindow does not exist. Skipping redirect.");
       }
-    } else {
-      console.log("No OAuth Code Found in Request");
     }
   });
 

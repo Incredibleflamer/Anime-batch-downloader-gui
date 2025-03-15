@@ -95,18 +95,13 @@ async function scrapeCards($, page) {
 
 async function AnimeInfo(id) {
   try {
-    let subOrDub = id.endsWith("sub")
-      ? "sub"
-      : id.endsWith("dub")
+    let subOrDub = id.endsWith("dub")
       ? "dub"
-      : id.endsWith("both")
-      ? "both"
+      : id.endsWith("sub")
+      ? "sub"
       : "both";
+    let episodeId = id.replace(/-(dub|sub|both)$/, "");
 
-    let episodeId = id
-      .replace("-dub", "")
-      .replace("-sub", "")
-      .replace("-both", "");
     const { data } = await axios.get(`${baseUrl}/watch/${episodeId}`);
     const $ = cheerio.load(data);
     const main = $("main");
@@ -116,23 +111,20 @@ async function AnimeInfo(id) {
     const dubsub = mainEntity.find("div.info");
     const details = mainEntity.find("div.detail");
     const dataId = main.find("div.rate-box").attr("data-id");
-    const episodes = await fetchEpisode(dataId, subOrDub);
-    const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
-    const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
-
     const imageSrc = main.find("div.poster-wrap img").attr("src") ?? null;
     const image = imageSrc
       ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
       : null;
+    const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
+    const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
+    subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
 
     return {
-      id: id,
-      malid: watchSection.attr("data-mal-id") || "",
+      id: id?.endsWith("dub") ? `${episodeId}-${subOrDub}` : id,
+      malid: watchSection.attr("data-mal-id") || null,
       image: image,
       title: mainEntity.find("div.title").text().trim() || "Unknown",
-      dubs: dub,
-      subs: sub,
-      subOrDub: subOrDub,
+      subOrDub: id?.endsWith("dub") ? subOrDub : id,
       type: dubsub.find("span > b").text().trim() || "Unknown",
       status: details.find("div:contains('Status:') > span").text() || "Unkown",
       genres: details
@@ -144,9 +136,7 @@ async function AnimeInfo(id) {
         "Unkown",
       description:
         mainEntity.find("div.desc").text().trim() || "No description",
-      episodes: episodes,
-      epsorted: true,
-      totalEpisodes: episodes.length,
+      dataId: dataId,
     };
   } catch (err) {
     console.error("Error fetching anime info:", err.message);
@@ -154,42 +144,47 @@ async function AnimeInfo(id) {
   }
 }
 
-async function fetchEpisode(dataId, subOrDub) {
-  let { data } = await axios.get(
-    `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${GenerateToken(
-      dataId
-    )}`
-  );
+async function fetchEpisode(dataId) {
+  try {
+    let { data } = await axios.get(
+      `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${GenerateToken(
+        dataId
+      )}`
+    );
 
-  const $ = cheerio.load(data.result);
+    const $ = cheerio.load(data.result);
+    let episodes = [];
 
-  const episodes = $("a")
-    .map((i, el) => {
-      let lang = el.attribs["langs"];
-      if (lang === "1") {
-        lang = "sub";
-      } else if (lang === "3") {
-        lang = subOrDub;
-      } else {
-        lang = "dub";
-      }
-      if (subOrDub === lang || subOrDub === "both") {
-        return {
-          number: parseInt(el.attribs["num"]),
-          lang: lang,
-          slug: el.attribs["slug"],
-          title: $(el).find("span").text(),
-          id: `${el.attribs["token"]}-${lang}`,
-        };
-      } else {
-        return null;
-      }
-    })
-    .get()
-    .filter(Boolean)
-    .reverse();
+    $("a").each((i, el) => {
+      const num = parseInt(el.attribs["num"]) || null;
+      const slug = el.attribs["slug"] || null;
+      const title = $(el).find("span").text().trim() || "Unknown Title";
+      const token = el.attribs["token"] || null;
+      const lang = el.attribs["langs"];
+      if (!num || !slug || !token) return;
+      episodes.push({
+        number: num,
+        slug,
+        title,
+        id: token,
+        lang: lang === 1 ? "sub" : (lang === 2) === "dub" ? "dub" : "both",
+      });
+    });
 
-  return episodes;
+    return {
+      totalPages: 1,
+      total: episodes.length,
+      episodes: episodes,
+      currentPage: 1,
+    };
+  } catch (err) {
+    return {
+      totalPages: 0,
+      total: 0,
+      episodes: [],
+      currentPage: 1,
+    };
+  }
 }
 
 async function fetchEpisodeSources(episodeId) {
@@ -319,4 +314,5 @@ module.exports = {
   SearchAnime,
   AnimeInfo,
   fetchEpisodeSources,
+  fetchEpisode,
 };

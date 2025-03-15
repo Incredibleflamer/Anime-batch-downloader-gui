@@ -1,13 +1,15 @@
+const {
+  getMALLastSync,
+  MalEpMap,
+  processAndSortMyAnimeList,
+} = require("./Metadata");
 const { logger } = require("./AppLogger");
-const NodeCache = require("node-cache");
 const axios = require("axios");
 
 const MalAppID = "d0b22d129a541dac4d28207f77b15b5f";
 let MalAcount = null;
 let pkce;
 global.MalLoggedIn = false;
-
-const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
 // Create A url
 async function MalCreateUrl() {
@@ -44,8 +46,10 @@ async function MalVerifyToken(code) {
       malToken: token,
     };
   } catch (err) {
-    console.log(`Error getting MAL token: \n ${err.response?.data} || ${err}`);
-    logger.error(`Error getting MAL token: \n ${err.response?.data} || ${err}`);
+    logger.error(`Error getting MAL token:`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+
     global.MalLoggedIn = false;
 
     return {
@@ -68,7 +72,6 @@ async function MalRefreshTokenGen(json) {
 
     if (Date.now() >= expires_at) {
       logger.info("🔄 Token expired! Refreshing...");
-      console.log("🔄 Token expired! Refreshing...");
 
       const { data } = await axios.post(
         "https://myanimelist.net/v1/oauth2/token",
@@ -96,14 +99,17 @@ async function MalRefreshTokenGen(json) {
 
     MalAcount = JsonToken;
     global.MalLoggedIn = true;
+    MalFetchListAll();
 
     return {
       mal_on_off: true,
       malToken: json,
     };
   } catch (err) {
-    logger.error("Failed to refresh token:", err);
-    console.log("Failed to refresh token:", err);
+    logger.error("Failed to refresh token");
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+
     global.MalLoggedIn = false;
 
     return {
@@ -155,10 +161,35 @@ async function MalAddToList(type, malid, status, NumWatchedEp) {
 
     return true;
   } catch (err) {
+    logger.error(`Failed To Add Anime To Mal`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
     return false;
+  }
+}
+
+// Fetch All Watching
+async function MalFetchListAll(force = false) {
+  let MalMappingDate = await getMALLastSync();
+
+  const isSyncExpired =
+    MalMappingDate &&
+    Date.now() - new Date(MalMappingDate).getTime() > 5 * 60 * 1000;
+
+  if (force || isSyncExpired || !MalMappingDate) {
+    let i = 1;
+    while (true) {
+      logger.info(`[MAL-LIST] FETCHING PAGE ${i}`);
+      let data = await MalFetchList(i, true);
+      if (data?.results?.length > 0) await MalEpMap(data.results);
+      if (!data?.hasNextPage) break;
+      i++;
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s wait
+    }
+    logger.info(`[MAL-LIST] Successfully Saved`);
+    await processAndSortMyAnimeList();
+  } else {
+    logger.info(`[MAL-LIST] SKIPED FETCH!`);
   }
 }
 
@@ -168,17 +199,10 @@ async function MalFetchList(page = 1) {
     if (!MalAcount?.access_token)
       throw new Error("No access token please login");
 
-    const cacheKey = `mal_list_${page}`;
-    const cachedData = cache.get(cacheKey);
-
-    if (cachedData) {
-      return cachedData;
-    }
-
-    const offset = (page - 1) * 30;
+    const offset = (page - 1) * 100;
 
     let { data } = await axios.get(
-      `https://api.myanimelist.net/v2/users/@me/animelist?nsfw=true&limit=30&offset=${offset}&status=watching&sort=list_updated_at&fields=list_status,num_episodes`,
+      `https://api.myanimelist.net/v2/users/@me/animelist?nsfw=true&limit=100&offset=${offset}&status=watching&sort=list_updated_at&fields=list_status,num_episodes`,
       {
         headers: {
           Authorization: `Bearer ${MalAcount.access_token}`,
@@ -193,24 +217,22 @@ async function MalFetchList(page = 1) {
         items?.node?.main_picture?.medium ??
         items?.node?.main_picture?.large ??
         null,
-      totalEpisodes: items?.node?.num_episodes,
+      totalEpisodes: items?.node?.num_episodes ?? null,
       watched: items?.list_status?.num_episodes_watched,
     }));
-
-    cache.set(cacheKey, {
-      hasNextPage: data?.paging?.next ?? false,
-      results: AnimeList,
-    });
 
     return {
       hasNextPage: data?.paging?.next ? true : false,
       results: AnimeList,
     };
   } catch (err) {
+    logger.error(`[MAL-LIST] Failed To Fetch Page : ${page}`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    console.log(err);
-    return false;
+    return {
+      hasNextPage: false,
+      results: [],
+    };
   }
 }
 

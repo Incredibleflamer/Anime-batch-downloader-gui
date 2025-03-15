@@ -7,6 +7,7 @@ const {
   ensureDirectoryExists,
 } = require("./DirectoryMaker");
 const { MalRefreshTokenGen } = require("./mal.js");
+const { logger } = require("./AppLogger.js");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
 const userDataPath = app.getPath("userData");
@@ -39,7 +40,6 @@ async function settingupdate({
   mergeSubtitles = null,
   subtitleFormat = null,
   Pagination = null,
-  subDub = null,
   autoLoadNextChapter = null,
 }) {
   const currentSettings = settings.get("config");
@@ -87,10 +87,6 @@ async function settingupdate({
     subtitleFormat = currentSettings?.subtitleFormat || "ttv";
   }
 
-  if (subDub === null) {
-    subDub = currentSettings?.subDub || "sub";
-  }
-
   config.quality = quality;
   config.mal_on_off = mal_on_off;
   config.status = status;
@@ -102,7 +98,6 @@ async function settingupdate({
   config.mergeSubtitles = mergeSubtitles;
   config.Pagination = Pagination;
   config.subtitleFormat = subtitleFormat;
-  config.subDub = subDub;
   config.autoLoadNextChapter = autoLoadNextChapter;
 
   await settingSave();
@@ -116,7 +111,6 @@ async function settingupdate({
     mergeSubtitles,
     Pagination,
     subtitleFormat,
-    subDub,
     autoLoadNextChapter,
   };
 }
@@ -176,12 +170,6 @@ async function settingfetch() {
       changes = true;
     }
 
-    // checking subDub
-    if (!config?.subDub) {
-      config.subDub = "sub";
-      changes = true;
-    }
-
     // checking Mangaprovider is valid
     if (
       !config?.Mangaprovider ||
@@ -197,7 +185,7 @@ async function settingfetch() {
 
     return config;
   } catch (err) {
-    console.log(err);
+    logger.error("Failed To Update Settings");
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
   }
@@ -222,7 +210,6 @@ async function SettingsLoad() {
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
-            subDub: "sub",
           };
 
     if (config.malToken != null) {
@@ -231,7 +218,7 @@ async function SettingsLoad() {
     }
     await settingSave();
   } catch (err) {
-    console.log(err);
+    logger.error("Failed To Load Config");
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
   }
@@ -267,7 +254,7 @@ async function settingSave() {
     await settings.set("config", config);
     await settings.save();
   } catch (err) {
-    console.log(err);
+    logger.error("Failed To Save Settings");
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
   }

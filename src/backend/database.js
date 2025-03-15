@@ -78,7 +78,6 @@ async function continuousExecution() {
           await saveQueue();
           await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (err) {
-          console.log("Error executing task:", err);
           logger.error(`Error message: ${err.message}`);
           logger.error(`Stack trace: ${err.stack}`);
           AnimeQueue.splice(0, 1);
@@ -130,7 +129,7 @@ async function downloadEpisodeByQuality(
     const provider = await providerFetch("Anime", config.Animeprovider);
     const sourcesArray = await fetchEpisodeSources(provider, epid);
 
-    let selectedSource = sourcesArray?.sources.find(
+    let selectedSource = sourcesArray?.sources?.find(
       (source) => source?.quality === config?.quality ?? "1080p"
     );
 

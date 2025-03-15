@@ -22,6 +22,11 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: LogFilePath,
     }),
+    new winston.transports.Console({
+      format: winston.format.printf(({ level, message }) => {
+        return `[${level}]: ${message}`;
+      }),
+    }),
   ],
 });
 

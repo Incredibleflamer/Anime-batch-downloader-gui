@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="/css/navbar.css" />
   </head>
   <body>
-    <%- include("components/navbar") %>
+    <%- include("components/navbar", { MalLoggedIn: MalLoggedIn }) %>
+
     <main>
       <div id="overlay" class="overlay" style="display: none"></div>
 
@@ -127,14 +128,6 @@
                 <select id="subtitle-format-select">
                   <option value="ttv">TTV</option>
                   <option value="srt">SRT</option>
-                </select>
-              </div>
-
-              <div id="subdub-option">
-                <label for="subdub-option-select">SubDub Option:</label>
-                <select id="subdub-option-select">
-                  <option value="sub">Sub</option>
-                  <option value="dub">Dub</option>
                 </select>
               </div>
             </div>

@@ -151,7 +151,11 @@
 
       const query = inputField.value.trim();
       if (!query) {
-        swal("Invalid Search", "Please enter some text to search", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Sync In Process",
+          text: "Please enter some text to search"
+        })
         return;
       }
       window.location.href = `/search?${searchType}=${encodeURIComponent(
