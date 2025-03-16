@@ -25,7 +25,7 @@ const observer = new IntersectionObserver(
         CurrentChapter = parseInt(ChapterAndPage[1]);
         CurrentPage = parseInt(ChapterAndPage[2]);
 
-        let ChapterData = Chapters[CurrentChapter];
+        let ChapterData = EpisodesChapters?.Chapters[CurrentChapter];
 
         document.getElementById("currentPage").textContent = `${
           CurrentPage + 1
@@ -43,8 +43,8 @@ const observer = new IntersectionObserver(
           CurrentPage + 1 === ChapterData?.TotalPages &&
           LoadNextChapter &&
           lastLoadedChapter >= CurrentChapter &&
-          CurrentChapter + 1 < Chapters.length &&
-          !Chapters[CurrentChapter + 1]?.fetched
+          CurrentChapter + 1 < EpisodesChapters?.Chapters.length &&
+          !EpisodesChapters?.Chapters[CurrentChapter + 1]?.fetched
         ) {
           LoadChapter(CurrentChapter + 1, LoadNextChapter);
         }
@@ -212,11 +212,6 @@ async function AddInfo(data) {
         : `
 
         <div class="chaptersOptions downloadOptions" id="chaptersDownloads"></div>
-
-
-        <div id="WatchReadContainer" style="display: none">
-          <div id="mangaContainer" class="manga-container"></div>
-        </div>
         `
     }
   </div>`;
@@ -245,6 +240,10 @@ async function AddInfo(data) {
   </div>`;
   } else {
     RightSide.innerHTML += `
+    <div id="WatchReadContainer" style="display: none">
+        <div id="mangaContainer" class="manga-container"></div>
+    </div>
+
     <div id="WatchReadContainer" style="display: none">
       <div class="StickyMangaControls">
 
@@ -498,6 +497,7 @@ async function HandleEpisodes(data) {
 // Handles Chapters
 async function HandleChapters() {
   if (EpisodesChapters?.total) {
+    TotalChapter = EpisodesChapters.total;
     document.getElementById(
       "totalep-p"
     ).textContent = `TOTAL CHAPTERS : ${EpisodesChapters.total}`;
@@ -667,9 +667,9 @@ async function LoadChapter(ChapterNum, Append = false) {
 
       const mangaContainer = document.getElementById("mangaContainer");
       if (!Append) {
-        mangaContainer.innerHTML = `<h2>${Chapter.title}</h2>`;
+        mangaContainer.innerHTML = `<h2>Chapter ${Chapter.number}</h2>`;
       } else {
-        mangaContainer.innerHTML += `<h2>${Chapter.title}</h2>`;
+        mangaContainer.innerHTML += `<h2>Chapter ${Chapter.number}</h2>`;
       }
 
       data.forEach((page, index) => {
