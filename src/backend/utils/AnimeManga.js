@@ -186,14 +186,27 @@ async function MangaInfo(provider, MANGA_ID) {
   }
 
   let info = await provider.provider.fetchMangaInfo(MANGA_ID);
-  info.chapters.reverse();
+  cache.set(cacheKey, info, 60);
+  return info;
+}
+
+// Manga
+async function fetchChapters(provider, MANGA_ID) {
+  const cacheKey = `mangachapters${provider.provider_name}_${MANGA_ID}`;
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
+  let info = await provider.provider.fetchChapters(MANGA_ID);
   cache.set(cacheKey, info, 60);
   return info;
 }
 
 // Chapters Fetch
 async function MangaChapterFetch(provider, MangaChapterID) {
-  const cacheKey = `mangachapterfetch_${provider.provider_name}_${page}`;
+  const cacheKey = `mangachapterfetch_${provider.provider_name}_${MangaChapterID}`;
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -271,4 +284,5 @@ module.exports = {
   MangaInfo,
   MangaChapterFetch,
   DownloadChapters,
+  fetchChapters,
 };

@@ -8,11 +8,7 @@ const router = express.Router();
 
 // functions
 const { ensureDirectoryExists } = require("./utils/DirectoryMaker");
-const {
-  downloadAnimeSingle,
-  MangaDownloadMain,
-  downloadAnimeMulti,
-} = require("./download");
+const { downloadAnimeSingle, downloadAnimeMulti } = require("./download");
 const {
   latestMangas,
   MangaSearch,
@@ -23,6 +19,7 @@ const {
   fetchEpisode,
   fetchEpisodeSources,
   MangaChapterFetch,
+  fetchChapters,
 } = require("./utils/AnimeManga");
 const { ddosGuardRequest } = require("./Scrappers/animepahe");
 const { logger, getLogs } = require("./utils/AppLogger");
@@ -349,6 +346,25 @@ router.post("/api/episodes", async (req, res) => {
     return res.json(data);
   } catch (err) {
     logger.error(`Error Fetching '${id}' Episodes page : ${page}:`);
+    logger.error(`Error message: ${err.message}`);
+    logger.error(`Stack trace: ${err.stack}`);
+    return res.json({ error: true, message: err?.message });
+  }
+});
+
+// Fetches Manga Chapters
+router.post("/api/chapters", async (req, res) => {
+  let { id } = req.body;
+  try {
+    if (!id) throw new Error("ID is Missing");
+
+    const provider = await providerFetch("Manga");
+    const data = await fetchChapters(provider, id);
+    if (!data) throw new Error("No Episodes Found");
+
+    return res.json(data);
+  } catch (err) {
+    logger.error(`Error Fetching '${id}' Manga Chapters`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
     return res.json({ error: true, message: err?.message });
@@ -739,7 +755,7 @@ router.get("/manga", async (req, res) => {
   res.render("index.ejs", {
     catagorie: "Latest Manga's",
     api: "/api/list/Manga/provider",
-    infoapi: "/info/Manga/mal?id=",
+    infoapi: "/info/Manga/provider?id=",
     Pagination: config?.Pagination || "off",
   });
 });
@@ -781,6 +797,7 @@ router.get("/log", async (req, res) => {
 router.get("/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
   const { AnimeManga, LocalMalProvider } = req.params;
   let id = decodeURIComponent(req?.query?.id ?? "");
+  const setting = await settingfetch();
   try {
     if (!id) throw new Error(`No ${AnimeManga} 'id' found in request!`);
     if (
@@ -791,6 +808,7 @@ router.get("/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
         type: AnimeManga,
         infoapi: `/api/info/${AnimeManga}/${LocalMalProvider}`,
         id: id,
+        autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
       });
     }
     throw new Error("Something is missing in request /info");
@@ -804,42 +822,6 @@ router.get("/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
   }
 });
 
-// manga info page
-router.get("/mangainfo", async (req, res) => {
-  try {
-    const setting = await settingfetch();
-    if (req.query.mangaid) {
-      const mangaid = req.query.mangaid.trim();
-      const provider = await providerFetch("Manga");
-      const data = await MangaInfo(provider, mangaid);
-      return res.render("mangainfo.ejs", {
-        data: data,
-        autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
-      });
-    } else if (req.query.localmangaid) {
-      const Internet = await hasInternet();
-      const localanimeid = req.query.localmangaid.trim();
-      let data = await getMetadataById(
-        "Manga",
-        setting?.CustomDownloadLocation,
-        localanimeid
-      );
-      if (!data) throw new Error("Local Manga Not Found");
-      return res.render("mangainfo.ejs", {
-        data: data,
-        autoLoadNextChapter: setting?.autoLoadNextChapter ?? "on",
-        Internet: Internet,
-      });
-    }
-    throw new Error("Something is missing in request /mangainfo");
-  } catch (err) {
-    logger.error(`Failed to fetch local Manga Page`);
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    res.render("error.ejs");
-  }
-});
-
 // downloads page
 router.get("/downloads", async (req, res) => {
   return res.render("downloads.ejs");
@@ -850,6 +832,10 @@ router.get("/proxy/image", async (req, res) => {
   const PaheImageUrl = req?.query?.pahe
     ? decodeURIComponent(req?.query?.pahe)
     : null;
+  const weebcentralUrl = req?.query?.weebcentral
+    ? decodeURIComponent(req?.query?.weebcentral)
+    : null;
+  const imageUrl = req.query.url ? decodeURIComponent(req.query.url) : null;
 
   try {
     if (PaheImageUrl) {
@@ -858,18 +844,25 @@ router.get("/proxy/image", async (req, res) => {
       });
       res.set("Content-Type", response.headers["content-type"]);
       return res.send(response.data);
-    } else {
-      const imageUrl = req.query.url ? decodeURIComponent(req.query.url) : null;
-      if (!imageUrl) {
-        return res.status(400).send("Missing 'url' query parameter.");
-      }
+    } else if (weebcentralUrl) {
+      const response = await axios.get(weebcentralUrl, {
+        responseType: "arraybuffer",
+        headers: {
+          Referer: "https://weebcentral.com/",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        },
+      });
+      res.set("Content-Type", response.headers["content-type"]);
+      return res.send(response.data);
+    } else if (imageUrl) {
       const response = await axios.get(imageUrl, {
         responseType: "arraybuffer",
       });
       res.set("Content-Type", response.headers["content-type"]);
       return res.send(response.data);
     }
-    throw new Error("");
+    throw new Error("Missing Url");
   } catch (error) {
     console.error("Error fetching image:", error);
     res.status(500).send("Internal server error.");
@@ -912,16 +905,5 @@ router.get("/error", async (req, res) => {
     error: req?.query?.message ?? "Internal Error",
   });
 });
-
-async function hasInternet() {
-  return new Promise((resolve) => {
-    const req = https.get("https://www.google.com", (res) => {
-      resolve(res.statusCode === 200);
-    });
-
-    req.on("error", () => resolve(false));
-    req.end();
-  });
-}
 
 module.exports = router;

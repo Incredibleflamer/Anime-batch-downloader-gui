@@ -56,15 +56,27 @@ function submitSettings(event) {
     .then((responseData) => {
       hideLoadingAnimation();
       if (responseData.message) {
-        swal("Updated Your User Config", responseData.message, "success");
+        Swal.fire({
+          icon: "success",
+          title: "Updated Config",
+          text: responseData.message,
+        });
       } else {
-        swal("Something Is Missing", responseData.error, "error");
+        Swal.fire({
+          icon: "error",
+          title: "Opps Error :P",
+          text: `${responseData.error}`,
+        });
       }
     })
     .catch((error) => {
       hideLoadingAnimation();
       console.error("Error:", error);
-      swal("Error", "Failed to update settings", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Failed To Update Config",
+        text: "Something Went Wrong",
+      });
     });
 }
 

@@ -89,13 +89,8 @@ async function searchManga(query, page = 1) {
 
 async function fetchMangaInfo(mangaId) {
   try {
-    const mangaInfo = {
+    let mangaInfo = {
       id: mangaId,
-      chapters: [],
-      genres: [],
-      type: "",
-      author: "",
-      released: "",
     };
 
     const { data } = await axios.get(`${baseUrl}/series/${mangaId}`);
@@ -152,9 +147,6 @@ async function fetchMangaInfo(mangaId) {
       mangaInfo.description = descriptionSection.length
         ? descriptionSection.text().trim()
         : null;
-
-      mangaInfo.chapters = await fetchAllChapters(mangaId);
-      mangaInfo.totalChapters = mangaInfo?.chapters?.length ?? 0;
     }
 
     return mangaInfo;
@@ -163,14 +155,14 @@ async function fetchMangaInfo(mangaId) {
   }
 }
 
-async function fetchAllChapters(mangaId) {
+async function fetchChapters(mangaId) {
   try {
     const { data } = await axios.get(
       `${baseUrl}/series/${mangaId}/full-chapter-list`
     );
     const $ = cheerio.load(data);
 
-    const chapterLinks = [];
+    let chapterLinks = [];
     const divs = $("div").toArray();
 
     for (
@@ -186,13 +178,21 @@ async function fetchAllChapters(mangaId) {
         if (id) {
           chapterLinks.push({
             id: id,
-            title: `Chapter ${chapterNumber}`,
+            number: chapterNumber,
           });
         }
       }
     }
 
-    return chapterLinks.reverse();
+    if (chapterLinks?.length > 0) {
+      chapterLinks.reverse();
+    }
+
+    return {
+      TotalPages: 1,
+      total: chapterLinks?.length ?? 0,
+      Chapters: chapterLinks,
+    };
   } catch (err) {
     throw new Error(err.message);
   }
@@ -208,7 +208,9 @@ async function fetchChapterPages(chapterId) {
     const pages = $("img")
       .map((index, img) => ({
         page: index + 1,
-        img: $(img).attr("src"),
+        img: `/proxy/image?weebcentral=${encodeURIComponent(
+          $(img).attr("src")
+        )}`,
       }))
       .get();
 
@@ -222,6 +224,6 @@ module.exports = {
   latestManga,
   searchManga,
   fetchMangaInfo,
-  fetchAllChapters,
+  fetchChapters,
   fetchChapterPages,
 };
