@@ -207,11 +207,7 @@
         init(
           "<%= url ? url : '' %>",
           JSON.parse(
-            `<%- JSON.stringify(settings)
-      .replace(/</g, '\\u003c')  // Escape "<" to prevent HTML issues
-      .replace(/\\/g, '\\\\')    // Escape backslashes
-      .replace(/"/g, '\\"')      // Escape double quotes
-    %>`
+            `<%- JSON.stringify(settings).replace(/</g, '\\u003c').replace(/\\/g, '\\\\').replace(/"/g, '\\"') %>`
           )
         );
       </script>
