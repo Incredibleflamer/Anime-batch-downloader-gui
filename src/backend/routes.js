@@ -8,7 +8,12 @@ const router = express.Router();
 
 // functions
 const { ensureDirectoryExists } = require("./utils/DirectoryMaker");
-const { downloadAnimeSingle, downloadAnimeMulti } = require("./download");
+const {
+  downloadAnimeSingle,
+  downloadAnimeMulti,
+  downloadMangaSingle,
+  downloadMangaMulti,
+} = require("./download");
 const {
   latestMangas,
   MangaSearch,
@@ -35,7 +40,6 @@ const {
   getMetadataById,
   getSourceById,
   MetadataAdd,
-  FindMapping,
   MalPage,
 } = require("./utils/Metadata");
 
@@ -197,7 +201,11 @@ router.post("/api/download/:AnimeManga/:singleMulti", async (req, res) => {
       }
     } else if (AnimeManga === "Manga") {
       if (singleMulti === "Single") {
+        let { id, ep, Title, number } = req.body;
+        MessageData = await downloadMangaSingle(id, ep, number, Title, true);
       } else if (singleMulti === "Multi") {
+        let { id, Chapters, Title } = req.body;
+        MessageData = await downloadMangaMulti(id, Chapters, Title);
       }
     }
 

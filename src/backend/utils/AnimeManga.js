@@ -266,11 +266,20 @@ async function DownloadChapters(
 
 // Download Chapter Images Utils
 async function downloadImage(url) {
-  const response = await axios({
-    url,
-    responseType: "arraybuffer",
-  });
-  return Buffer.from(response.data, "binary");
+  url = url.split("/proxy/image?weebcentral=")[1];
+  if (url) {
+    url = decodeURIComponent(url);
+    const response = await axios(url, {
+      responseType: "arraybuffer",
+      headers: {
+        Referer: "https://weebcentral.com/",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+      },
+    });
+    return Buffer.from(response.data, "binary");
+  }
+  return null;
 }
 
 module.exports = {

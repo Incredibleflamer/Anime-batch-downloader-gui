@@ -187,15 +187,15 @@ async function AddInfo(data) {
           ? `
           <button id="toggleDownloadOptions" class="btn btn-outline-info" onclick="toggleDownloadOptions('subs')" style="display: none">Show Dub 🎥</button>
           
-          <button id="toggleDownloadFrom" onclick="downloadFromModal('subs')">Download From Specific Episodes (SUB)</button>
+          <button id="toggleDownloadFrom" onclick="AnimedownloadFromModal('subs')">Download From Specific Episodes (SUB)</button>
 
-          <button id="toggleDownloadAll" onclick="downloadAll('subs')">Download All Episodes (SUB)</button>
+          <button id="toggleDownloadAll" onclick="AnimedownloadAll('subs')">Download All Episodes (SUB)</button>
           `
           : `
 
-          <button id="toggleDownloadChapterFrom" onclick="downloadFromModalChapter()">Download From Specific Chapter</button>
+          <button id="toggleDownloadChapterFrom" onclick="MangadownloadFromModal()">Download From Specific Chapter</button>
 
-          <button id="downloadallChapters" onclick="downloadAllChapters()">Download All Chapters</button>
+          <button id="downloadallChapters" onclick="MangadownloadAll()">Download All Chapters</button>
           
           `
       }
@@ -422,7 +422,7 @@ async function HandleEpisodes(data) {
     document.getElementById("subDownloads").innerHTML = data.subs
       .map(
         (sub) =>
-          `<button class="episode" onclick="download('${sub.id}',${sub.number},'sub')"> Download Episode ${sub.number} (SUB) </button>`
+          `<button class="episode" onclick="Animedownload('${sub.id}',${sub.number},'sub')"> Download Episode ${sub.number} (SUB) </button>`
       )
       .join("");
   }
@@ -432,7 +432,7 @@ async function HandleEpisodes(data) {
     document.getElementById("dubDownloads").innerHTML = data.dubs
       .map(
         (dub) =>
-          `<button class="episode" onclick="download('${dub.id}',${dub.number},'dub')"> Download Episode ${dub.number} (DUB) </button>`
+          `<button class="episode" onclick="Animedownload('${dub.id}',${dub.number},'dub')"> Download Episode ${dub.number} (DUB) </button>`
       )
       .join("");
   }
@@ -525,7 +525,7 @@ async function HandleChapters() {
     document.getElementById("chaptersDownloads").innerHTML =
       EpisodesChapters.Chapters.map(
         (chapter) =>
-          `<button class="episode" onclick="download('${chapter.id}')"> Chapter ${chapter.number} </button>`
+          `<button class="episode" onclick="Mangadownload('${chapter.id}', ${chapter.number})"> Chapter ${chapter.number} </button>`
       ).join("");
   }
 }
@@ -584,15 +584,15 @@ function toggleDownloadOptions(type = null) {
   if (showSub) {
     button.textContent = "Show Dub 🎥";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (SUB)";
-    toggleDownloadFrom.onclick = () => downloadFromModal("sub");
+    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("sub");
     toggleDownloadAll.textContent = "Download All Episodes (SUB)";
-    toggleDownloadAll.onclick = () => downloadAll("sub");
+    toggleDownloadAll.onclick = () => AnimedownloadAll("sub");
   } else {
     button.textContent = "Show Sub 🎭";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (DUB)";
-    toggleDownloadFrom.onclick = () => downloadFromModal("dub");
+    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("dub");
     toggleDownloadAll.textContent = "Download All Episodes (DUB)";
-    toggleDownloadAll.onclick = () => downloadAll("dub");
+    toggleDownloadAll.onclick = () => AnimedownloadAll("dub");
   }
 }
 
@@ -846,46 +846,33 @@ function scrollToElement(elementId) {
 }
 
 // Download Episode
-async function download(Epid, Epnumber, SubDub) {
-  try {
-    const response = await fetch("/api/download/Anime/Single", {
-      method: "POST",
-      body: JSON.stringify({
-        id: `${id.replace(/-(dub|sub|both)$/, ``)}-${SubDub}`,
-        ep: Epid,
-        number: Epnumber,
-        Title: Title,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
+async function Animedownload(Epid, Epnumber, SubDub) {
+  await DownloadApi(
+    JSON.stringify({
+      id: `${id.replace(/-(dub|sub|both)$/, ``)}-${SubDub}`,
+      ep: Epid,
+      number: Epnumber,
+      Title: Title,
+    }),
+    "Single"
+  );
+}
 
-    const responseData = await response.json();
-    if (responseData?.error) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed To Update Queue!",
-        text: `Error: ${responseData?.message ?? "Internal Error"}`,
-      });
-    } else {
-      Swal.fire({
-        icon: "success",
-        title: "Updated Queue!",
-        text: `${responseData?.message ?? "no message provided by backend"}`,
-      });
-    }
-  } catch (err) {
-    Swal.fire({
-      icon: "error",
-      title: "Failed To Update Queue!",
-      text: `Error: ${err?.message ?? "Internal Error"}`,
-    });
-  }
+// Download Chapters
+async function Mangadownload(Mangaid, ChapterNumber) {
+  await DownloadApi(
+    JSON.stringify({
+      id: id,
+      ep: Mangaid,
+      number: ChapterNumber,
+      Title: Title,
+    }),
+    "Single"
+  );
 }
 
 // Download All Episode
-async function downloadAll(SubDub) {
+async function AnimedownloadAll(SubDub) {
   Swal.fire({
     title: "Fetching All Episodes...",
     html: `
@@ -918,13 +905,32 @@ async function downloadAll(SubDub) {
         }
       );
 
-      await DOWNLOADAPI(data, SubDub);
+      await DownloadApi(
+        JSON.stringify({
+          id: `${id.replace(/-(dub|sub|both)$/, ``)}-${SubDub}`,
+          Title: Title,
+          Episodes: data,
+        }),
+        "Multi"
+      );
     },
   });
 }
 
-// Download From x - y Episodes
-async function downloadFromModal(SubDub) {
+// Download All Chapters
+async function MangadownloadAll() {
+  await DownloadApi(
+    JSON.stringify({
+      id: id,
+      Chapters: EpisodesChapters?.Chapters,
+      Title: Title,
+    }),
+    "Single"
+  );
+}
+
+// Download From X - Y Episodes
+async function AnimedownloadFromModal(SubDub) {
   Swal.fire({
     title: `Download Episodes (${SubDub === "subs" ? "SUB" : "DUB"})`,
     html: `
@@ -1003,9 +1009,84 @@ async function downloadFromModal(SubDub) {
               item.number <= result.value.End
           );
 
-          await DOWNLOADAPI(data, SubDub);
+          await DownloadApi(
+            JSON.stringify({
+              id: `${id.replace(/-(dub|sub|both)$/, ``)}-${SubDub}`,
+              Title: Title,
+              Episodes: data,
+            }),
+            "Multi"
+          );
         },
       });
+    }
+  });
+}
+
+// Download X - Y Chapter
+async function MangadownloadFromModal() {
+  Swal.fire({
+    title: `Download Chapters`,
+    html: `
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <label for="start">Starting Chapter (1)</label>
+      <input id="start" type="number" class="swal2-input" value="1" min="1" required>
+      
+      <label for="end">End Chapter (${TotalChapter})</label>
+      <input id="end" type="number" class="swal2-input" placeholder="Leave Blank If downloading only 1 Ep" required>
+    </div>
+  `,
+    showCancelButton: true,
+    confirmButtonText: "Submit",
+    preConfirm: () => {
+      let StartChapter = parseInt(document.getElementById("start")?.value);
+      if (!StartChapter || StartChapter < 1) {
+        Swal.showValidationMessage("Start Chapter must be greater than 0");
+        return false;
+      }
+
+      let EndChapter = parseInt(document.getElementById("end")?.value);
+      if (EndChapter && EndChapter < StartChapter) {
+        Swal.showValidationMessage(
+          `End Episode Must Be Greater Than ${StartChapter}`
+        );
+        return false;
+      } else if (EndChapter && EndChapter > TotalChapter) {
+        Swal.showValidationMessage(
+          `End Episode Must be Less Than ${TotalChapter}`
+        );
+        return false;
+      }
+
+      if (!EndChapter) EndChapter = StartChapter;
+
+      return { Start: StartChapter, End: EndChapter };
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      let data = EpisodesChapters?.Chapters?.filter(
+        (items) =>
+          items?.number &&
+          items?.number >= result.value.Start &&
+          items?.number <= result.value.End
+      );
+
+      if (data?.length > 0) {
+        await DownloadApi(
+          JSON.stringify({
+            id: id,
+            Title: Title,
+            Chapters: data,
+          }),
+          "Multi"
+        );
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed To Update Queue!",
+          text: `Couldnt Add Nothing In Queue 🤣 ( Hint You Tried To Download 0 Eps )`,
+        });
+      }
     }
   });
 }
@@ -1056,16 +1137,12 @@ async function GetAllEpFetched(SubDub, Start, End, progressCallback) {
   return EpisodesToDownload;
 }
 
-// Call The Downloads Api
-async function DOWNLOADAPI(Episodes, SubDub) {
+// Call Single Api
+async function DownloadApi(body, SingleMulti) {
   try {
-    const response = await fetch("/api/download/Anime/Multi", {
+    const response = await fetch(`/api/download/${type}/${SingleMulti}`, {
       method: "POST",
-      body: JSON.stringify({
-        id: `${id.replace(/-(dub|sub|both)$/, ``)}-${SubDub}`,
-        Title: Title,
-        Episodes: Episodes,
-      }),
+      body: body,
       headers: {
         "Content-type": "application/json; charset=UTF-8",
       },
@@ -1081,12 +1158,11 @@ async function DOWNLOADAPI(Episodes, SubDub) {
     } else {
       Swal.fire({
         icon: "success",
-        title: "Update Queue!",
-        text: responseData?.message ?? "no message provided by backend",
+        title: "Updated Queue!",
+        text: `${responseData?.message ?? "no message provided by backend"}`,
       });
     }
   } catch (err) {
-    console.log(err);
     Swal.fire({
       icon: "error",
       title: "Failed To Update Queue!",
