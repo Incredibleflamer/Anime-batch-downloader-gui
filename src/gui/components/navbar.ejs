@@ -4,7 +4,7 @@
       <img src="/images/logo.webp" alt="profile-logo" />
     </a>
 
-    <button class="toggler sidebar-toggler">
+    <button class="toggler sidebar-toggler" onclick="toggleSidebar()">
       <span class="material-symbols-rounded">Menu</span>
     </button>
   </header>
@@ -12,13 +12,14 @@
   <nav class="sidebar-nav">
     <ul class="nav-list primary-nav">
       <li class="nav-item">
-        <div class="sidebar-search">
+        <div class="sidebar-search" onclick="toggleSidebar()">
           <span class="nav-icon material-symbols-rounded left">search</span>
           <input
             type="text"
             id="sidebar-search-input"
             placeholder="Search..."
             class="search-input"
+            onkeypress="performSearch(event)"
           />
         </div>
       </li>
@@ -43,13 +44,13 @@
         </a>
         <span class="nav-tooltip">Local Manga</span>
       </li>
-      <li class="nav-item" <%= MalLoggedIn ? "" : "hidden" %>>
-        <a href="/mal/anime" class="nav-link">
+      <li class="nav-item">
+        <a href="/mal/anime" class="nav-link" id="mal">
           <span class="nav-icon material-symbols-rounded">subscriptions</span>
           <span class="nav-label">Mal Library</span>
         </a>
         <span class="nav-tooltip">Mal Library</span>
-      </li>      
+      </li>
       <li class="nav-item">
         <a href="/anime" class="nav-link">
           <span class="nav-icon material-symbols-rounded">movie</span>
@@ -90,92 +91,89 @@
 </aside>
 <script src="/js/libs/sweetalert.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  let MalConnected = "<%= MalLoggedIn %>" === "true";
+
+  if (!MalConnected) document.getElementById("mal").style.display = "none";
+
+  document.addEventListener("click", (event) => {
     const sidebar = document.querySelector(".sidebar");
     const sidebarToggler = document.querySelector(".sidebar-toggler");
     const sidebarSearch = document.querySelector(".sidebar-search");
-    const searchIcon = document.querySelector(".nav-icon.left");
     const inputField = document.getElementById("sidebar-search-input");
 
-    sidebarToggler.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleSidebar();
-    });
+    if (
+      !sidebar.contains(event.target) &&
+      !sidebarToggler.contains(event.target) &&
+      !sidebarSearch.contains(event.target)
+    ) {
+      sidebar.classList.add("collapsed");
+      sidebarSearch.classList.remove("show-input");
+      sidebarSearch.onclick = toggleSidebar;
+      inputField.value = "";
+    }
+  });
 
-    searchIcon.addEventListener("click", (event) => {
-      event.stopPropagation();
+  function toggleSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarSearch = document.querySelector(".sidebar-search");
+    const inputField = document.getElementById("sidebar-search-input");
+
+    sidebar.classList.toggle("collapsed");
+    if (sidebar.classList.contains("collapsed")) {
+      sidebarSearch.classList.remove("show-input");
+      sidebarSearch.onclick = toggleSidebar;
+      inputField.value = "";
+    } else {
+      sidebarSearch.classList.add("show-input");
+      sidebarSearch.onclick = null;
+    }
+  }
+
+  function performSearch(event) {
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarSearch = document.querySelector(".sidebar-search");
+    const inputField = document.getElementById("sidebar-search-input");
+
+    if (event.key === "Enter") {
+      if (!sidebar.classList.contains("collapsed")) {
+        const isMangaPage =
+          window.location.pathname.includes("/manga") ||
+          window.location.search.includes("?mangatosearch");
+
+        const searchType = isMangaPage ? "mangatosearch" : "animetosearch";
+
+        const query = inputField.value.trim();
+        if (!query) {
+          Swal.fire({
+            icon: "error",
+            title: "Sync In Process",
+            text: "Please enter some text to search",
+          });
+          return;
+        }
+        window.location.href = `/search?${searchType}=${encodeURIComponent(
+          query
+        )}`;
+      }
+    } else {
       if (sidebar.classList.contains("collapsed")) {
         sidebar.classList.remove("collapsed");
         sidebarSearch.classList.add("show-input");
         inputField.focus();
-      } else {
-        performSearch();
-      }
-    });
-
-    document.addEventListener("click", (event) => {
-      if (
-        !sidebar.contains(event.target) &&
-        !sidebarToggler.contains(event.target) &&
-        !sidebarSearch.contains(event.target)
-      ) {
-        sidebar.classList.add("collapsed");
-        sidebarSearch.classList.remove("show-input");
-        inputField.value = "";
-      }
-    });
-
-    inputField.addEventListener("keypress", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        performSearch();
-      }
-    });
-
-    function toggleSidebar() {
-      sidebar.classList.toggle("collapsed");
-      if (sidebar.classList.contains("collapsed")) {
-        sidebarSearch.classList.remove("show-input");
-        inputField.value = "";
-      } else {
-        sidebarSearch.classList.add("show-input");
       }
     }
+  }
 
-    function performSearch() {
-      const isMangaPage =
-        window.location.pathname.includes("/manga") ||
-        window.location.search.includes("?mangatosearch");
-
-      const searchType = isMangaPage ? "mangatosearch" : "animetosearch";
-
-      const query = inputField.value.trim();
-      if (!query) {
-        Swal.fire({
-          icon: "error",
-          title: "Sync In Process",
-          text: "Please enter some text to search"
-        })
-        return;
-      }
-      window.location.href = `/search?${searchType}=${encodeURIComponent(
-        query
-      )}`;
-    }
-  });
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const backButton = document.getElementById("back-button");
-    if (
-      document.referrer &&
-      document.referrer.startsWith(window.location.origin) &&
-      document.referrer !== window.location.href
-    ) {
-      backButton.style.display = "block";
-      backButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        window.history.back();
-      });
-    }
-  });
+  const backButton = document.getElementById("back-button");
+  if (
+    document.referrer &&
+    document.referrer.startsWith(window.location.origin) &&
+    document.referrer !== window.location.href
+  ) {
+    backButton.style.display = "block";
+    backButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.history.back();
+    });
+  }
 </script>

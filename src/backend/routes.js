@@ -230,9 +230,9 @@ router.post("/api/download/:AnimeManga/:singleMulti", async (req, res) => {
 });
 
 // Fetchs Lists : Latest , Local , Search Anime & Manga
-router.post("/api/list/:AnimeManga/:provider/:page", async (req, res) => {
+router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
   const { AnimeManga, provider } = req.params;
-  let { page } = req.params;
+  let { page } = req.query;
   page = parseInt(page) || 1;
   try {
     if (!AnimeManga || !provider) {
@@ -718,7 +718,7 @@ router.get(["/", "/local/anime"], async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Local Anime's",
-    api: "/api/list/Anime/local",
+    api: "/api/list/Anime/local?page=",
     infoapi: "/info/Anime/local?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -729,7 +729,7 @@ router.get("/local/manga", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Local Manga's",
-    api: "/api/list/Manga/local",
+    api: "/api/list/Manga/local?page=",
     infoapi: "/info/Manga/local?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -740,7 +740,7 @@ router.get("/anime", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Recent Anime's",
-    api: "/api/list/Anime/provider",
+    api: "/api/list/Anime/provider?page=",
     infoapi: "/info/Anime/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -751,7 +751,7 @@ router.get("/mal/anime", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "MyAnimelist Anime's",
-    api: "/api/list/Anime/mal",
+    api: "/api/list/Anime/mal?page=",
     infoapi: "/info/Anime/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -762,7 +762,7 @@ router.get("/manga", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Latest Manga's",
-    api: "/api/list/Manga/provider",
+    api: "/api/list/Manga/provider?page=",
     infoapi: "/info/Manga/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -775,10 +775,10 @@ router.get("/search", async (req, res) => {
 
   const config = await settingfetch();
   res.render("index.ejs", {
-    catagorie: "Results For  Manga's",
+    catagorie: `Results For ${anime ? anime : manga}`,
     api: `/api/list/${anime ? "Anime" : "Manga"}/search?query=${
       anime ? anime : manga
-    }`,
+    }&page=`,
     infoapi: `/info/${anime ? "Anime" : "Manga"}/provider?id=`,
     Pagination: config?.Pagination || "off",
   });

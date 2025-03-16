@@ -12,7 +12,7 @@ async function fetchPageData(page) {
     if (isFetching || (page > 1 && !hasNextPage) || allDataFetched) return;
     isFetching = true;
 
-    const response = await fetch(`${api}/${page}`, {
+    const response = await fetch(`${api}${page}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,7 +25,9 @@ async function fetchPageData(page) {
 
     const data = await response.json();
 
-    if (page === 1 && data?.hasNextPage) {
+    currentPage = page;
+
+    if (data?.hasNextPage) {
       if (pagination === "on") {
         document.body.innerHTML += '<div id="pagination-controls"></div>';
         addPaginationControls();
@@ -41,8 +43,6 @@ async function fetchPageData(page) {
     } else if (!data?.hasNextPage || data?.hasNextPage === false) {
       hasNextPage = false;
     }
-
-    currentPage = page;
 
     if (data && data.results && data.results.length > 0) {
       await addchild(data);
