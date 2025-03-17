@@ -319,10 +319,14 @@ async function hianimeExtract(videoUrl) {
 async function getVideoUrls(url) {
   try {
     const quality = ["1080", "720", "360"];
-    const response = await axios.get(url);
+    const baseUrl = url.split("/").slice(0, -1).join("/");
+    const response = await axios.get(url, {
+      headers: {
+        Referer: "https://megacloud.club/",
+      },
+    });
     const text = response.data;
     const lines = text.split("\n");
-    const baseUrl = url.split("/").slice(0, -1).join("/");
 
     const videoUrls = [];
 
@@ -343,7 +347,12 @@ async function getVideoUrls(url) {
           if (qualityMatch) {
             videoUrls.push({
               quality: `${qualityMatch}p`,
-              url: `${baseUrl}/${lines[index + 1]}`,
+              url: {
+                url: `${baseUrl}/${lines[index + 1]}`,
+                headers: {
+                  Referer: "https://megacloud.club/",
+                },
+              },
             });
           }
         }

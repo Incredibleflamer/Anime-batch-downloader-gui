@@ -20,7 +20,12 @@ class downloader {
   }) {
     this.concurrency = 5;
     this.directory = directory;
-    this.streamUrl = streamUrl;
+    if (streamUrl?.url) {
+      this.streamUrl = streamUrl.url;
+      this.headers = streamUrl.headers ?? {};
+    } else {
+      this.streamUrl = streamUrl;
+    }
     this.Epnum = parseInt(Epnum);
     this.caption = caption;
     this.EpID = EpID;
@@ -29,7 +34,9 @@ class downloader {
     this.ChangeTosrt = ChangeTosrt ?? false;
     this.downloadedPaths = [];
     this.httpClient = axios.create({
-      headers: { Connection: "keep-alive" },
+      headers: {
+        Connection: "keep-alive",
+      },
     });
   }
 
@@ -55,7 +62,9 @@ class downloader {
     if (!this.streamUrl || this.streamUrl.length <= 0) {
       throw new Error("No Stream Url Provided");
     } else {
-      let Playlist = await axios.get(this.streamUrl);
+      let Playlist = await this.httpClient.get(this.streamUrl, {
+        headers: this.headers ?? {},
+      });
       if (!Playlist || !Playlist.data) throw new Error("No Stream Found!");
       let Segments = Playlist.data
         .split("\n")
@@ -321,6 +330,7 @@ class downloader {
         url: SegmentUrl,
         responseType: "stream",
         signal: controller.signal,
+        headers: this.headers ?? {},
       });
 
       const writer = fs.createWriteStream(SegmentFileName);

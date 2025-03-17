@@ -925,7 +925,7 @@ async function MangadownloadAll() {
       Chapters: EpisodesChapters?.Chapters,
       Title: Title,
     }),
-    "Single"
+    "Multi"
   );
 }
 

@@ -13,13 +13,19 @@ ipcRenderer.on("download-logger", (event, data) => {
   UpdateBar(data);
 });
 
-async function UpdateBar() {
+UpdateBar();
+
+async function UpdateBar(data = null) {
   try {
-    let QueueData = await fetch("/downloads", {
-      method: "POST",
-    });
-    let data = QueueData.json();
+    if (!data) {
+      let QueueData = await fetch("/downloads", {
+        method: "POST",
+      });
+      data = QueueData.json();
+    }
+
     if (!bar) return;
+
     var captionElement = document.getElementById("caption");
 
     var ratio =
@@ -45,14 +51,15 @@ async function UpdateBar() {
     var queueContainer = document.getElementById("queue");
     var queueItemsContainer = document.getElementById("queue-items");
 
+    let scrollTop = null;
     if (!queueItemsContainer) {
       queueItemsContainer = document.createElement("div");
       queueItemsContainer.id = "queue-items";
       queueContainer.appendChild(queueItemsContainer);
+    } else {
+      scrollTop = queueItemsContainer.scrollTop;
+      queueItemsContainer.innerHTML = "";
     }
-
-    const scrollTop = queueItemsContainer.scrollTop;
-    queueItemsContainer.innerHTML = "";
 
     if (data.queue && data.queue.length > 0) {
       queueContainer.innerHTML = `
@@ -79,7 +86,7 @@ async function UpdateBar() {
       queueContainer.innerHTML = "";
     }
 
-    queueItemsContainer.scrollTop = scrollTop;
+    if (scrollTop) queueItemsContainer.scrollTop = scrollTop;
   } catch (err) {
     console.log(err);
   }

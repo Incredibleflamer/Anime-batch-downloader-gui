@@ -50,7 +50,6 @@ async function continuousExecution() {
             }
           } else if (currentTask?.Type === "Manga") {
             let { Title, EpNum, epid, ChapterTitle, config } = currentTask;
-
             if (Title && EpNum && epid && ChapterTitle && config) {
               await downloadMangaChapters(
                 config,

@@ -146,7 +146,7 @@ async function downloadMangaMulti(mangaid, Chapters = [], Title) {
 // Handles Single Manga Download
 async function downloadMangaSingle(
   mangaid,
-  episodeid,
+  chapterid,
   number,
   Title,
   saveinfo = false
@@ -175,7 +175,7 @@ async function downloadMangaSingle(
       }
     }
 
-    let is_downloaded = await checkEpisodeDownload(episodeid);
+    let is_downloaded = await checkEpisodeDownload(chapterid);
 
     if (is_downloaded) {
       return {
@@ -193,7 +193,7 @@ async function downloadMangaSingle(
           CustomDownloadLocation: config?.CustomDownloadLocation,
         },
         ChapterTitle: `Chapter ${number}`,
-        epid: episodeid,
+        epid: chapterid,
         totalSegments: 0,
         currentSegments: 0,
       });
