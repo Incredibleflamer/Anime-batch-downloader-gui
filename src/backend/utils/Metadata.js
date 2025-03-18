@@ -14,7 +14,6 @@ const tables = {
   Anime: {
     id: "TEXT PRIMARY KEY",
     folder_name: "TEXT",
-    // Animeinfo
     title: "TEXT",
     subOrDub: "TEXT",
     type: "TEXT",
@@ -23,18 +22,11 @@ const tables = {
     status: "TEXT",
     genres: "TEXT",
     aired: "TEXT",
-    // EPISODES
     EpisodesDataId: "TEXT",
-    totalEpisodes: "INTEGER",
-    last_page: "INTEGER",
-    episodes: "TEXT",
-    // IMAGE
     image: "BLOB",
-    last_updated: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   },
   Manga: {
     id: "TEXT PRIMARY KEY",
-    // MANGA INFO
     title: "TEXT",
     folder_name: "TEXT",
     provider: "TEXT",
@@ -43,11 +35,7 @@ const tables = {
     type: "TEXT",
     author: "TEXT",
     released: "TEXT",
-    // CHAPTER INFO
-    chapters: "TEXT",
-    totalChapters: "INTEGER",
     image: "BLOB",
-    last_updated: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   },
   Mapping: {
     id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -119,85 +107,7 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
     .prepare(`SELECT * FROM ${type} WHERE id = ?`)
     .get(valuesToAdd?.id);
 
-  if (existingRecord && Updating) {
-    try {
-      updates = {};
-      // Anime
-      if (
-        valuesToAdd.totalEpisodes !== undefined &&
-        valuesToAdd.episodes !== existingRecord.episodes
-      ) {
-        updates.episodes = valuesToAdd.episodes;
-      }
-
-      if (
-        valuesToAdd.totalEpisodes !== undefined &&
-        existingRecord.totalEpisodes !== valuesToAdd.totalEpisodes
-      ) {
-        updates.totalEpisodes = valuesToAdd.totalEpisodes;
-      }
-
-      if (
-        valuesToAdd.last_page !== undefined &&
-        existingRecord.last_page !== valuesToAdd.last_page
-      ) {
-        updates.last_page = valuesToAdd.last_page;
-      }
-
-      if (
-        valuesToAdd?.description !== undefined &&
-        existingRecord.description !== valuesToAdd.description
-      ) {
-        updates.description = valuesToAdd.description;
-      }
-
-      if (
-        valuesToAdd?.status !== undefined &&
-        existingRecord.status !== valuesToAdd.status
-      ) {
-        updates.status = valuesToAdd.status;
-      }
-
-      if (
-        valuesToAdd?.genres !== undefined &&
-        existingRecord.genres !== valuesToAdd.genres
-      ) {
-        updates.genres = valuesToAdd.genres;
-      }
-
-      // Manga
-      if (
-        valuesToAdd?.chapters !== undefined &&
-        existingRecord.chapters !== valuesToAdd.chapters
-      ) {
-        updates.chapters = valuesToAdd.chapters;
-      }
-
-      if (
-        valuesToAdd?.totalChapters !== undefined &&
-        existingRecord.totalChapters !== valuesToAdd.totalChapters
-      ) {
-        updates.totalChapters = valuesToAdd.totalChapters;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        const setClause =
-          Object.keys(updates)
-            .map((key) => `${key} = ?`)
-            .join(", ") + ", last_updated = CURRENT_TIMESTAMP";
-
-        const values = [...Object.values(updates), valuesToAdd.id];
-
-        db.prepare(`UPDATE ${type} SET ${setClause} WHERE id = ?`).run(
-          ...values
-        );
-      }
-    } catch (err) {
-      logger.error(`Failed To Update Metadata`);
-      logger.error(`Error message: ${err.message}`);
-      logger.error(`Stack trace: ${err.stack}`);
-    }
-  } else if (!existingRecord) {
+  if (!existingRecord) {
     if (valuesToAdd?.ImageUrl) {
       let Imageurl = valuesToAdd?.ImageUrl?.trim();
 
@@ -388,10 +298,6 @@ async function getMetadataById(type, baseDir, id) {
       throw new Error(`No metadata found for ID: ${id}`);
     }
 
-    if (metadata?.last_updated) {
-      metadata.last_updated = timeAgo(metadata?.last_updated);
-    }
-
     if (metadata?.genres) {
       try {
         metadata.genres = metadata?.genres?.split(",") ?? [];
@@ -400,20 +306,9 @@ async function getMetadataById(type, baseDir, id) {
       }
     }
 
-    if (metadata?.episodes) {
-      try {
-        metadata.episodes = JSON.parse(metadata.episodes);
-      } catch (error) {
-        metadata.episodes = [];
-      }
-    }
-
-    if (metadata?.chapters) {
-      try {
-        metadata.chapters = JSON.parse(metadata.chapters);
-      } catch (error) {
-        metadata.chapters = [];
-      }
+    if (metadata?.EpisodesDataId) {
+      metadata.dataId = metadata?.EpisodesDataId;
+      delete metadata.EpisodesDataId;
     }
 
     const folderPath = path.join(baseDir, type, metadata.folder_name);
@@ -486,38 +381,34 @@ async function getSourceById(type, baseDir, id, number) {
       throw new Error(`File not found for ${type} ${number}`);
     }
 
+    const subtitlesDir = path.join(folderPath, `subtitles_${number}`);
+    let subtitleFiles = [];
+
+    if (fs.existsSync(subtitlesDir)) {
+      subtitleFiles = fs
+        .readdirSync(subtitlesDir)
+        .filter((file) => file.endsWith(".srt") || file.endsWith(".vtt"))
+        .map((subtitle) => {
+          const parts = subtitle.split(".");
+          const nameWithoutExt = parts.slice(0, -1).join(".");
+          const lang = nameWithoutExt.split("_").slice(1).join("_");
+
+          return {
+            url: `/subtitles?file=${encodeURIComponent(
+              path.join(subtitlesDir, subtitle)
+            )}`,
+            lang: lang || "unknown",
+          };
+        });
+    }
     return {
       filepath: path.join(folderPath, fileName),
       ...DataToReturn,
+      subtitleFiles: subtitleFiles,
     };
   } catch (err) {
     throw new Error(`Error fetching file by ID: ${err.message}`);
   }
-}
-
-// Helper function
-function timeAgo(timestamp) {
-  const now = new Date();
-  const past = new Date(timestamp + " UTC");
-  const diffInSeconds = Math.floor((now - past) / 1000);
-
-  const units = [
-    { name: "year", seconds: 31536000 },
-    { name: "month", seconds: 2592000 },
-    { name: "week", seconds: 604800 },
-    { name: "day", seconds: 86400 },
-    { name: "hour", seconds: 3600 },
-    { name: "minute", seconds: 60 },
-    { name: "second", seconds: 1 },
-  ];
-
-  for (const unit of units) {
-    const amount = Math.floor(diffInSeconds / unit.seconds);
-    if (amount >= 1) {
-      return `${amount} ${unit.name}${amount > 1 ? "s" : ""} ago`;
-    }
-  }
-  return "just now";
 }
 
 // get last mapping updated time
@@ -620,29 +511,96 @@ async function fetchAndUpdateMappingDatabase() {
 }
 
 // find mapping ids
-async function FindMapping(id) {
+async function FindMapping(Animeid, malid, AnimeTitle, dir) {
   try {
-    const FoundRow = db
-      .prepare(
-        "SELECT * FROM Mapping WHERE AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
-      )
-      .get(`%${id}%`, `%${id}%`, `%${id}%`);
+    let data = {
+      malid: malid,
+    };
 
-    return FoundRow?.MalID ?? null;
+    // if logged in mal
+    try {
+      if (global.MalLoggedIn) {
+        // if no malid find mapping
+        if (!data?.malid) {
+          const FoundRow = db
+            .prepare(
+              "SELECT * FROM Mapping WHERE AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
+            )
+            .get(`%${Animeid}%`, `%${Animeid}%`, `%${Animeid}%`);
+
+          data.malid = FoundRow?.MalID ?? null;
+        }
+
+        // if mal id find in list if it exists
+        if (data.malid) {
+          let MalInfo = db
+            .prepare(`SELECT * FROM MyAnimeList WHERE id = ?`)
+            .get(data.malid);
+
+          data = {
+            ...data,
+            totalEpisodes:
+              MalInfo?.totalEpisodes > 0
+                ? MalInfo.totalEpisodes
+                : MalInfo?.lastEpisode
+                ? MalInfo.lastEpisode
+                : 0,
+            lastEpisode: MalInfo.lastEpisode ?? null,
+            watched: MalInfo.watched ?? 0,
+            status: MalInfo.status ?? "plan_to_watch",
+          };
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+
+    // checking downloads
+    try {
+      id = Animeid?.replace(/-(dub|sub|both)$/, "");
+
+      data.DownloadedEpisodes = {
+        sub: [],
+        dub: [],
+      };
+
+      try {
+        for (const type of Object.keys(data.DownloadedEpisodes)) {
+          const folderPath = path.join(
+            dir,
+            "Anime",
+            `${AnimeTitle?.replace(/[^a-zA-Z0-9]/g, "_")}_${type}`
+          );
+
+          if (fs.existsSync(folderPath)) {
+            const filesAndFolders = await fs.promises.readdir(folderPath, {
+              withFileTypes: true,
+            });
+
+            data.DownloadedEpisodes[type] = filesAndFolders
+              .filter(
+                (file) =>
+                  file.isFile() &&
+                  file.name.endsWith(".mp4") &&
+                  file.name.toLowerCase().match(/\d+/)
+              )
+              .map((file) => parseInt(file.name.match(/\d+/)[0]))
+              .filter(Boolean)
+              .sort((a, b) => a - b);
+          }
+        }
+      } catch (err) {
+        console.log(err);
+        // ignore
+      }
+    } catch (err) {
+      // ignore
+    }
+    return data;
   } catch (err) {
     logger.error(`Error Fetching Mapping`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
-    return null;
-  }
-}
-
-// Find Mal data
-async function FindMalData(id) {
-  try {
-    let MalInfo = db.prepare(`SELECT * FROM MyAnimeList WHERE id = ?`).get(id);
-    return MalInfo || null;
-  } catch (err) {
     return null;
   }
 }
@@ -940,5 +898,4 @@ module.exports = {
   processAndSortMyAnimeList,
   getMALLastSync,
   MalPage,
-  FindMalData,
 };

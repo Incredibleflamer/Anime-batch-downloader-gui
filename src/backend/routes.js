@@ -2,7 +2,7 @@
 const express = require("express");
 const axios = require("axios");
 const JSZip = require("jszip");
-const https = require("https");
+const path = require("path");
 const fs = require("fs");
 const router = express.Router();
 
@@ -296,26 +296,19 @@ router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
 router.post("/api/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
   const { AnimeManga, LocalMalProvider } = req.params;
   const { id } = req.body;
+  const setting = await settingfetch();
 
   try {
     if (!id) throw new Error("ID IS Missing");
 
     let data = null;
     if (AnimeManga === "Anime") {
-      if (LocalMalProvider === "local") {
-        const setting = await settingfetch();
-        data = await getMetadataById(
-          "Anime",
-          setting?.CustomDownloadLocation,
-          id
-        );
-      } else if (LocalMalProvider === "provider") {
+      if (LocalMalProvider === "provider") {
         let provider = await providerFetch("Anime");
-        data = await animeinfo(provider, id);
+        data = await animeinfo(provider, setting?.CustomDownloadLocation, id);
       }
     } else if (AnimeManga === "Manga") {
       if (LocalMalProvider === "local") {
-        const setting = await settingfetch();
         data = await getMetadataById(
           "Manga",
           setting?.CustomDownloadLocation,
@@ -467,13 +460,13 @@ router.post("/api/watch", async (req, res) => {
   const { ep, epNum, Downloaded } = req.body;
   try {
     if (!Downloaded) {
-      if (ep) throw new Error("Episode ID Not Found");
+      if (!ep) throw new Error("Episode ID Not Found");
       const provider = await providerFetch("Anime");
       const sourcesArray = await fetchEpisodeSources(provider, ep);
       res.status(200).json(sourcesArray);
     } else {
-      if (epNum) throw new Error("Episode Number Not Found");
-      if (ep) throw new Error("Anime ID Not Found");
+      if (!epNum) throw new Error("Episode Number Not Found");
+      if (!ep) throw new Error("Anime ID Not Found");
 
       const config = await settingfetch();
 
@@ -496,6 +489,11 @@ router.post("/api/watch", async (req, res) => {
           url: `/video?path=${encodeURIComponent(SourcesData?.filepath)}`,
           quality: "HD",
         });
+      }
+
+      // subtitles
+      if (SourcesData?.subtitleFiles?.length > 0) {
+        videoData.subtitles = SourcesData?.subtitleFiles;
       }
 
       // Subtitles : TODO
@@ -556,6 +554,30 @@ router.get("/video", (req, res) => {
   }
 });
 
+router.get("/subtitles", (req, res) => {
+  try {
+    let subtitlePath = req.query.file;
+    if (!subtitlePath) {
+      return res.status(400).json({ error: "Subtitle file path required" });
+    }
+
+    subtitlePath = decodeURIComponent(subtitlePath);
+
+    if (!fs.existsSync(subtitlePath)) {
+      return res.status(404).json({ error: "Subtitle file not found" });
+    }
+
+    const ext = path.extname(subtitlePath);
+    const mimeType = ext === ".srt" ? "application/x-subrip" : "text/vtt";
+
+    res.setHeader("Content-Type", mimeType);
+    res.sendFile(subtitlePath);
+  } catch (err) {
+    console.error("Error serving subtitle:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // get chapter
 router.post("/api/read", async (req, res) => {
   const { chapterID, Downloaded = false, MangaID } = req.body;
@@ -603,101 +625,6 @@ router.post("/api/read", async (req, res) => {
   }
 });
 
-// api for syncing anime / manga
-router.post("/api/sync/local", async (req, res) => {
-  try {
-    const setting = await settingfetch();
-    let { animeid, mangaid } = req.body;
-
-    if (animeid?.trim()?.length > 0) {
-      animeid = animeid.trim();
-      let data = await getMetadataById(
-        "Anime",
-        setting?.CustomDownloadLocation,
-        animeid
-      );
-      if (!data) throw new Error("Metadata not found!");
-
-      let provider = await providerFetch("Anime", data?.provider);
-      if (provider) {
-        const animedata = await animeinfo(provider, animeid);
-
-        if (
-          provider.provider_name === "animekai" ||
-          provider.provider_name === "hianime"
-        ) {
-          await MetadataAdd(
-            "Anime",
-            {
-              id: animeid,
-              description: animedata.description ?? null,
-              status: animedata.status ?? null,
-              genres: animedata?.genres?.join(",") ?? null,
-              totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
-              last_page: parseInt(animedata?.last_page) ?? null,
-              episodes: JSON.stringify(animedata?.episodes) ?? null,
-            },
-            true
-          );
-
-          return res.status(200).json({ Success: true });
-        } else if (provider.provider_name === "pahe") {
-          await MetadataAdd(
-            "Anime",
-            {
-              id: animeid,
-              description: animedata.description ?? null,
-              status: animedata.status ?? null,
-              genres: animedata?.genres?.join(",") ?? null,
-              totalEpisodes: parseInt(animedata?.totalEpisodes) ?? null,
-              last_page: parseInt(animedata?.last_page) ?? null,
-              episodes: JSON.stringify(animedata?.episodes) ?? null,
-            },
-            true
-          );
-          return res.status(200).json({ Success: true });
-        }
-      }
-    } else if (mangaid?.trim()?.length > 0) {
-      mangaid = mangaid.trim();
-      let data = await getMetadataById(
-        "Manga",
-        setting?.CustomDownloadLocation,
-        mangaid
-      );
-
-      if (!data) throw new Error("Metadata not found!");
-
-      let provider = await providerFetch("Manga", data?.provider);
-
-      if (provider) {
-        const mangainfo = await MangaInfo(provider, mangaid);
-        await MetadataAdd(
-          "Manga",
-          {
-            id: mangaid,
-            description: mangainfo.description ?? null,
-            genres: mangainfo?.genres?.join(",") ?? null,
-            chapters: JSON.stringify(mangainfo?.chapters) ?? null,
-            totalChapters: parseInt(mangainfo?.totalChapters) ?? null,
-          },
-          true
-        );
-        return res.status(200).json({ Success: true });
-      }
-    }
-    throw new Error("Invalid type must be manga / anime");
-  } catch (err) {
-    logger.error(`Failed To Sync`);
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    res.status(400).json({
-      error: err.message,
-      Success: false,
-    });
-  }
-});
-
 // ===================== routes =====================
 
 // Local Anime Page
@@ -706,7 +633,7 @@ router.get(["/", "/local/anime"], async (req, res) => {
   res.render("index.ejs", {
     catagorie: "Local Anime's",
     api: "/api/list/Anime/local?page=",
-    infoapi: "/info/Anime/local?id=",
+    infoapi: "/info/Anime/provider?id=",
     Pagination: config?.Pagination || "off",
   });
 });
@@ -867,28 +794,65 @@ router.get("/proxy/image", async (req, res) => {
 // Proxy for m3u8
 router.get("/proxy", async (req, res) => {
   try {
-    const videoUrl = req.query.url;
-    if (!videoUrl) return res.status(400).json({ error: "No URL provided" });
+    if (req.query.url) {
+      const response = await ddosGuardRequest(req.query.url, {
+        responseType: "arraybuffer",
+      });
 
-    const response = await ddosGuardRequest(videoUrl, {
-      responseType: "arraybuffer",
-    });
+      const contentType = response.headers["content-type"];
+      res.setHeader("Content-Type", contentType);
 
-    const contentType = response.headers["content-type"];
-    res.setHeader("Content-Type", contentType);
+      if (contentType.includes("application/vnd.apple.mpegurl")) {
+        let m3u8Data = response.data.toString("utf-8");
 
-    if (contentType.includes("application/vnd.apple.mpegurl")) {
-      let m3u8Data = response.data.toString("utf-8");
+        m3u8Data = m3u8Data.replace(
+          /^https?:\/\/.*$/gm,
+          (match) => `/proxy?url=${encodeURIComponent(match)}`
+        );
 
-      m3u8Data = m3u8Data.replace(
-        /^https?:\/\/.*$/gm,
-        (match) => `/proxy?url=${encodeURIComponent(match)}`
-      );
+        return res.send(m3u8Data);
+      }
 
-      return res.send(m3u8Data);
+      return res.send(response.data);
+    } else if (req?.query?.hianime) {
+      try {
+        const response = await axios.get(
+          decodeURIComponent(req.query.hianime),
+          {
+            responseType: "arraybuffer",
+            headers: {
+              Referer: "https://megacloud.club/",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+              Accept: "*/*",
+              Connection: "keep-alive",
+            },
+          }
+        );
+
+        const contentType = response.headers["content-type"];
+        res.setHeader("Content-Type", contentType);
+
+        if (
+          contentType.includes("application/vnd.apple.mpegurl") ||
+          contentType.includes("video/MP2T")
+        ) {
+          let m3u8Data = response.data.toString("utf-8");
+
+          m3u8Data = m3u8Data.replace(
+            /^https?:\/\/.*$/gm,
+            (match) => `/proxy?hianime=${encodeURIComponent(match)}`
+          );
+
+          return res.send(m3u8Data);
+        }
+
+        return res.send(response.data);
+      } catch (error) {
+        console.error("Error fetching video:", error.message);
+        res.status(500).json({ error: "Failed to fetch video" });
+      }
     }
-
-    res.send(response.data);
   } catch (error) {
     console.error("Error fetching video:", error.message);
     res.status(500).json({ error: "Failed to fetch video" });

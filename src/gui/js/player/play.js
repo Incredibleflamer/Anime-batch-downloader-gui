@@ -82,7 +82,14 @@ function updateVideoSource() {
       selectedSources?.sources
         ?.filter((source) => source?.quality && source.quality !== "default")
         ?.map((source) => {
-          if (source?.url.endsWith(".m3u8")) {
+          if (source?.url?.url) {
+            return {
+              src: `/proxy?hianime=${encodeURIComponent(source?.url?.url)}`,
+              type: "application/x-mpegURL",
+              label: source?.quality,
+            };
+          }
+          if (source?.url?.endsWith(".m3u8")) {
             return {
               src: `/proxy?url=${encodeURIComponent(source?.url)}`,
               type: "application/x-mpegURL",

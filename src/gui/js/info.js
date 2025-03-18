@@ -8,6 +8,7 @@ let Image = null;
 let totalEpisodes = 0;
 let TotalPages = 0;
 let EpisodesChapters = {};
+let downloaded = {};
 
 let lastLoadedChapter = 0;
 let TotalChapter = 0;
@@ -97,6 +98,8 @@ async function init(typeInput, ApiInfoInput, IDInput, LoadNextChapterInput) {
   // Anime Episodes
   else {
     AnimeMangaepid = AnimeInfoData?.dataId;
+    downloaded = AnimeInfoData?.DownloadedEpisodes;
+
     await AddInfo(AnimeInfoData);
     // Fetch Episode List ( page 1 )
     let AnimeEpisodesData = await EpisodeFetch(1);
@@ -135,9 +138,7 @@ async function AddInfo(data) {
     data?.aired ? `AIRED ON : ${data.aired} <br>` : ""
   }${data?.released ? `Released : ${data?.released}<br>` : ""}${
     data?.author ? `Author : ${data?.author}<br>` : ""
-  }<p id="totalep-p"></p><p id="subs-p"></p><p id="dubs-p"></p>${
-    data?.last_updated ? `LAST UPDATED : ${data?.last_updated} <br>` : ""
-  }`;
+  }<p id="totalep-p"></p><p id="subs-p"></p><p id="dubs-p"></p>`;
 
   // episodes will be pushed later inside addition-info div
   RightSide.innerHTML += `
@@ -163,16 +164,6 @@ async function AddInfo(data) {
                 class="btn btn-outline-info"
                 onclick="toggleDownloadWatchRead()"
             >${type === "Anime" ? "Watch" : "Read"}</button>
-            
-            ${
-              data?.LasySync
-                ? `<button
-                id="sync"
-                class="btn btn-outline-info"
-                onclick="SyncInfo()"
-            >Sync</button>`
-                : ""
-            }
         </div>
   </div>
 `;
@@ -296,6 +287,69 @@ async function AddInfo(data) {
     </div>
     `;
   }
+
+  if (data?.malid) {
+    let Mal = document.getElementById("mal-control");
+    if (Mal) {
+      Mal.innerHTML = `
+    <h4>My Anime List</h4>
+    
+    <!-- Select Menu -->
+    <select name="addtomal" id="addtomal" class="mal-select-menu">
+      <option value="" ${
+        !data?.status ? "selected" : ""
+      }>Select From Below</option>
+      <option value="watching" ${
+        data?.status === "watching" ? "selected" : ""
+      }>Watching</option>
+      <option value="completed" ${
+        data?.status === "completed" ? "selected" : ""
+      }>Completed</option>
+      <option value="plan_to_watch" ${
+        data?.status === "plan_to_watch" ? "selected" : ""
+      }>Plan To Watch</option>
+      <option value="on_hold" ${
+        data?.status === "on_hold" ? "selected" : ""
+      }>On Hold</option>
+      <option value="dropped" ${
+        data?.status === "dropped" ? "selected" : ""
+      }>Dropped</option>
+    </select>
+
+    <!-- Episode Control -->
+    <div class="episode-control">
+      <button class="minus-btn">-</button>
+
+      <span class="episode-status">
+        <span>
+          <span id="currently-watched">${data?.watched ?? 0}</span>
+          <span class="mal-tool-tip">Watched Episodes</span>
+        </span>
+    
+        /
+        
+        <!-- total episodes -->
+        <span>
+          <span id="total-episodes">${data?.totalEpisodes ?? "??"}</span>
+          <span class="mal-tool-tip">Total Episodes</span>
+        </span>
+
+        <!-- total episodes released -->
+        ${
+          data?.lastEpisode
+            ? `
+              <span>
+                (<span id="currently-released">${data?.lastEpisode}</span>)
+                <span class="mal-tool-tip">Released Episodes</span>
+              </span>`
+            : ""
+        }
+      
+      </span>
+      <button class="plus-btn">+</button>
+    </div>`;
+    }
+  }
 }
 
 // Fetch Episodes
@@ -330,27 +384,34 @@ async function EpisodeFetch(page = 1) {
   EpisodesChapters[page] = { dubs: [], subs: [] };
 
   data.episodes.forEach((item) => {
-    if (data?.downloadedEp?.includes(item.number)) return;
-
     if (item.lang === "both") {
-      EpisodesChapters[page].dubs.push({
-        number: item.number,
-        id: `${item.id}-dub`,
-      });
-      EpisodesChapters[page].subs.push({
-        number: item.number,
-        id: `${item.id}-sub`,
-      });
+      if (!downloaded?.dub?.includes(item.number)) {
+        EpisodesChapters[page].dubs.push({
+          number: item.number,
+          id: `${item.id}-dub`,
+        });
+      }
+
+      if (!downloaded?.sub?.includes(item.number)) {
+        EpisodesChapters[page].subs.push({
+          number: item.number,
+          id: `${item.id}-sub`,
+        });
+      }
     } else if (item.lang === "sub") {
-      EpisodesChapters[page].subs.push({
-        number: item.number,
-        id: `${item.id}-sub`,
-      });
+      if (!downloaded?.sub?.includes(item.number)) {
+        EpisodesChapters[page].subs.push({
+          number: item.number,
+          id: `${item.id}-sub`,
+        });
+      }
     } else if (item.lang === "dub") {
-      EpisodesChapters[page].dubs.push({
-        number: item.number,
-        id: `${item.id}-dub`,
-      });
+      if (!downloaded?.dub?.includes(item.number)) {
+        EpisodesChapters[page].dubs.push({
+          number: item.number,
+          id: `${item.id}-dub`,
+        });
+      }
     }
   });
 
@@ -394,22 +455,26 @@ async function HandleEpisodes(data) {
   }
 
   if (data?.subs?.length > 0) {
-    document.getElementById("subs-p").textContent = `SUB : ${data.subs.length}`;
+    document.getElementById("subs-p").textContent = `SUB : ${
+      data.subs.length + downloaded.sub.length
+    }`;
   }
 
   if (data?.dubs?.length > 0) {
-    document.getElementById("dubs-p").textContent = `DUB : ${data.dubs.length}`;
+    document.getElementById("dubs-p").textContent = `DUB : ${
+      data.dubs.length + downloaded.dub.length
+    }`;
   }
 
   // Downloaded Episodes
-  if (data?.downloadedEp?.length > 0) {
+  if (downloaded?.sub?.length > 0) {
     let downloadsEpsdiv = document.getElementById("downloaded-episodes-info");
     downloadsEpsdiv.style.display = "block";
-    downloadsEpsdiv.innerHTML = `<p>⚠️ ${data?.downloadedEp?.length} Episode${
-      data?.downloadedEp?.length > 1
+    downloadsEpsdiv.innerHTML = `<p>⚠️ ${downloaded?.sub?.length} Episode${
+      downloaded?.sub?.length > 1
         ? "s Are Hidden As They Are"
         : " is Hidden As Its"
-    } Already Downloaded!</p>`;
+    } Already Downloaded! ( sub )</p>`;
   }
 
   // sub dub tongle
@@ -475,15 +540,36 @@ async function HandleEpisodes(data) {
     });
   }
 
-  // Watch : Downloaded Episodes
-  if (data?.downloadedEp?.length > 0) {
-    document.getElementById("playfromdownloads").style.display = "grid";
-    document.getElementById("playdownloads").innerHTML = data?.downloadedEp
-      .map(
-        (ep) =>
-          `<button class="episode" onclick="Videoplay(${id},'${ep}', true)", true> Watch EP ${ep}</button>`
-      )
-      .join("");
+  // Watch: Downloaded Episodes
+  if (downloaded?.sub?.length > 0 || downloaded?.dub?.length > 0) {
+    const playFromDownloads = document.getElementById("playfromdownloads");
+    const playDownloads = document.getElementById("playdownloads");
+
+    if (playFromDownloads && playDownloads) {
+      playFromDownloads.style.display = "grid";
+
+      const subEpisodes = (downloaded?.sub || [])
+        .sort((a, b) => a - b)
+        .map(
+          (ep) =>
+            `<button class="episode" onclick="Videoplay('${id}', '${ep}', true)"> 
+             Watch EP ${ep} (SUB)
+           </button>`
+        )
+        .join("");
+
+      const dubEpisodes = (downloaded?.dubs || [])
+        .sort((a, b) => a - b)
+        .map(
+          (ep) =>
+            `<button class="episode" onclick="Videoplay('${id}', '${ep}', true)"> 
+             Watch EP ${ep} (DUB)
+           </button>`
+        )
+        .join("");
+
+      playDownloads.innerHTML = subEpisodes + dubEpisodes;
+    }
   }
 
   // Watch : Online
@@ -584,9 +670,32 @@ function toggleDownloadOptions(type = null) {
   const dubOptions = document.getElementsByClassName("dubOptions");
   const subOptions = document.getElementsByClassName("subOptions");
   const button = document.getElementById("toggleDownloadOptions");
+  const downloadsEpsdiv = document.getElementById("downloaded-episodes-info");
 
-  let showSub =
-    type === "sub" || (type === null && subOptions[0].style.display === "none");
+  if (
+    !toggleDownloadFrom ||
+    !toggleDownloadAll ||
+    !button ||
+    !downloadsEpsdiv
+  ) {
+    console.error("Required elements not found.");
+    return;
+  }
+
+  // Check if `subOptions` exist before accessing it
+  let showSub;
+
+  if (type === "sub") {
+    showSub = true;
+  } else if (type === "dub") {
+    showSub = false;
+  } else {
+    showSub =
+      subOptions.length > 0 &&
+      window.getComputedStyle(subOptions[0]).display === "none";
+  }
+
+  console.log("Toggling to:", showSub ? "SUB" : "DUB");
 
   for (let i = 0; i < subOptions.length; i++) {
     subOptions[i].style.display = showSub ? "grid" : "none";
@@ -598,15 +707,31 @@ function toggleDownloadOptions(type = null) {
   if (showSub) {
     button.textContent = "Show Dub 🎥";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (SUB)";
-    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("sub");
+    toggleDownloadFrom.onclick = () => toggleDownloadOptions("dub");
     toggleDownloadAll.textContent = "Download All Episodes (SUB)";
     toggleDownloadAll.onclick = () => AnimedownloadAll("sub");
   } else {
     button.textContent = "Show Sub 🎭";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (DUB)";
-    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("dub");
+    toggleDownloadFrom.onclick = () => toggleDownloadOptions("sub");
     toggleDownloadAll.textContent = "Download All Episodes (DUB)";
     toggleDownloadAll.onclick = () => AnimedownloadAll("dub");
+  }
+
+  // Show or hide downloaded episodes message
+  if (showSub && downloaded?.sub?.length > 0) {
+    downloadsEpsdiv.style.display = "block";
+    downloadsEpsdiv.innerHTML = `<p>⚠️ ${downloaded.sub.length} Episode${
+      downloaded.sub.length > 1 ? "s Are Hidden" : " is Hidden"
+    } As They Are Already Downloaded! ( sub )</p>`;
+  } else if (!showSub && downloaded?.dub?.length > 0) {
+    downloadsEpsdiv.style.display = "block";
+    downloadsEpsdiv.innerHTML = `<p>⚠️ ${downloaded.dub.length} Episode${
+      downloaded.dub.length > 1 ? "s Are Hidden" : " is Hidden"
+    } As They Are Already Downloaded! ( dub )</p>`;
+  } else {
+    downloadsEpsdiv.style.display = "none";
+    downloadsEpsdiv.innerHTML = "";
   }
 }
 
@@ -1183,52 +1308,4 @@ async function DownloadApi(body, SingleMulti) {
       text: `Error: ${err?.message ?? "Internal Error"}`,
     });
   }
-}
-
-// Sync Anime
-async function SyncInfo() {
-  try {
-    const response = await fetch(`/api/sync/local`, {
-      method: "POST",
-      body: JSON.stringify({
-        [`${type === "Anime" ? "animeid" : "mangaid"}`]: id,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
-    if (response.status === 400 || !response.ok) {
-      throw new Error("Something Went Wrong");
-    } else {
-      Swal.fire({
-        icon: "success",
-        title: "Sync In Process",
-        text: "Syncing May Take Time!",
-      });
-      updateLastUpdated();
-    }
-  } catch (err) {
-    Swal.fire({
-      icon: "error",
-      title: "Failed To Sync!",
-      text: `Error: \n${err}`,
-    });
-  }
-}
-
-// Last Sync Update
-function updateLastUpdated() {
-  const additionalInfo = document.getElementById("additional-info");
-  if (!additionalInfo) return;
-
-  const lines = additionalInfo.innerHTML.split("<br>");
-
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes("Last Updated")) {
-      lines[i] = `Last Updated: now`;
-      break;
-    }
-  }
-
-  additionalInfo.innerHTML = lines.join("<br>");
 }

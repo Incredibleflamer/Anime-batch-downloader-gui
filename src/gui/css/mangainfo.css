@@ -21,14 +21,13 @@
   bottom: 1%;
   left: 6%;
   width: 250px;
-  background: #222;
   color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border: 1px solid #e68900;
+  border: 1px solid #f5e1ff;
   border-radius: 10px;
   z-index: 500;
   max-height: 80vh;
@@ -46,8 +45,8 @@
 }
 
 .manga-btn {
-  background-color: #ff9800;
-  color: white;
+  background-color: #f5e1ff;
+  color: black;
   border: none;
   padding: 6px 12px;
   cursor: pointer;
@@ -60,7 +59,7 @@
 }
 
 .manga-btn:hover {
-  background-color: #e68900;
+  background-color: #f5e1ff;
 }
 
 .manga-input {
@@ -113,4 +112,101 @@
   font-size: clamp(12px, 2vw, 16px);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* My Anime List */
+.StickyMalControls {
+  position: fixed;
+  bottom: 3%;
+  left: 6%;
+  width: 250px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem;
+  border-radius: 10px;
+  z-index: 500;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.StickyMalControls h4 {
+  font-weight: 900;
+  font-size: larger;
+}
+
+.mal-select-menu {
+  color: white;
+  padding: 0.5rem;
+  text-align: center;
+  border-radius: 5px;
+  background-color: #222;
+  border: 0.1rem solid #6a3fcf;
+  margin: 0rem;
+}
+
+.mal-select-menu option {
+  background-color: #222;
+  color: #8c5aff;
+  border: none;
+}
+
+.mal-select-menu option:hover {
+  background-color: #6a3fcf;
+}
+
+.episode-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+}
+
+.episode-control button {
+  background-color: #8c5aff;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+.episode-control button:hover {
+  background-color: #6a3fcf;
+}
+
+.episode-status {
+  min-width: 80px;
+  text-align: center;
+  font-weight: bold;
+  position: relative;
+  overflow: visible;
+}
+
+.episode-status span:hover .mal-tool-tip {
+  left: auto;
+  right: 0;
+}
+
+.mal-tool-tip {
+  visibility: hidden;
+  opacity: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  position: absolute;
+  transform: translateY(-5px);
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  white-space: nowrap;
+  z-index: 9999999;
+}
+
+.episode-status span:hover .mal-tool-tip {
+  visibility: visible;
+  opacity: 1;
 }

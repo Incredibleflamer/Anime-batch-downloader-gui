@@ -1,4 +1,4 @@
-const { FindMapping, FindMalData } = require("./Metadata");
+const { FindMapping } = require("./Metadata");
 const NodeCache = require("node-cache");
 const HLSLogger = require("./logger");
 const JSZip = require("jszip");
@@ -97,7 +97,7 @@ async function findanime(provider, Anime_NAME, page = 1) {
 }
 
 // anime info
-async function animeinfo(provider, animeId) {
+async function animeinfo(provider, dir, animeId) {
   const cacheKey = `animeinfo_${provider.provider_name}_${animeId}`;
   const cachedData = cache.get(cacheKey);
 
@@ -106,18 +106,17 @@ async function animeinfo(provider, animeId) {
   }
 
   let data = await provider.provider.AnimeInfo(animeId);
-  if (global.MalLoggedIn) {
-    if (!data?.malid) data.malid = await FindMapping(data.id);
-
-    if (data?.malid) {
-      let Maldata = await FindMalData(String(data.malid));
-      if (Maldata)
-        data = {
-          ...data,
-          totalEpisodes: Maldata.totalEpisodes,
-          watched: Maldata.watched,
-        };
-    }
+  let MyAnimeListData = await FindMapping(
+    data?.id,
+    data?.malid,
+    data?.title,
+    dir
+  );
+  if (MyAnimeListData) {
+    data = {
+      ...data,
+      ...MyAnimeListData,
+    };
   }
 
   cache.set(cacheKey, data, 60);
