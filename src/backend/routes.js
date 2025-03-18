@@ -250,7 +250,7 @@ router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
           page
         );
       } else if (provider === "mal") {
-        data = await MalPage(config.Animeprovider);
+        data = await MalPage(config.Animeprovider, page);
       } else if (provider === "provider") {
         const provider = await providerFetch("Anime");
         data = await latestAnime(provider, page);
@@ -466,28 +466,15 @@ router.get("/api/download/remove", async (req, res) => {
 router.post("/api/watch", async (req, res) => {
   const { ep, epNum, Downloaded } = req.body;
   try {
-    if (!ep || !epNum) throw new Error("");
     if (!Downloaded) {
+      if (ep) throw new Error("Episode ID Not Found");
       const provider = await providerFetch("Anime");
-      let animedata = null;
-
-      if (provider?.provider_name === "pahe") {
-        let currentPage = Math.ceil(epNum / 30);
-        animedata = await animeinfo(provider, ep, {
-          page: currentPage,
-          fetch_info: false,
-        });
-      } else {
-        animedata = await animeinfo(provider, ep);
-      }
-
-      let AnimeEpId = animedata.episodes.find(
-        (item) => item.number === parseInt(epNum)
-      );
-      if (!AnimeEpId?.id) throw new Error("Episode Not Found");
-      const sourcesArray = await fetchEpisodeSources(provider, AnimeEpId?.id);
+      const sourcesArray = await fetchEpisodeSources(provider, ep);
       res.status(200).json(sourcesArray);
     } else {
+      if (epNum) throw new Error("Episode Number Not Found");
+      if (ep) throw new Error("Anime ID Not Found");
+
       const config = await settingfetch();
 
       let videoData = {

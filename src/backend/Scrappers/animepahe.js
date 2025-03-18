@@ -143,7 +143,7 @@ async function fetchEpisode(id, page = 1) {
     let {
       data: { last_page, data, total },
     } = await ddosGuardRequest(
-      `${baseUrl}/api?m=release&id=${id}&sort=episode_asc&page=${page}`
+      `${baseUrl}/api?m=release&id=${id}&sort=episode_desc&page=${page}`
     );
 
     data.forEach((item) => {

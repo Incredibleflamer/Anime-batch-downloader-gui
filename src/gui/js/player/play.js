@@ -6,7 +6,7 @@ let skipIntroTime = null;
 
 async function Videoplay(id, EpisodeNumber, Downloaded = false) {
   try {
-    ep = parseInt(EpisodeNumber, 10);
+    ep = parseInt(EpisodeNumber, 10) ?? 0;
     if (player) {
       player.pause();
     }

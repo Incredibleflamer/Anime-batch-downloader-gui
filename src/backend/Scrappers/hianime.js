@@ -41,7 +41,14 @@ async function AnimeInfo(id) {
     info.image = $("img.film-poster-img").attr("src");
     info.description = $("div.film-description").text().trim();
     info.type = $("span.item").last().prev().prev().text().toUpperCase();
-    info.subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
+    info.subOrDub =
+      SubDubBoth === "both"
+        ? dub > 0 && sub > 0
+          ? "both"
+          : dub > 0
+          ? "dub"
+          : "sub"
+        : `${SubDubBoth}`;
     info.dataId = episodeId.split("-").pop();
     return info;
   } catch (err) {
@@ -79,7 +86,7 @@ async function fetchEpisode(id) {
     });
 
     return {
-      episodes: episodes,
+      episodes: episodes?.length > 0 ? episodes.reverse() : [],
       totalPages: 1,
       total: episodes.length,
       currentPage: 1,

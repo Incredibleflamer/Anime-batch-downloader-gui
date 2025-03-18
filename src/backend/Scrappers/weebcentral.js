@@ -11,28 +11,35 @@ async function latestManga(page = 1) {
 
     $("article").each((index, article) => {
       const Manga = $(article);
-      let id = $(Manga).find("a").attr("href");
+      let id = Manga.find("a").attr("href");
       if (id?.includes("/series/")) {
         id = id.split("/series/")?.[1].split("/")?.[0];
         if (id) {
-          const image = Manga.find("picture > img").attr("src");
-          const title = Manga.find(".font-semibold.text-lg").text();
-          latestMangas.push({
-            id: id,
-            title: title,
-            image: image,
-          });
+          const image = Manga.find("picture > img")?.attr("src") ?? null;
+          const title =
+            Manga.find(".font-semibold.text-lg")
+              ?.text()
+              ?.replaceAll("\n", "")
+              ?.trim() ?? null;
+
+          if (image && title) {
+            latestMangas.push({
+              id: id,
+              title: title,
+              image: image,
+            });
+          }
         }
       }
     });
 
     return {
       current_page: page,
-      hasNextPage: true,
+      hasNextPage: $("button[hx-get]").length > 0,
       results: latestMangas,
     };
   } catch (err) {
-    throw new Error(err.message);
+    throw err;
   }
 }
 
@@ -53,37 +60,39 @@ async function searchManga(query, page = 1) {
     $("body article").each((index, article) => {
       const Manga = $(article).find("section").eq(0);
       if (Manga.length > 0) {
-        let id = $(Manga).find("a").attr("href");
+        let id = Manga.find("a").attr("href");
         if (id?.includes("/series/")) {
           id = id.split("/series/")?.[1].split("/")?.[0];
           if (id) {
-            const MangaArticle = Manga.find("article").eq(1);
-            if (MangaArticle.length > 0) {
-              const image = MangaArticle.find("picture > img").attr("src");
-              const title = MangaArticle.find(".text-ellipsis")
-                .first()
+            const MangaArticle = Manga?.find("article")?.eq(1);
+            if (MangaArticle?.length > 0) {
+              const image = MangaArticle?.find("picture > img")?.attr("src");
+              const title = MangaArticle?.find(".text-ellipsis")
+                ?.first()
                 ?.text()
+                ?.replaceAll("\n", "")
                 ?.trim();
 
-              results.push({
-                id: id,
-                title: title,
-                image: image,
-              });
+              if (title && image) {
+                results.push({
+                  id: id,
+                  title: title,
+                  image: image,
+                });
+              }
             }
           }
         }
       }
     });
-    const hasNextPage = results.length === 32;
 
     return {
       current_page: page,
-      hasNextPage: hasNextPage,
+      hasNextPage: $("button[hx-get]").length > 0,
       results: results,
     };
   } catch (err) {
-    throw new Error(err.message);
+    throw err;
   }
 }
 
@@ -91,6 +100,10 @@ async function fetchMangaInfo(mangaId) {
   try {
     let mangaInfo = {
       id: mangaId,
+      genres: [],
+      type: "",
+      author: "",
+      released: "",
     };
 
     const { data } = await axios.get(`${baseUrl}/series/${mangaId}`);
@@ -151,7 +164,7 @@ async function fetchMangaInfo(mangaId) {
 
     return mangaInfo;
   } catch (err) {
-    throw new Error(err.message);
+    throw err;
   }
 }
 
@@ -194,7 +207,7 @@ async function fetchChapters(mangaId) {
       Chapters: chapterLinks,
     };
   } catch (err) {
-    throw new Error(err.message);
+    throw err;
   }
 }
 
@@ -216,7 +229,7 @@ async function fetchChapterPages(chapterId) {
 
     return pages;
   } catch (err) {
-    throw new Error(err.message);
+    throw err;
   }
 }
 

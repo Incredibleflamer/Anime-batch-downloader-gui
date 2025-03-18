@@ -1,5 +1,10 @@
 // imports
-const { animeinfo, MangaInfo, fetchChapters } = require("./utils/AnimeManga");
+const {
+  animeinfo,
+  MangaInfo,
+  fetchChapters,
+  fetchEpisode,
+} = require("./utils/AnimeManga");
 const { providerFetch, settingfetch } = require("./utils/settings");
 const { addToQueue, checkEpisodeDownload } = require("./utils/queue");
 const { MetadataAdd } = require("./utils/Metadata");
@@ -55,6 +60,26 @@ async function downloadAnimeSingle(
     if (saveinfo) {
       const animedata = await animeinfo(provider, animeid);
       if (animedata) {
+        let Episodes = await fetchEpisode(provider, animedata?.dataId, 1);
+
+        // fetch more episodes
+        if (Episodes && Episodes?.episodes?.length > 0) {
+          if (Episodes?.last_page && Episodes?.last_page > 1) {
+            for (let i = 2; i <= Episodes.last_page; i++) {
+              let nextPageData = await fetchEpisode(
+                provider,
+                EpisodesDataId,
+                i
+              );
+              if (nextPageData?.episodes?.length > 0) {
+                Episodes.episodes?.push(...nextPageData?.episodes);
+              } else {
+                break;
+              }
+            }
+          }
+        }
+
         MetadataAdd("Anime", {
           id: animeid,
           title: `${animedata.title} ${animedata?.subOrDub}`,
@@ -67,6 +92,9 @@ async function downloadAnimeSingle(
           aired: animedata?.aired ?? null,
           ImageUrl: animedata?.image,
           EpisodesDataId: animedata?.dataId,
+          last_page: Episodes.last_page,
+          totalEpisodes: Episodes.episodes.length ?? 0,
+          episodes: JSON.stringify(Episodes?.episodes),
         });
       }
     }
@@ -168,9 +196,9 @@ async function downloadMangaSingle(
           type: mangainfo.type ?? null,
           author: mangainfo?.author ?? null,
           released: mangainfo?.released ?? null,
-          chapters: JSON.stringify(mangainfo?.chapters) ?? null,
-          totalChapters: parseInt(mangainfo?.totalChapters) ?? null,
           ImageUrl: mangainfo?.image,
+          chapters: JSON.parse(mangainfo?.chapters),
+          totalChapters: MangaInfo?.totalChapters,
         });
       }
     }

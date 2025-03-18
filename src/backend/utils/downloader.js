@@ -320,7 +320,7 @@ class downloader {
         stalledTimeout = setTimeout(() => {
           hasAborted = true;
           controller.abort();
-        }, 5000);
+        }, 10000);
       };
 
       resetTimeout();

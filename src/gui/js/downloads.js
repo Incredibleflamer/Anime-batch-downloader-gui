@@ -21,7 +21,7 @@ async function UpdateBar(data = null) {
       let QueueData = await fetch("/downloads", {
         method: "POST",
       });
-      data = QueueData.json();
+      data = await QueueData.json();
     }
 
     if (!bar) return;

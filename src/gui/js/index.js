@@ -7,7 +7,7 @@ let hasNextPage = true;
 let api = null;
 let infoapi = null;
 
-async function fetchPageData(page) {
+async function fetchPageData(page, init = false) {
   try {
     if (isFetching || (page > 1 && !hasNextPage) || allDataFetched) return;
     isFetching = true;
@@ -27,21 +27,18 @@ async function fetchPageData(page) {
 
     currentPage = page;
 
-    if (data?.hasNextPage) {
+    hasNextPage = data?.hasNextPage ?? false;
+
+    if (data?.hasNextPage && init) {
       if (pagination === "on") {
         document.body.innerHTML += '<div id="pagination-controls"></div>';
-        addPaginationControls();
       } else {
         window.addEventListener("scroll", handleScroll);
       }
-    } else {
-      hasNextPage = false;
     }
 
-    if (data?.hasNextPage) {
-      hasNextPage = true;
-    } else if (!data?.hasNextPage || data?.hasNextPage === false) {
-      hasNextPage = false;
+    if (pagination === "on") {
+      addPaginationControls();
     }
 
     if (data && data.results && data.results.length > 0) {
@@ -107,97 +104,102 @@ async function addchild(data) {
 
 function addPaginationControls() {
   const paginationContainer = document.getElementById("pagination-controls");
+  if (!paginationContainer) return;
   paginationContainer.innerHTML = "";
-  if (hasNextPage) {
-    const inputField = `<input type="number" id="pageInput" min="1" max="${
-      totalPages || ""
-    }" value="${currentPage}" class="pagination-btn page-number" style="width: 80px; text-align: center;" inputmode="numeric" pattern="[0-9]*">`;
+  if (!currentPage) return;
 
-    let firstButtons = "";
-    let lastButtons = "";
+  const inputField = `<input type="number" id="pageInput" min="1" max="${
+    totalPages || ""
+  }" value="${currentPage}" class="pagination-btn page-number" style="width: 80px; text-align: center;" inputmode="numeric" pattern="[0-9]*">`;
 
-    if (totalPages) {
-      firstButtons = Array.from(
-        { length: Math.min(4, totalPages) },
-        (_, i) => i + 1
+  let firstButtons = "";
+  let lastButtons = "";
+
+  if (totalPages) {
+    firstButtons = Array.from(
+      { length: Math.min(4, totalPages) },
+      (_, i) => i + 1
+    )
+      .map(
+        (page) =>
+          `<button class="pagination-btn page-number ${
+            page === currentPage ? "active" : ""
+          }" data-page="${page}" ${
+            page === currentPage ? "disabled" : ""
+          }>${page}</button>`
       )
-        .map(
-          (page) =>
-            `<button class="pagination-btn page-number ${
-              page === currentPage ? "active" : ""
-            }" data-page="${page}" ${
-              page === currentPage ? "disabled" : ""
-            }>${page}</button>`
-        )
-        .join("");
+      .join("");
 
-      lastButtons =
-        totalPages > 4
-          ? Array.from({ length: 4 }, (_, i) => totalPages - 3 + i)
-              .map(
-                (page) =>
-                  `<button class="pagination-btn page-number ${
-                    page === currentPage ? "active" : ""
-                  }" data-page="${page}" ${
-                    page === currentPage ? "disabled" : ""
-                  }>${page}</button> `
-              )
-              .join("")
-          : "";
+    lastButtons =
+      totalPages > 4
+        ? Array.from({ length: 4 }, (_, i) => totalPages - 3 + i)
+            .map(
+              (page) =>
+                `<button class="pagination-btn page-number ${
+                  page === currentPage ? "active" : ""
+                }" data-page="${page}" ${
+                  page === currentPage ? "disabled" : ""
+                }>${page}</button> `
+            )
+            .join("")
+        : "";
 
-      paginationContainer.innerHTML = `
+    paginationContainer.innerHTML = `
   <div class="pagination-wrapper">
     ${firstButtons} <button class="pagination-btn page-number" id="prevPage">&lt;</button> ${inputField} <button class="pagination-btn page-number" id="nextPage">&gt;</button> ${lastButtons}
   </div>`;
-    } else {
-      paginationContainer.innerHTML = `
+  } else {
+    paginationContainer.innerHTML = `
   <div class="pagination-wrapper">
-    <button class="pagination-btn page-number" id="prevPage">&lt;</button>
+    <button class="pagination-btn page-number" id="prevPage" ${
+      currentPage <= 1 ? "disabled" : ""
+    }>&lt;</button>
     ${inputField}
-    <button class="pagination-btn page-number" id="nextPage">&gt;</button>
+    <button class="pagination-btn page-number" id="nextPage" ${
+      hasNextPage ? "" : "disabled"
+    }>&gt;</button>
   </div>`;
-    }
+  }
 
-    document
-      .querySelectorAll("#pagination-controls button[data-page]")
-      .forEach((btn) =>
-        btn.addEventListener("click", (e) =>
-          handlePagination(parseInt(e.target.dataset.page, 10))
-        )
-      );
-
-    const pageInput = document.getElementById("pageInput");
-    pageInput.addEventListener("change", (e) =>
-      handlePagination(parseInt(e.target.value, 10))
+  document
+    .querySelectorAll("#pagination-controls button[data-page]")
+    .forEach((btn) =>
+      btn.addEventListener("click", (e) =>
+        handlePagination(parseInt(e.target.dataset.page, 10))
+      )
     );
 
-    if (currentPage > 1) {
-      document
-        .getElementById("prevPage")
-        .addEventListener("click", () => handlePagination(currentPage - 1));
-    } else {
-      document.getElementById("prevPage").addEventListener("click", () =>
-        Swal.fire({
-          icon: "error",
-          title: "Page Not Found",
-          text: ":P Page you looking for doesn't exists ( like my gf )",
-        })
-      );
-    }
+  const pageInput = document.getElementById("pageInput");
+  pageInput.addEventListener("change", (e) =>
+    handlePagination(parseInt(e.target.value, 10))
+  );
 
-    if (hasNextPage) {
-      document
-        .getElementById("nextPage")
-        .addEventListener("click", () => handlePagination(currentPage + 1));
-    } else {
-      document.getElementById("nextPage").addEventListener("click", () =>
-        Swal.fire({
-          icon: "error",
-          title: "Page Not Found",
-          text: ":P Page you looking for doesn't exists ( like my gf )",
-        })
-      );
-    }
+  if (currentPage > 1) {
+    document
+      .getElementById("prevPage")
+      .addEventListener("click", () => handlePagination(currentPage - 1));
+  } else {
+    document.getElementById("prevPage").addEventListener("click", () =>
+      Swal.fire({
+        icon: "error",
+        title: "Page Not Found",
+        text: ":P Page you looking for doesn't exists ( like my gf )",
+      })
+    );
+  }
+
+  if (hasNextPage) {
+    document
+      .getElementById("nextPage")
+      .addEventListener("click", () => handlePagination(currentPage + 1));
+  } else {
+    document.getElementById("nextPage").addEventListener("click", () =>
+      Swal.fire({
+        icon: "error",
+        title: "Page Not Found",
+        text: ":P Page you looking for doesn't exists ( like my gf )",
+      })
+    );
   }
 }
 
@@ -223,6 +225,6 @@ async function init(paginationInput, apiInput, infoapiInput) {
   pagination = paginationInput;
   api = apiInput;
   infoapi = infoapiInput;
-  await fetchPageData(1);
+  await fetchPageData(1, true);
   document.getElementById("loading-container").hidden = true;
 }

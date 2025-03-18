@@ -100,7 +100,10 @@ async function init(typeInput, ApiInfoInput, IDInput, LoadNextChapterInput) {
     await AddInfo(AnimeInfoData);
     // Fetch Episode List ( page 1 )
     let AnimeEpisodesData = await EpisodeFetch(1);
-    await HandleEpisodes(AnimeEpisodesData);
+    await HandleEpisodes({
+      ...AnimeEpisodesData,
+      watched: AnimeInfoData?.watched ?? 0,
+    });
   }
 }
 
@@ -422,7 +425,11 @@ async function HandleEpisodes(data) {
     document.getElementById("subDownloads").innerHTML = data.subs
       .map(
         (sub) =>
-          `<button class="episode" onclick="Animedownload('${sub.id}',${sub.number},'sub')"> Download Episode ${sub.number} (SUB) </button>`
+          `<button class="episode ${
+            data?.watched >= sub.number ? "episode_active" : ""
+          }"  onclick="Animedownload('${sub.id}',${
+            sub.number
+          },'sub')"> Download Episode ${sub.number} (SUB) </button>`
       )
       .join("");
   }
@@ -432,7 +439,11 @@ async function HandleEpisodes(data) {
     document.getElementById("dubDownloads").innerHTML = data.dubs
       .map(
         (dub) =>
-          `<button class="episode" onclick="Animedownload('${dub.id}',${dub.number},'dub')"> Download Episode ${dub.number} (DUB) </button>`
+          `<button class="episode ${
+            data?.watched >= dub.number ? "episode_active" : ""
+          }" onclick="Animedownload('${dub.id}',${
+            dub.number
+          },'dub')"> Download Episode ${dub.number} (DUB) </button>`
       )
       .join("");
   }
@@ -470,7 +481,7 @@ async function HandleEpisodes(data) {
     document.getElementById("playdownloads").innerHTML = data?.downloadedEp
       .map(
         (ep) =>
-          `<button class="episode" onclick="Videoplay('${ep}')", true> Watch EP ${ep}</button>`
+          `<button class="episode" onclick="Videoplay(${id},'${ep}', true)", true> Watch EP ${ep}</button>`
       )
       .join("");
   }
@@ -480,13 +491,16 @@ async function HandleEpisodes(data) {
     document.getElementById("playfromonline").style.display = "grid";
     const episodesMap = new Map();
     [...(data.subs || []), ...(data.dubs || [])].forEach((ep) => {
-      episodesMap.set(ep.id, ep);
+      let id = ep.id.replace(/-(dub|sub|both)$/, "");
+      episodesMap.set(id, ep);
     });
 
     document.getElementById("playonline").innerHTML = [...episodesMap.values()]
       .map(
         (ep) =>
-          `<button class="episode" onclick="Videoplay('${ep.id}')">
+          `<button class="episode ${
+            data?.watched >= ep.number ? "episode_active" : ""
+          }" onclick="Videoplay('${ep.id}')">
           Watch EP ${ep.number}
        </button>`
       )

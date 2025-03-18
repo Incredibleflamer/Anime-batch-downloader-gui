@@ -172,6 +172,8 @@ async function MalAddToList(type, malid, status, NumWatchedEp) {
 async function MalFetchListAll(force = false) {
   let MalMappingDate = await getMALLastSync();
 
+  let limit = MalMappingDate ? 50 : 500;
+
   const isSyncExpired =
     MalMappingDate &&
     Date.now() - new Date(MalMappingDate).getTime() > 5 * 60 * 1000;
@@ -179,9 +181,16 @@ async function MalFetchListAll(force = false) {
   if (force || isSyncExpired || !MalMappingDate) {
     let i = 1;
     while (true) {
-      logger.info(`[MAL-LIST] FETCHING PAGE ${i}`);
-      let data = await MalFetchList(i, true);
-      if (data?.results?.length > 0) await MalEpMap(data.results);
+      logger.info(`[MAL-LIST] FETCHING PAGE ${i} ( ${limit} )`);
+      let data = await MalFetchList(i, limit);
+      if (data?.results?.length > 0) {
+        let stop = await MalEpMap(data.results);
+        console.log(stop);
+        if (stop && limit === 50) break;
+      } else {
+        break;
+      }
+
       if (!data?.hasNextPage) break;
       i++;
       await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s wait
@@ -194,15 +203,15 @@ async function MalFetchListAll(force = false) {
 }
 
 // Fetch Anime / Manga List
-async function MalFetchList(page = 1) {
+async function MalFetchList(page = 1, limit = 100) {
   try {
     if (!MalAcount?.access_token)
       throw new Error("No access token please login");
 
-    const offset = (page - 1) * 100;
+    const offset = (page - 1) * limit;
 
     let { data } = await axios.get(
-      `https://api.myanimelist.net/v2/users/@me/animelist?nsfw=true&limit=100&offset=${offset}&status=watching&sort=list_updated_at&fields=list_status,num_episodes`,
+      `https://api.myanimelist.net/v2/users/@me/animelist?nsfw=true&limit=${limit}&offset=${offset}&sort=list_updated_at&fields=list_status,num_episodes`,
       {
         headers: {
           Authorization: `Bearer ${MalAcount.access_token}`,
@@ -218,7 +227,9 @@ async function MalFetchList(page = 1) {
         items?.node?.main_picture?.large ??
         null,
       totalEpisodes: items?.node?.num_episodes ?? null,
-      watched: items?.list_status?.num_episodes_watched,
+      watched: items?.list_status?.num_episodes_watched ?? 0,
+      status: items?.list_status?.status ?? null,
+      updated_at: items?.list_status?.updated_at ?? null,
     }));
 
     return {

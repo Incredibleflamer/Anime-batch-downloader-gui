@@ -1,5 +1,4 @@
 // libs
-const { ddosGuardRequest, fetchEpisode } = require("../Scrappers/animepahe");
 const BetterSqlite3 = require("better-sqlite3");
 const { logger } = require("./AppLogger");
 const { app } = require("electron");
@@ -63,8 +62,11 @@ const tables = {
     title: "TEXT",
     image: "TEXT",
     totalEpisodes: "INTEGER",
+    lastEpisode: "INTEGER",
     watched: "INTEGER",
+    status: "TEXT",
     sortOrder: "INTEGER",
+    updated_at: "TEXT",
   },
   last_ran_Mapping: {
     id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -197,34 +199,25 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
     }
   } else if (!existingRecord) {
     if (valuesToAdd?.ImageUrl) {
-      let data;
+      let Imageurl = valuesToAdd?.ImageUrl?.trim();
 
-      if (valuesToAdd?.ImageUrl?.startsWith("/proxy/image?pahe=")) {
-        valuesToAdd.ImageUrl = decodeURIComponent(
-          valuesToAdd.ImageUrl.replace("/proxy/image?pahe=", "")
-        );
+      if (Imageurl.startsWith("/proxy")) {
+        Imageurl = `https://localhost:${global.PORT}${Imageurl}`;
+      }
 
-        const response = await ddosGuardRequest(valuesToAdd.ImageUrl, {
-          responseType: "arraybuffer",
-        });
-
-        data = response.data;
-      } else {
-        let Imageurl = valuesToAdd?.ImageUrl;
-        if (Imageurl?.startsWith("/proxy/image?url=")) {
-          Imageurl = decodeURIComponent(
-            valuesToAdd.ImageUrl.replace("/proxy/image?url=", "")
-          );
-        }
+      try {
         const response = await axios.get(Imageurl, {
           responseType: "arraybuffer",
         });
-        data = response.data;
-      }
 
-      valuesToAdd.image = `data:image/png;base64,${Buffer.from(data).toString(
-        "base64"
-      )}`;
+        valuesToAdd.image = `data:image/png;base64,${Buffer.from(
+          response.data
+        ).toString("base64")}`;
+      } catch (error) {
+        logger.error(`Failed to fetch image from: ${Imageurl}`);
+        logger.error(`Error message: ${err.message}`);
+        logger.error(`Stack trace: ${err.stack}`);
+      }
     }
 
     if (valuesToAdd?.title) {
@@ -265,16 +258,6 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
       ).run(...values);
     } catch (error) {
       throw new Error(`Error inserting into ${type}: ${error.message}`);
-    }
-
-    if (valuesToAdd?.EpisodesDataId) {
-      try {
-        await FetchAllEpisodes(valuesToAdd.EpisodesDataId);
-      } catch (err) {
-        logger.error(`Error Fetching All Episodes`);
-        logger.error(`Error message: ${err.message}`);
-        logger.error(`Stack trace: ${err.stack}`);
-      }
     }
   }
 }
@@ -512,34 +495,6 @@ async function getSourceById(type, baseDir, id, number) {
   }
 }
 
-// Fetch All Anime Episodes
-async function FetchAllEpisodes(EpisodesDataId) {
-  let Episodes = await fetchEpisode(EpisodesDataId, 1);
-
-  if (Episodes && Episodes?.episodes?.length > 0) {
-    if (Episodes?.last_page && Episodes?.last_page > 1) {
-      for (let i = 2; i <= Episodes.last_page; i++) {
-        let nextPageData = await fetchEpisode(EpisodesDataId, i);
-        if (nextPageData?.episodes?.length > 0) {
-          Episodes.episodes?.push(...nextPageData?.episodes);
-        } else {
-          break;
-        }
-      }
-    }
-
-    await MetadataAdd(
-      "Anime",
-      {
-        last_page: Episodes.last_page,
-        totalEpisodes: Episodes.episodes.length ?? 0,
-        episodes: Episodes?.episodes,
-      },
-      true
-    );
-  }
-}
-
 // Helper function
 function timeAgo(timestamp) {
   const now = new Date();
@@ -589,7 +544,7 @@ function getMappingLastRun() {
 async function getMALLastSync() {
   try {
     const row = db
-      .prepare("SELECT last_Sync_Mal FROM last_ran_Mapping WHERE id = 1")
+      .prepare("SELECT last_Sync_Mal FROM last_ran_Mapping WHERE id = 2")
       .get();
 
     return row?.last_Sync_Mal ?? null;
@@ -665,7 +620,7 @@ async function fetchAndUpdateMappingDatabase() {
 }
 
 // find mapping ids
-function FindMapping(id) {
+async function FindMapping(id) {
   try {
     const FoundRow = db
       .prepare(
@@ -682,45 +637,95 @@ function FindMapping(id) {
   }
 }
 
+// Find Mal data
+async function FindMalData(id) {
+  try {
+    let MalInfo = db.prepare(`SELECT * FROM MyAnimeList WHERE id = ?`).get(id);
+    return MalInfo || null;
+  } catch (err) {
+    return null;
+  }
+}
+
 // Map MAL
 async function MalEpMap(data = []) {
   try {
-    if (!data.length) return;
+    if (!data.length) return true;
+
+    const ids = data.map((entry) => entry.id.toString());
+
+    const existingEntries = db
+      .prepare(
+        `SELECT * FROM MyAnimeList WHERE id IN (${ids
+          .map(() => "?")
+          .join(",")})`
+      )
+      .all(...ids);
+
+    const existingMap = new Map(
+      existingEntries.map((entry) => [entry.id, entry])
+    );
+
+    let NotChanged = false;
 
     let InsertOrUpdateQuery = db.prepare(`
-      INSERT INTO MyAnimeList (id, title, image, totalEpisodes, watched)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO MyAnimeList (id, title, image, totalEpisodes, watched, status, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET 
         title = excluded.title,
         image = excluded.image,
         totalEpisodes = excluded.totalEpisodes,
-        watched = excluded.watched
+        watched = excluded.watched,
+        status = excluded.status,
+        updated_at = excluded.updated_at
     `);
 
     const insertMany = db.transaction((entries) => {
       for (const entry of entries) {
+        const existing = existingMap.get(entry.id.toString());
+
+        if (
+          existing &&
+          existing.title === entry.title &&
+          existing.image === entry.image &&
+          existing.totalEpisodes === parseInt(entry.totalEpisodes ?? 0) &&
+          existing.watched === parseInt(entry.watched ?? 0) &&
+          existing.status === entry.status &&
+          existing.updated_at === entry.updated_at
+        ) {
+          NotChanged = true;
+          continue;
+        }
+
         InsertOrUpdateQuery.run(
           entry.id.toString(),
           entry.title,
           entry.image,
           parseInt(entry.totalEpisodes ?? 0),
-          parseInt(entry.watched ?? 0)
+          parseInt(entry.watched ?? 0),
+          entry.status,
+          entry.updated_at
         );
       }
     });
 
     insertMany(data);
+
+    return NotChanged;
   } catch (err) {
     logger.error(`Failed To Update MyAnimeList`);
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
+    return true;
   }
 }
 
 // Mal Sort
 async function processAndSortMyAnimeList() {
   try {
-    let animeList = db.prepare(`SELECT * FROM MyAnimeList`).all();
+    let animeList = db
+      .prepare(`SELECT * FROM MyAnimeList WHERE status = 'watching'`)
+      .all();
     if (animeList.length === 0) return;
 
     let malIds = animeList.map((anime) => anime.id);
@@ -741,9 +746,7 @@ async function processAndSortMyAnimeList() {
           if (parsedEpisodes.length) {
             mappingMap.set(MalID, parsedEpisodes);
           }
-        } catch (e) {
-          // skip :3
-        }
+        } catch (e) {}
       }
     }
 
@@ -812,7 +815,11 @@ async function processAndSortMyAnimeList() {
       updateQuery.run(
         entry.title,
         entry.image,
-        entry.totalEpisodes,
+        entry?.totalEpisodes > 0
+          ? entry.totalEpisodes
+          : entry?.lastEpisode
+          ? entry?.lastEpisode
+          : 0,
         entry.watched,
         index,
         entry.id
@@ -820,7 +827,7 @@ async function processAndSortMyAnimeList() {
     });
 
     db.prepare(
-      "INSERT OR REPLACE INTO last_ran_Mapping (id, last_Sync_Mal) VALUES (1, ?)"
+      "INSERT OR REPLACE INTO last_ran_Mapping (id, last_Sync_Mal) VALUES (2, ?)"
     ).run(new Date().toISOString());
 
     logger.info(`[MyAnimeList] Successfully Sorted!`);
@@ -832,14 +839,33 @@ async function processAndSortMyAnimeList() {
 }
 
 // Mal Retrive Pages
-async function MalPage(provider_name) {
+async function MalPage(provider_name, page = 1) {
   try {
-    let animeList = db.prepare(`SELECT * FROM MyAnimeList`).all();
+    const limit = 30;
+    const offset = (page - 1) * limit;
+    let animeList = db
+      .prepare(
+        `SELECT * FROM MyAnimeList 
+       WHERE status = 'watching' 
+       AND sortOrder > 0 
+       ORDER BY sortOrder 
+       LIMIT ? OFFSET ?`
+      )
+      .all(limit, offset);
 
-    if (animeList.length === 0) return [];
+    let totalRecords =
+      db
+        .prepare(
+          `SELECT COUNT(*) AS total FROM MyAnimeList WHERE status = 'watching'`
+        )
+        .get()?.total || 0;
+
+    let hasNextPage = offset + limit < totalRecords;
+    let totalPages = Math.ceil(totalRecords / limit);
+
+    if (animeList.length === 0) throw new Error("Empty");
 
     let malIds = animeList.map((anime) => anime.id);
-
     let mappingData = db
       .prepare(
         `SELECT MalID, AnimeKai, HiAnime, AnimePahe FROM Mapping WHERE MalID IN (${malIds
@@ -853,7 +879,6 @@ async function MalPage(provider_name) {
       if (!mapping) return null;
 
       let providerId = null;
-
       switch (provider_name) {
         case "animekai":
           providerId = mapping.AnimeKai;
@@ -866,11 +891,14 @@ async function MalPage(provider_name) {
           break;
       }
 
-      if (providerId && providerId !== "[]") {
-        providerId = JSON.parse(providerId);
-        if (providerId?.length > 0) {
-          providerId = providerId[0];
-        } else {
+      if (providerId && providerId !== "[]" && providerId !== "{}") {
+        try {
+          providerId = JSON.parse(providerId);
+          providerId =
+            Array.isArray(providerId) && providerId.length > 0
+              ? providerId[0]
+              : null;
+        } catch (e) {
           providerId = null;
         }
       } else {
@@ -883,17 +911,16 @@ async function MalPage(provider_name) {
     let lists = filteredAnime.filter((anime) => anime !== null);
 
     return {
-      totalPages: 1,
-      currentPage: 1,
-      hasNextPage: false,
-      totalItems: lists.length,
+      totalPages,
+      currentPage: page,
+      hasNextPage,
+      totalItems: totalRecords,
       results: lists,
     };
   } catch (err) {
-    console.log("Error in MalPage:", err);
     return {
       totalPages: 0,
-      currentPage: 1,
+      currentPage: page,
       hasNextPage: false,
       totalItems: 0,
       results: [],
@@ -913,4 +940,5 @@ module.exports = {
   processAndSortMyAnimeList,
   getMALLastSync,
   MalPage,
+  FindMalData,
 };

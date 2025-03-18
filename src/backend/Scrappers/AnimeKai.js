@@ -139,7 +139,6 @@ async function AnimeInfo(id) {
       dataId: dataId,
     };
   } catch (err) {
-    console.error("Error fetching anime info:", err.message);
     throw new Error(err.message);
   }
 }
@@ -174,7 +173,7 @@ async function fetchEpisode(dataId) {
     return {
       totalPages: 1,
       total: episodes.length,
-      episodes: episodes,
+      episodes: episodes?.length > 0 ? episodes.reverse() : [],
       currentPage: 1,
     };
   } catch (err) {

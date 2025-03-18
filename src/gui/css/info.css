@@ -28,9 +28,9 @@ button {
   src: url("/fonts/PressStart2P-Regular.ttf") format("truetype");
 }
 
-.font {
+/* .font {
   font-family: "PressStart2P", sans-serif;
-}
+} */
 
 .anime-info {
   display: flex;
@@ -58,11 +58,8 @@ button {
 
 .anime-title {
   font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-  background-image: linear-gradient(#7676ff, white);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing-unit) * 1.5);
 }
 
 .anime-type {
@@ -96,7 +93,7 @@ button {
 
 /* genres */
 .genres {
-  height: 4rem;
+  max-height: 4rem;
   display: flex;
   gap: 0.2rem;
   padding: 0;
@@ -251,8 +248,8 @@ button {
   box-shadow: 0 10px 80px -10px #7a4be8;
 }
 
-.episode:active {
-  background-color: #7a4be8;
+.episode_active {
+  background-color: #41bd45;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 

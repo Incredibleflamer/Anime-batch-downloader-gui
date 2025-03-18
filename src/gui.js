@@ -122,7 +122,7 @@ const createWindow = () => {
 
   // max priority
   exec(
-    `wmic process where processid=${process.pid} CALL setpriority 128`,
+    `powershell -Command "& {Get-Process -Id ${process.pid} | ForEach-Object { $_.PriorityClass = 'High' }}"`,
     (error, stdout, stderr) => {
       if (error) {
         console.error("Failed to set process priority:", error);
