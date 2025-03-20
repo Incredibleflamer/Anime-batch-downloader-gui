@@ -207,7 +207,11 @@ async function fetchChapters(mangaId) {
       Chapters: chapterLinks,
     };
   } catch (err) {
-    throw err;
+    return {
+      TotalPages: 0,
+      total: 0,
+      Chapters: [],
+    };
   }
 }
 
@@ -229,7 +233,7 @@ async function fetchChapterPages(chapterId) {
 
     return pages;
   } catch (err) {
-    throw err;
+    return [];
   }
 }
 

@@ -2,6 +2,7 @@ let type = null;
 let id = null;
 let AnimeMangaepid = null;
 let malid = null;
+let LocalAnimeManga = false;
 
 let Title = null;
 let Image = null;
@@ -93,6 +94,8 @@ async function init(typeInput, ApiInfoInput, IDInput, LoadNextChapterInput) {
     return;
   }
 
+  LocalAnimeManga = AnimeInfoData?.provider ? AnimeInfoData?.provider : false;
+
   // Manga Chapters
   if (type === "Manga") {
     AnimeMangaepid = AnimeInfoData?.id;
@@ -142,7 +145,7 @@ async function AddInfo(data) {
   ${
     data?.type
       ? `TYPE: ${data.type} ${
-          data?.subOrDub ? `( ${data.subOrDub} )` : ``
+          data?.subOrDub ? `( <span id="subdub">${data.subOrDub}</span> )` : ``
         } <br>`
       : ""
   }${data?.status ? `STATUS: ${data.status} <br>` : ""}${
@@ -158,7 +161,7 @@ async function AddInfo(data) {
   <div class="genres"> 
     ${
       data?.genres?.length > 0
-        ? data.genres
+        ? data?.genres
             .map(
               (element) =>
                 `<button type="button" class="genre">${element}</button>`
@@ -401,6 +404,11 @@ async function EpisodeFetch(page = 1) {
     body: JSON.stringify({
       id: AnimeMangaepid,
       page: page,
+      ...(LocalAnimeManga
+        ? {
+            provider: LocalAnimeManga,
+          }
+        : {}),
     }),
   });
 
@@ -464,6 +472,11 @@ async function ChapterFetch() {
     },
     body: JSON.stringify({
       id: AnimeMangaepid,
+      ...(LocalAnimeManga
+        ? {
+            provider: LocalAnimeManga,
+          }
+        : {}),
     }),
   });
 
@@ -491,13 +504,13 @@ async function HandleEpisodes(data) {
 
   if (data?.subs?.length > 0) {
     document.getElementById("subs-p").textContent = `SUB : ${
-      data.subs.length + downloaded.sub.length
+      data?.subs?.length + (downloaded?.sub?.length ?? 0)
     }`;
   }
 
   if (data?.dubs?.length > 0) {
     document.getElementById("dubs-p").textContent = `DUB : ${
-      data.dubs.length + downloaded.dub.length
+      data?.dubs?.length + (downloaded?.dub?.length ?? 0)
     }`;
   }
 
@@ -516,8 +529,13 @@ async function HandleEpisodes(data) {
   if (data?.subs?.length > 0 && data?.dubs?.length > 0) {
     document.getElementById("toggleDownloadOptions").style.display = "block";
   } else {
+    let SubOrDub = data?.subs?.length > 0 ? "sub" : "dub";
     document.getElementById("toggleDownloadOptions").style.display = "none";
-    toggleDownloadOptions(data?.subs?.length > 0 ? "sub" : "dub");
+    toggleDownloadOptions(SubOrDub);
+    let subdubcontainer = document.getElementById("subdub");
+    if (subdubcontainer) {
+      subdubcontainer.innerText = SubOrDub.toUpperCase();
+    }
   }
 
   // adding subs
@@ -1273,11 +1291,13 @@ async function MangadownloadFromModal() {
 async function GetAllEpFetched(SubDub, Start, End, progressCallback) {
   let EpisodesToDownload = [];
 
-  let AllKeys = Object.keys(Episodes).map(Number);
+  let AllKeys = Object.keys(EpisodesChapters).map(Number);
+
   let LastPageFetched = Math.max(...AllKeys, 0);
 
   let AllFetched =
-    !Episodes?.[LastPageFetched]?.hasNextPage && AllKeys.length === TotalPages;
+    !EpisodesChapters?.[LastPageFetched]?.hasNextPage &&
+    AllKeys.length === TotalPages;
 
   let FirstPage = Math.ceil(Start / 30);
   let LastPage = Math.ceil(End / 30);
@@ -1302,15 +1322,19 @@ async function GetAllEpFetched(SubDub, Start, End, progressCallback) {
 
   leftPages = !AllFetched
     ? Array.from({ length: TotalPages }, (_, i) => i + 1).filter(
-        (page) => !Object.keys(Episodes).map(Number).includes(page)
+        (page) => !Object.keys(EpisodesChapters).map(Number).includes(page)
       )
     : [];
 
-  Object.values(Episodes).forEach((page) => {
+  Object.values(EpisodesChapters).forEach((page) => {
     if (page[`${SubDub}s`] && Array.isArray(page[`${SubDub}s`])) {
       EpisodesToDownload.push(...page[`${SubDub}s`]);
     }
   });
+
+  if (EpisodesToDownload?.length > 0) {
+    EpisodesToDownload = EpisodesToDownload.reverse();
+  }
 
   return EpisodesToDownload;
 }

@@ -97,12 +97,17 @@ async function findanime(provider, Anime_NAME, page = 1) {
 }
 
 // anime info
-async function animeinfo(provider, dir, animeId) {
+async function animeinfo(provider, dir, animeId, MalFetch = true) {
   const cacheKey = `animeinfo_${provider.provider_name}_${animeId}`;
   let cachedData = cache.get(cacheKey);
 
   if (cachedData) {
-    if (global?.MalLoggedIn && cachedData?.MalLoggedIn && cachedData?.malid) {
+    if (
+      global?.MalLoggedIn &&
+      cachedData?.MalLoggedIn &&
+      cachedData?.malid &&
+      MalFetch
+    ) {
       let MyAnimeListData = await FindMapping(
         cachedData?.id,
         cachedData?.malid,
@@ -115,22 +120,25 @@ async function animeinfo(provider, dir, animeId) {
   }
 
   let data = await provider.provider.AnimeInfo(animeId);
-  let MyAnimeListData = await FindMapping(
-    data?.id,
-    data?.malid,
-    data?.title,
-    dir
-  );
 
-  if (MyAnimeListData) {
-    data = {
-      ...data,
-      ...MyAnimeListData,
-    };
-  }
+  if (MalFetch) {
+    let MyAnimeListData = await FindMapping(
+      data?.id,
+      data?.malid,
+      data?.title,
+      dir
+    );
 
-  if (global?.MalLoggedIn) {
-    data = { ...data, MalLoggedIn: true };
+    if (MyAnimeListData) {
+      data = {
+        ...data,
+        ...MyAnimeListData,
+      };
+    }
+
+    if (global?.MalLoggedIn) {
+      data = { ...data, MalLoggedIn: true };
+    }
   }
 
   cache.set(cacheKey, data, 60);

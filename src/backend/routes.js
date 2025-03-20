@@ -37,9 +37,8 @@ const { getQueue, updateQueue, removeQueue } = require("./utils/queue");
 const { MalCreateUrl, MalVerifyToken, MalAddToList } = require("./utils/mal");
 const {
   getAllMetadata,
-  getMetadataById,
+  FindMapping,
   getSourceById,
-  MetadataAdd,
   MalPage,
 } = require("./utils/Metadata");
 
@@ -299,30 +298,64 @@ router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
 router.post("/api/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
   const { AnimeManga, LocalMalProvider } = req.params;
   const { id } = req.body;
+
+  let data = null;
+  let provider = null;
+
   const setting = await settingfetch();
 
   try {
     if (!id) throw new Error("ID IS Missing");
 
-    let data = null;
-    if (AnimeManga === "Anime") {
-      if (LocalMalProvider === "provider") {
-        let provider = await providerFetch("Anime");
-        data = await animeinfo(provider, setting?.CustomDownloadLocation, id);
-      }
-    } else if (AnimeManga === "Manga") {
-      if (LocalMalProvider === "local") {
-        data = await getMetadataById(
-          "Manga",
-          setting?.CustomDownloadLocation,
-          id
+    if (LocalMalProvider === "local") {
+      try {
+        let AnimeLocalInfo = await FindMapping(
+          AnimeManga,
+          id,
+          null,
+          setting.CustomDownloadLocation
         );
-      } else if (LocalMalProvider === "provider") {
-        let provider = await providerFetch("Manga");
-        data = await MangaInfo(provider, id);
+        if (AnimeLocalInfo) {
+          if (AnimeLocalInfo?.genres) {
+            AnimeLocalInfo.genres = AnimeLocalInfo.genres.split(",");
+          }
+          data = AnimeLocalInfo;
+          provider = AnimeLocalInfo?.provider;
+        }
+
+        if (global?.MalLoggedIn) {
+          data = { ...data, MalLoggedIn: true };
+        }
+      } catch (err) {
+        console.log(err);
+        throw new Error(`No ${AnimeManga} Found with id '${id}'`);
       }
     }
-    if (!data) throw new Error(`No ${AnimeManga} Found with id '${id}'`);
+
+    try {
+      if (AnimeManga === "Anime") {
+        let Animeprovider = await providerFetch("Anime", provider ?? null);
+        let AnimeInfo = await animeinfo(
+          Animeprovider,
+          setting?.CustomDownloadLocation,
+          id,
+          data?.provider ? false : true
+        );
+
+        data = {
+          ...data,
+          ...AnimeInfo,
+        };
+      } else if (AnimeManga === "Manga") {
+        let Mangaprovider = await providerFetch("Manga", provider ?? null);
+        data = { ...data, ...(await MangaInfo(Mangaprovider, id)) };
+      }
+    } catch (err) {
+      // ignore err
+    }
+
+    if (!data?.id) throw new Error(`No ${AnimeManga} Found with id '${id}'`);
+
     return res.json(data);
   } catch (err) {
     logger.error(
@@ -336,15 +369,15 @@ router.post("/api/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
 
 // Fetches Anime Episodes
 router.post("/api/episodes", async (req, res) => {
-  let { id, page } = req.body;
+  let { id, page, provider } = req.body;
   page = parseInt(page ?? 1);
   try {
     if (isNaN(page)) throw new Error(`invalid Page '${page}'`);
     if (!id) throw new Error("ID is Missing");
 
-    const provider = await providerFetch("Anime");
+    const Animeprovider = await providerFetch("Anime", provider ?? null);
 
-    const data = await fetchEpisode(provider, id, page);
+    const data = await fetchEpisode(Animeprovider, id, page);
     if (!data) throw new Error("No Episodes Found");
 
     return res.json(data);
@@ -358,12 +391,12 @@ router.post("/api/episodes", async (req, res) => {
 
 // Fetches Manga Chapters
 router.post("/api/chapters", async (req, res) => {
-  let { id } = req.body;
+  let { id, provider } = req.body;
   try {
     if (!id) throw new Error("ID is Missing");
 
-    const provider = await providerFetch("Manga");
-    const data = await fetchChapters(provider, id);
+    const Mangaprovider = await providerFetch("Manga", provider ?? null);
+    const data = await fetchChapters(Mangaprovider, id);
     if (!data) throw new Error("No Episodes Found");
 
     return res.json(data);
@@ -670,7 +703,7 @@ router.get(["/", "/local/anime"], async (req, res) => {
   res.render("index.ejs", {
     catagorie: "Local Anime's",
     api: "/api/list/Anime/local?page=",
-    infoapi: "/info/Anime/provider?id=",
+    infoapi: "/info/Anime/local?id=",
     Pagination: config?.Pagination || "off",
   });
 });

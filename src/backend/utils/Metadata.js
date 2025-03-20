@@ -286,8 +286,8 @@ async function getAllMetadata(type, baseDir, page = 1) {
   }
 }
 
-// Get Metadata By id
-async function getMetadataById(type, baseDir, id) {
+// Get Local Provider And Info
+async function FetchLocalProviderInfo(type, id) {
   if (!tables[type]) {
     throw new Error(`Invalid table: ${type}`);
   }
@@ -309,40 +309,6 @@ async function getMetadataById(type, baseDir, id) {
     if (metadata?.EpisodesDataId) {
       metadata.dataId = metadata?.EpisodesDataId;
       delete metadata.EpisodesDataId;
-    }
-
-    const folderPath = path.join(baseDir, type, metadata.folder_name);
-
-    if (fs.existsSync(folderPath)) {
-      const filesAndFolders = await fs.promises.readdir(folderPath, {
-        withFileTypes: true,
-      });
-
-      if (type === "Anime") {
-        metadata.DownloadedEpisodes = filesAndFolders
-          .filter(
-            (file) =>
-              file.isFile() &&
-              file.name.endsWith(".mp4") &&
-              file.name.toLowerCase().includes("ep")
-          )
-          .map((file) => parseInt(file?.name?.toLowerCase()?.split("ep")?.[0]))
-          .filter(Boolean)
-          .sort((a, b) => a - b);
-      } else if (type === "Manga") {
-        metadata.DownloadedChapters = filesAndFolders
-          .filter(
-            (file) =>
-              file.isFile() &&
-              file.name.endsWith(".cbz") &&
-              file.name.toLowerCase().includes("chapter")
-          )
-          .map((file) =>
-            parseInt(file?.name?.toLowerCase()?.split("chapter")?.[1])
-          )
-          .filter(Boolean)
-          .sort((a, b) => a - b);
-      }
     }
 
     return metadata;
@@ -502,7 +468,7 @@ async function fetchAndUpdateMappingDatabase() {
         SaveMappingDatabase(response.data.data, response.data.last_ran);
         logger.info("[MAL-LIST] MAPPING UPDATED");
       }
-    } catch (error) {
+    } catch (err) {
       logger.error("[MAL-LIST] MAPPING FAILED");
       logger.error(`Error message: ${err.message}`);
       logger.error(`Stack trace: ${err.stack}`);
@@ -511,28 +477,30 @@ async function fetchAndUpdateMappingDatabase() {
 }
 
 // find mapping ids
-async function FindMapping(Animeid, malid, AnimeTitle, dir) {
+async function FindMapping(type, AnimeMangaid, malid, dir) {
   try {
-    let data = {
-      malid: malid,
-    };
+    let data = {};
 
-    // if logged in mal
-    try {
-      if (global.MalLoggedIn) {
+    // if logged in mal && Anime
+    if (type === "Anime") {
+      let id = AnimeMangaid?.replace(/-(dub|sub|both)$/, "");
+
+      try {
         // if no malid find mapping
-        if (!data?.malid) {
+        if (!malid) {
           const FoundRow = db
             .prepare(
               "SELECT * FROM Mapping WHERE AnimeKai LIKE ? OR HiAnime LIKE ? OR AnimePahe LIKE ?"
             )
-            .get(`%${Animeid}%`, `%${Animeid}%`, `%${Animeid}%`);
+            .get(`%${id}%`, `%${id}%`, `%${id}%`);
 
           data.malid = FoundRow?.MalID ? parseInt(FoundRow.MalID) : null;
+        } else {
+          data.malid = malid;
         }
 
         // if mal id find in list if it exists
-        if (data.malid) {
+        if (data.malid && global.MalLoggedIn) {
           let MalInfo = db
             .prepare(`SELECT * FROM MyAnimeList WHERE id = ?`)
             .get(String(data.malid));
@@ -547,55 +515,95 @@ async function FindMapping(Animeid, malid, AnimeTitle, dir) {
                 : 0,
             lastEpisode: MalInfo.lastEpisode ?? null,
             watched: MalInfo.watched ?? 0,
-            status: MalInfo.status ?? "plan_to_watch",
+            status: MalInfo.status ?? "",
           };
         }
+      } catch (err) {
+        // ignore
       }
-    } catch (err) {
-      // ignore
-    }
 
-    // checking downloads
-    try {
-      id = Animeid?.replace(/-(dub|sub|both)$/, "");
-
-      data.DownloadedEpisodes = {
-        sub: [],
-        dub: [],
-      };
-
+      // Finding If Its Downloaded
       try {
-        for (const type of Object.keys(data.DownloadedEpisodes)) {
-          const folderPath = path.join(
-            dir,
-            "Anime",
-            `${AnimeTitle?.replace(/[^a-zA-Z0-9]/g, "_")}_${type}`
-          );
+        const Downloads = db
+          .prepare("SELECT * FROM Anime WHERE id = ? or id = ?")
+          .all(`${id}-sub`, `${id}-dub`);
+
+        if (Downloads?.length > 0) {
+          Downloads[0].dataId = Downloads[0]?.EpisodesDataId;
+          delete Downloads[0].EpisodesDataId;
+
+          data = {
+            ...data,
+            ...Downloads[0],
+            DownloadedEpisodes: {
+              sub: [],
+              dub: [],
+            },
+          };
+
+          for (const SubDub of Downloads) {
+            const folderPath = path.join(
+              dir,
+              "Anime",
+              `${SubDub.title?.replace(/[^a-zA-Z0-9]/g, "_")}`
+            );
+
+            if (fs.existsSync(folderPath)) {
+              const filesAndFolders = await fs.promises.readdir(folderPath, {
+                withFileTypes: true,
+              });
+
+              data.DownloadedEpisodes[SubDub.subOrDub] = filesAndFolders
+                .filter(
+                  (file) =>
+                    file.isFile() &&
+                    file.name.endsWith(".mp4") &&
+                    file.name.match(/\d+/)
+                )
+                .map((file) => parseInt(file.name.match(/\d+/)[0]))
+                .filter(Boolean)
+                .sort((a, b) => a - b);
+            }
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    } else {
+      try {
+        const Downloads = db
+          .prepare("SELECT * FROM Manga WHERE id = ?")
+          .get(AnimeMangaid);
+
+        if (Downloads) {
+          data = { ...Downloads, DownloadedChapters: [] };
+
+          const folderPath = path.join(dir, type, Downloads.folder_name);
 
           if (fs.existsSync(folderPath)) {
             const filesAndFolders = await fs.promises.readdir(folderPath, {
               withFileTypes: true,
             });
 
-            data.DownloadedEpisodes[type] = filesAndFolders
+            data.DownloadedChapters = filesAndFolders
               .filter(
                 (file) =>
                   file.isFile() &&
-                  file.name.endsWith(".mp4") &&
-                  file.name.toLowerCase().match(/\d+/)
+                  file.name.endsWith(".cbz") &&
+                  file.name.toLowerCase().includes("chapter")
               )
-              .map((file) => parseInt(file.name.match(/\d+/)[0]))
+              .map((file) =>
+                parseInt(file.name.toLowerCase().split("chapter")[1])
+              )
               .filter(Boolean)
               .sort((a, b) => a - b);
           }
         }
       } catch (err) {
-        console.log(err);
-        // ignore
+        // ignore erro
       }
-    } catch (err) {
-      // ignore
     }
+
     return data;
   } catch (err) {
     logger.error(`Error Fetching Mapping`);
@@ -890,7 +898,6 @@ module.exports = {
   MetadataAdd,
   MetadataRemove,
   getAllMetadata,
-  getMetadataById,
   getSourceById,
   fetchAndUpdateMappingDatabase,
   FindMapping,
@@ -898,4 +905,5 @@ module.exports = {
   processAndSortMyAnimeList,
   getMALLastSync,
   MalPage,
+  FetchLocalProviderInfo,
 };
