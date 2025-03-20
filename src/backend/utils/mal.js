@@ -1,10 +1,11 @@
+const { logger } = require("./AppLogger");
+const axios = require("axios");
 const {
   getMALLastSync,
   MalEpMap,
   processAndSortMyAnimeList,
 } = require("./Metadata");
-const { logger } = require("./AppLogger");
-const axios = require("axios");
+const verifyChallenge = require("./pkce");
 
 const MalAppID = "d0b22d129a541dac4d28207f77b15b5f";
 let MalAcount = null;
@@ -13,9 +14,13 @@ global.MalLoggedIn = false;
 
 // Create A url
 async function MalCreateUrl() {
-  const pkceChallenge = (await import("pkce-challenge")).default;
-  pkce = await pkceChallenge(128);
-  return `https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=${MalAppID}&code_challenge_method=plain&code_challenge=${pkce.code_challenge}`;
+  try {
+    pkce = await verifyChallenge(128);
+    return `https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=${MalAppID}&code_challenge_method=plain&code_challenge=${pkce.code_challenge}`;
+  } catch (error) {
+    console.error("Failed to load pkce-challenge:", error);
+    return null;
+  }
 }
 
 // Mal Verify Token

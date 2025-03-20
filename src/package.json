@@ -1,6 +1,6 @@
 {
   "name": "animedownloader",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Download anime in batches & its fast :3",
   "main": "gui.js",
   "scripts": {
@@ -63,9 +63,7 @@
     "fs-extra": "^10.0.0",
     "image-pixels": "^2.2.2",
     "jszip": "^3.10.1",
-    "node-abi": "^4.1.0",
     "node-cache": "^5.1.2",
-    "pkce-challenge": "^4.1.0",
     "progress": "^2.0.3",
     "puppeteer": "^23.11.0",
     "puppeteer-extra": "^3.3.6",

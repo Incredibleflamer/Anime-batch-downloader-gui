@@ -737,13 +737,20 @@ router.get("/search", async (req, res) => {
 
 // settings
 router.get("/setting", async (req, res) => {
-  const setting = await settingfetch();
-  url = null;
-  if (!setting.mal_on_off || setting.mal_on_off === null) {
-    const url = await MalCreateUrl();
-    return res.render("settings.ejs", { settings: setting, url: url });
+  try {
+    const setting = await settingfetch();
+    url = null;
+    if (!setting.mal_on_off || setting.mal_on_off === null) {
+      const url = await MalCreateUrl();
+      return res.render("settings.ejs", { settings: setting, url: url });
+    }
+    res.render("settings.ejs", { settings: setting, url: url });
+  } catch (err) {
+    logger.error(err);
+    res.render("error.ejs", {
+      error: err,
+    });
   }
-  res.render("settings.ejs", { settings: setting, url: url });
 });
 
 // log page
