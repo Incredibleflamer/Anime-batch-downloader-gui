@@ -18,7 +18,7 @@ class downloader {
     MergeSubtitles = false,
     ChangeTosrt = false,
   }) {
-    this.concurrency = 5;
+    this.concurrency = 1;
     this.directory = directory;
     if (streamUrl?.url) {
       this.streamUrl = streamUrl.url;
@@ -115,7 +115,7 @@ class downloader {
         }
 
         this.concurrency = Math.min(
-          Math.max(parseInt(this.concurrency), 5),
+          Math.max(parseInt(this.concurrency), 1),
           100
         );
 
@@ -299,7 +299,7 @@ class downloader {
       await this.AxiosGetSegments(SegmentUrl, SegmentFileName);
       this.Segments[index] = SegmentFileName;
     } catch (err) {
-      this.concurrency -= 10;
+      this.concurrency -= 1;
       logger.info(
         `Failed To Download Segment! [ Re-downloading in next batch ] Continuing in 5s`
       );
