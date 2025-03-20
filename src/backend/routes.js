@@ -127,24 +127,24 @@ router.post("/api/settings", async (req, res) => {
 
     // mal on then add status and autotrack
     if (data.mal_on_off === true) {
-      message += `\nAuto Add To: ${data.status}\nAuto Track Ep: ${data.autotrack}`;
+      message += `<br>Auto Add To: ${data.status}<br>Auto Track Ep: ${data.autotrack}`;
     }
 
     // add download location
-    message += `\nDownload Location: ${data.CustomDownloadLocation}\nAnime Provider : ${data.Animeprovider}`;
+    message += `<br>Download Location: ${data.CustomDownloadLocation}<br>Anime Provider : ${data.Animeprovider}`;
 
     // if provider is hianime add mergeSubtitles
     if (data.Animeprovider === "hianime") {
-      message += `\nMerge Subtitles: ${data.mergeSubtitles}`;
+      message += `<br>Merge Subtitles: ${data.mergeSubtitles}`;
       if (data.mergeSubtitles === "off") {
-        message += `\nSubtitle Format: ${data.subtitleFormat}`;
+        message += `<br>Subtitle Format: ${data.subtitleFormat}`;
       }
     }
 
-    message += `\nManga Provider : ${data?.Mangaprovider}\nAutoload Next Chapter : ${data?.autoLoadNextChapter}`;
+    message += `<br>Manga Provider : ${data?.Mangaprovider}<br>Autoload Next Chapter : ${data?.autoLoadNextChapter}`;
 
     // Pagination
-    message += `\nPagination : ${data.Pagination}`;
+    message += `<br>Pagination : ${data.Pagination}`;
 
     res.status(200).json({ message: message });
   } catch (err) {
