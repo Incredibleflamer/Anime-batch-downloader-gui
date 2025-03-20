@@ -120,51 +120,34 @@ async function MalRefreshTokenGen(json) {
 }
 
 // Add To List
-async function MalAddToList(type, malid, status, NumWatchedEp) {
+async function MalAddToList(malid, status, NumWatchedEp = 0) {
   try {
     if (!MalAcount?.access_token)
       throw new Error("No access token please login");
 
-    // checking in mal if entrie there
-    const MylistEntrie = await axios.get(
-      `https://api.myanimelist.net/v2/${type}/${malid}?fields=my_list_status`,
+    await axios.put(
+      `https://api.myanimelist.net/v2/anime/${malid}/my_list_status`,
+      new URLSearchParams({
+        status: status,
+        num_watched_episodes: NumWatchedEp,
+      }).toString(),
       {
         headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Bearer ${MalAcount.access_token}`,
         },
       }
     );
 
-    // Adding In Myanimelist
-    if (
-      !MylistEntrie?.data?.my_list_status ||
-      MylistEntrie?.data?.my_list_status !== status
-    ) {
-      await axios.put(
-        `https://api.myanimelist.net/v2/anime/${animeId}/my_list_status`,
-        new URLSearchParams({
-          status: status,
-          num_watched_episodes: NumWatchedEp
-            ? NumWatchedEp
-            : MylistEntrie?.data?.num_episodes_watched
-            ? MylistEntrie?.data?.num_episodes_watched
-            : 0,
-        }).toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Bearer ${MalAcount.access_token}`,
-          },
-        }
-      );
-    }
+    MalFetchListAll(true);
 
-    return true;
+    return { title: "MyAnimeList Update Success!", icon: "success" };
   } catch (err) {
-    logger.error(`Failed To Add Anime To Mal`);
-    logger.error(`Error message: ${err.message}`);
-    logger.error(`Stack trace: ${err.stack}`);
-    return false;
+    return {
+      title: "MyAnimeList Update Fail!",
+      icon: "error",
+      text: `Error : ${err.message}`,
+    };
   }
 }
 
@@ -185,7 +168,6 @@ async function MalFetchListAll(force = false) {
       let data = await MalFetchList(i, limit);
       if (data?.results?.length > 0) {
         let stop = await MalEpMap(data.results);
-        console.log(stop);
         if (stop && limit === 50) break;
       } else {
         break;

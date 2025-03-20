@@ -528,14 +528,14 @@ async function FindMapping(Animeid, malid, AnimeTitle, dir) {
             )
             .get(`%${Animeid}%`, `%${Animeid}%`, `%${Animeid}%`);
 
-          data.malid = FoundRow?.MalID ?? null;
+          data.malid = FoundRow?.MalID ? parseInt(FoundRow.MalID) : null;
         }
 
         // if mal id find in list if it exists
         if (data.malid) {
           let MalInfo = db
             .prepare(`SELECT * FROM MyAnimeList WHERE id = ?`)
-            .get(data.malid);
+            .get(String(data.malid));
 
           data = {
             ...data,

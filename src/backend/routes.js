@@ -34,7 +34,7 @@ const {
   providerFetch,
 } = require("./utils/settings");
 const { getQueue, updateQueue, removeQueue } = require("./utils/queue");
-const { MalCreateUrl, MalVerifyToken } = require("./utils/mal");
+const { MalCreateUrl, MalVerifyToken, MalAddToList } = require("./utils/mal");
 const {
   getAllMetadata,
   getMetadataById,
@@ -64,6 +64,9 @@ router.get("/mal/logout", async (req, res) => {
   global.win.webContents.send("mal", {
     LoggedIn: false,
   });
+
+  global.MalLoggedIn = false;
+
   return res.send("logged out!");
 });
 
@@ -554,6 +557,7 @@ router.get("/video", (req, res) => {
   }
 });
 
+// Get Local Subtitles
 router.get("/subtitles", (req, res) => {
   try {
     let subtitlePath = req.query.file;
@@ -622,6 +626,39 @@ router.post("/api/read", async (req, res) => {
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
     res.status(200).json([]);
+  }
+});
+
+// Update Mal Listings
+router.post("/api/mal/update", async (req, res) => {
+  try {
+    let { malid, episodes, status } = req.body;
+
+    episodes = parseInt(episodes) || 0;
+
+    switch (status) {
+      case "watching":
+      case "completed":
+      case "plan_to_watch":
+      case "on_hold":
+      case "dropped":
+        break;
+      default:
+        status = null;
+    }
+
+    if (!malid || !status) throw new Error("Some thing is missing");
+
+    let data = await MalAddToList(malid, status, episodes);
+
+    return res.json(data);
+  } catch (err) {
+    // log error
+    res.json({
+      title: "MyAnimeList Update Fail!",
+      icon: "error",
+      text: `Error : ${err.message}`,
+    });
   }
 });
 

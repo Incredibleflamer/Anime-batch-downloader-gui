@@ -72,13 +72,37 @@ async function addchild(data) {
                 alt="${result.title}" 
                 onerror="this.onerror=null; this.src='./images/image-404.png';"
                 class="thumbnail lazy-image" />
-              ${
-                result?.totalEpisodes && result?.DownloadedEpisodes
-                  ? `<div class="episodes"><div class="downloaded"><div class="material-symbols-rounded">download_done</div> ${result?.DownloadedEpisodes?.length}</div><div class="total"><div class="material-symbols-rounded">download</div> ${result?.totalEpisodes}</div></div>`
-                  : result?.totalEpisodes && result?.watched
-                  ? `<div class="episodes"><div class="downloaded"><div class="material-symbols-rounded">visibility</div>${result.watched}</div><div class="total"><div class="material-symbols-rounded">movie</div>${result.totalEpisodes}</div></div>`
-                  : ""
-              } 
+                ${
+                  result?.totalEpisodes !== undefined &&
+                  result?.totalEpisodes !== null &&
+                  result?.DownloadedEpisodes !== undefined &&
+                  result?.DownloadedEpisodes !== null
+                    ? `<div class="episodes">
+                        <div class="downloaded">
+                          <div class="material-symbols-rounded">download_done</div> 
+                          ${result?.DownloadedEpisodes?.length}
+                        </div>
+                        <div class="total">
+                          <div class="material-symbols-rounded">download</div> 
+                          ${result?.totalEpisodes}
+                        </div>
+                      </div>`
+                    : result?.totalEpisodes !== undefined &&
+                      result?.totalEpisodes !== null &&
+                      result?.watched !== undefined &&
+                      result?.watched !== null
+                    ? `<div class="episodes">
+                        <div class="downloaded">
+                          <div class="material-symbols-rounded">visibility</div>
+                          ${result.watched}
+                        </div>
+                        <div class="total">
+                          <div class="material-symbols-rounded">movie</div>
+                          ${result.totalEpisodes}
+                        </div>
+                      </div>`
+                    : ""
+                }                
               <div class="overlay">${result.title}</div>
             </div>
           </a>

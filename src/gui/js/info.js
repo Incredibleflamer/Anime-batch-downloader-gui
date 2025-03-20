@@ -1,12 +1,14 @@
 let type = null;
 let id = null;
 let AnimeMangaepid = null;
+let malid = null;
 
 let Title = null;
 let Image = null;
 
 let totalEpisodes = 0;
 let TotalPages = 0;
+let WatchedEp = 0;
 let EpisodesChapters = {};
 let downloaded = {};
 
@@ -15,6 +17,14 @@ let TotalChapter = 0;
 let CurrentChapter = 0;
 let CurrentPage = 0;
 let LoadNextChapter = "off";
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+});
 
 // Track Current Page & Chapter
 const observer = new IntersectionObserver(
@@ -100,13 +110,14 @@ async function init(typeInput, ApiInfoInput, IDInput, LoadNextChapterInput) {
     AnimeMangaepid = AnimeInfoData?.dataId;
     downloaded = AnimeInfoData?.DownloadedEpisodes;
 
+    if (AnimeInfoData?.MalLoggedIn) {
+      malid = AnimeInfoData?.malid;
+    }
+
     await AddInfo(AnimeInfoData);
     // Fetch Episode List ( page 1 )
     let AnimeEpisodesData = await EpisodeFetch(1);
-    await HandleEpisodes({
-      ...AnimeEpisodesData,
-      watched: AnimeInfoData?.watched ?? 0,
-    });
+    await HandleEpisodes(AnimeEpisodesData);
   }
 }
 
@@ -291,11 +302,12 @@ async function AddInfo(data) {
   if (data?.malid) {
     let Mal = document.getElementById("mal-control");
     if (Mal) {
+      WatchedEp = data?.watched;
       Mal.innerHTML = `
     <h4>My Anime List</h4>
     
     <!-- Select Menu -->
-    <select name="addtomal" id="addtomal" class="mal-select-menu">
+    <select id="mal-status" class="mal-select-menu" onchange="MyAnimeListUpdate()">
       <option value="" ${
         !data?.status ? "selected" : ""
       }>Select From Below</option>
@@ -318,11 +330,11 @@ async function AddInfo(data) {
 
     <!-- Episode Control -->
     <div class="episode-control">
-      <button class="minus-btn">-</button>
+      <button class="minus-btn" onclick="MalDecreaseEpisode()">-</button>
 
       <span class="episode-status">
         <span>
-          <span id="currently-watched">${data?.watched ?? 0}</span>
+          <span id="mal-currently-watched">${data?.watched ?? 0}</span>
           <span class="mal-tool-tip">Watched Episodes</span>
         </span>
     
@@ -330,7 +342,7 @@ async function AddInfo(data) {
         
         <!-- total episodes -->
         <span>
-          <span id="total-episodes">${data?.totalEpisodes ?? "??"}</span>
+          <span id="mal-total-episodes">${data?.totalEpisodes ?? "??"}</span>
           <span class="mal-tool-tip">Total Episodes</span>
         </span>
 
@@ -339,16 +351,39 @@ async function AddInfo(data) {
           data?.lastEpisode
             ? `
               <span>
-                (<span id="currently-released">${data?.lastEpisode}</span>)
+                (<span id="mal-currently-released">${data?.lastEpisode}</span>)
                 <span class="mal-tool-tip">Released Episodes</span>
               </span>`
             : ""
         }
       
       </span>
-      <button class="plus-btn">+</button>
+      <button class="plus-btn" onclick="MalIncreaseEpisode()">+</button>
     </div>`;
     }
+  }
+}
+
+function MalDecreaseEpisode() {
+  let episodeCount = document.getElementById("mal-currently-watched");
+  let currentEpisodes = parseInt(episodeCount.innerText, 10) || 0;
+
+  if (currentEpisodes > 0) {
+    episodeCount.innerText = currentEpisodes - 1;
+    MyAnimeListUpdate();
+  }
+}
+
+function MalIncreaseEpisode() {
+  let episodeCount = document.getElementById("mal-currently-watched");
+  let totalEpisodes =
+    parseInt(document.getElementById("mal-total-episodes").innerText, 10) ||
+    Infinity;
+  let currentEpisodes = parseInt(episodeCount.innerText, 10) || 0;
+
+  if (currentEpisodes < totalEpisodes) {
+    episodeCount.innerText = currentEpisodes + 1;
+    MyAnimeListUpdate();
   }
 }
 
@@ -491,8 +526,8 @@ async function HandleEpisodes(data) {
       .map(
         (sub) =>
           `<button class="episode ${
-            data?.watched >= sub.number ? "episode_active" : ""
-          }"  onclick="Animedownload('${sub.id}',${
+            WatchedEp >= sub.number ? "episode_active" : ""
+          }"  epnum="${sub.number}" onclick="Animedownload('${sub.id}',${
             sub.number
           },'sub')"> Download Episode ${sub.number} (SUB) </button>`
       )
@@ -505,8 +540,8 @@ async function HandleEpisodes(data) {
       .map(
         (dub) =>
           `<button class="episode ${
-            data?.watched >= dub.number ? "episode_active" : ""
-          }" onclick="Animedownload('${dub.id}',${
+            WatchedEp >= dub.number ? "episode_active" : ""
+          }" epnum="${dub.number}" onclick="Animedownload('${dub.id}',${
             dub.number
           },'dub')"> Download Episode ${dub.number} (DUB) </button>`
       )
@@ -552,7 +587,9 @@ async function HandleEpisodes(data) {
         .sort((a, b) => a - b)
         .map(
           (ep) =>
-            `<button class="episode" onclick="Videoplay('${id}', '${ep}', true)"> 
+            `<button class="episode ${
+              WatchedEp >= ep ? "episode_active" : ""
+            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true)"> 
              Watch EP ${ep} (SUB)
            </button>`
         )
@@ -562,7 +599,9 @@ async function HandleEpisodes(data) {
         .sort((a, b) => a - b)
         .map(
           (ep) =>
-            `<button class="episode" onclick="Videoplay('${id}', '${ep}', true)"> 
+            `<button class="episode${
+              WatchedEp >= ep ? "episode_active" : ""
+            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true)"> 
              Watch EP ${ep} (DUB)
            </button>`
         )
@@ -585,8 +624,8 @@ async function HandleEpisodes(data) {
       .map(
         (ep) =>
           `<button class="episode ${
-            data?.watched >= ep.number ? "episode_active" : ""
-          }" onclick="Videoplay('${ep.id}')">
+            WatchedEp >= ep.number ? "episode_active" : ""
+          }" epnum="${ep.number}" onclick="Videoplay('${ep.id}')">
           Watch EP ${ep.number}
        </button>`
       )
@@ -1308,4 +1347,59 @@ async function DownloadApi(body, SingleMulti) {
       text: `Error: ${err?.message ?? "Internal Error"}`,
     });
   }
+}
+
+async function MyAnimeListUpdate() {
+  let status = document.getElementById("mal-status").value;
+  let episodeCount = document.getElementById("mal-currently-watched");
+  let currentEpisodes = parseInt(episodeCount.innerText, 10) || 0;
+
+  if (status !== "") {
+    let MalResponse = await fetch(`/api/mal/update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        malid: malid,
+        episodes: currentEpisodes,
+        status: status,
+      }),
+    });
+
+    let data = await MalResponse.json();
+
+    if (data) {
+      new Toast(data);
+      if (data?.icon === "success") {
+        UpdateEpisodeButtons(currentEpisodes);
+      }
+    }
+  }
+}
+
+function UpdateEpisodeButtons(currentEpisodes) {
+  let buttonContainers = [
+    "playonline",
+    "playdownloads",
+    "subDownloads",
+    "dubDownloads",
+  ];
+
+  buttonContainers.forEach((containerId) => {
+    let container = document.getElementById(containerId);
+    if (!container) return;
+
+    let buttons = container.querySelectorAll("button");
+
+    buttons.forEach((button) => {
+      let epnum = parseInt(button.getAttribute("epnum"), 10) || 0;
+
+      if (epnum <= currentEpisodes) {
+        button.classList.add("episode_active");
+      } else {
+        button.classList.remove("episode_active");
+      }
+    });
+  });
 }

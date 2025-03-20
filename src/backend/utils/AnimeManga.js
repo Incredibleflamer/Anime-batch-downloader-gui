@@ -99,9 +99,18 @@ async function findanime(provider, Anime_NAME, page = 1) {
 // anime info
 async function animeinfo(provider, dir, animeId) {
   const cacheKey = `animeinfo_${provider.provider_name}_${animeId}`;
-  const cachedData = cache.get(cacheKey);
+  let cachedData = cache.get(cacheKey);
 
   if (cachedData) {
+    if (global?.MalLoggedIn && cachedData?.MalLoggedIn && cachedData?.malid) {
+      let MyAnimeListData = await FindMapping(
+        cachedData?.id,
+        cachedData?.malid,
+        cachedData?.title,
+        dir
+      );
+      cachedData = { ...cachedData, ...MyAnimeListData, MalLoggedIn: true };
+    }
     return cachedData;
   }
 
@@ -112,11 +121,16 @@ async function animeinfo(provider, dir, animeId) {
     data?.title,
     dir
   );
+
   if (MyAnimeListData) {
     data = {
       ...data,
       ...MyAnimeListData,
     };
+  }
+
+  if (global?.MalLoggedIn) {
+    data = { ...data, MalLoggedIn: true };
   }
 
   cache.set(cacheKey, data, 60);
