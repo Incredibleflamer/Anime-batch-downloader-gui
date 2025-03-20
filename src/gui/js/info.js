@@ -746,13 +746,13 @@ function toggleDownloadOptions(type = null) {
   if (showSub) {
     button.textContent = "Show Dub 🎥";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (SUB)";
-    toggleDownloadFrom.onclick = () => toggleDownloadOptions("dub");
+    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("dub");
     toggleDownloadAll.textContent = "Download All Episodes (SUB)";
     toggleDownloadAll.onclick = () => AnimedownloadAll("sub");
   } else {
     button.textContent = "Show Sub 🎭";
     toggleDownloadFrom.textContent = "Download From Specific Episodes (DUB)";
-    toggleDownloadFrom.onclick = () => toggleDownloadOptions("sub");
+    toggleDownloadFrom.onclick = () => AnimedownloadFromModal("sub");
     toggleDownloadAll.textContent = "Download All Episodes (DUB)";
     toggleDownloadAll.onclick = () => AnimedownloadAll("dub");
   }

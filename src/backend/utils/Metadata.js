@@ -123,7 +123,7 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
         valuesToAdd.image = `data:image/png;base64,${Buffer.from(
           response.data
         ).toString("base64")}`;
-      } catch (error) {
+      } catch (err) {
         logger.error(`Failed to fetch image from: ${Imageurl}`);
         logger.error(`Error message: ${err.message}`);
         logger.error(`Stack trace: ${err.stack}`);
