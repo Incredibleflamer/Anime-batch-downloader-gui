@@ -1,3 +1,4 @@
+let ep = null;
 var player = null;
 let SelectedSource = "sub";
 let Isboth = false;
@@ -17,6 +18,11 @@ async function Videoplay(id, EpisodeNumber, Downloaded = false) {
         ep: `${Downloaded ? id : `${id.replace(/-(dub|sub|both)$/, "")}-both`}`,
         epNum: ep,
         Downloaded: Downloaded,
+        ...(window.LocalAnimeManga
+          ? {
+              provider: window.LocalAnimeManga,
+            }
+          : {}),
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",

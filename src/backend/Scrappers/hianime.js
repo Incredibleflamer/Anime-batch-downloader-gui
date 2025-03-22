@@ -90,6 +90,7 @@ async function fetchEpisode(id) {
       totalPages: 1,
       total: episodes.length,
       currentPage: 1,
+      hasNextPage: false,
     };
   } catch (err) {
     console.log(err);
@@ -98,6 +99,7 @@ async function fetchEpisode(id) {
       total: 0,
       totalPages: 0,
       currentPage: 1,
+      hasNextPage: false,
     };
   }
 }

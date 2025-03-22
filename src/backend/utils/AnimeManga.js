@@ -109,6 +109,7 @@ async function animeinfo(provider, dir, animeId, MalFetch = true) {
       MalFetch
     ) {
       let MyAnimeListData = await FindMapping(
+        "Anime",
         cachedData?.id,
         cachedData?.malid,
         cachedData?.title,
@@ -123,6 +124,7 @@ async function animeinfo(provider, dir, animeId, MalFetch = true) {
 
   if (MalFetch) {
     let MyAnimeListData = await FindMapping(
+      "Anime",
       data?.id,
       data?.malid,
       data?.title,

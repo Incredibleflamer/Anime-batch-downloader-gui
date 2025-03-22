@@ -6,7 +6,13 @@ const { MetadataAdd } = require("./utils/Metadata");
 // const { MalAddToList, MalGogo } = require("./utils/mal");
 
 // Handles Multiple Episodes Download
-async function downloadAnimeMulti(animeid, Episodes = [], Title) {
+async function downloadAnimeMulti(
+  provider = null,
+  animeid,
+  Episodes = [],
+  Title,
+  SubDub
+) {
   if (Episodes?.length <= 0)
     return {
       error: false,
@@ -23,25 +29,31 @@ async function downloadAnimeMulti(animeid, Episodes = [], Title) {
   for (let i = 0; i < Episodes.length; i++) {
     let Episode = Episodes[i];
     let data = await downloadAnimeSingle(
+      provider,
       animeid,
-      Episode.id,
+      `${Episode.id}-${SubDub}`,
       Episode.number,
       Title,
       i === 0
     );
+
     // if any error change to error
     if (data?.error) {
+      Message.type = "error";
       Message.error = true;
     } else {
       success++;
     }
   }
 
-  return `Added ${success} Episodes To Queue!`;
+  Message.message = `Added ${success} Episodes To Queue!`;
+
+  return Message;
 }
 
 // Handles Single Episode Download
 async function downloadAnimeSingle(
+  provider = null,
   animeid,
   episodeid,
   number,
@@ -50,11 +62,11 @@ async function downloadAnimeSingle(
 ) {
   try {
     const config = await settingfetch();
-    const provider = await providerFetch("Anime");
+    const Animeprovider = await providerFetch("Anime", provider);
 
     if (saveinfo) {
       const animedata = await animeinfo(
-        provider,
+        Animeprovider,
         config?.CustomDownloadLocation,
         animeid
       );
@@ -62,12 +74,13 @@ async function downloadAnimeSingle(
         MetadataAdd("Anime", {
           id: animeid,
           title: `${animedata.title} ${animedata?.subOrDub}`,
-          provider: provider.provider_name,
+          provider: Animeprovider.provider_name,
           subOrDub: animedata?.subOrDub ?? null,
           type: animedata.type ?? null,
           description: animedata.description ?? null,
           status: animedata.status ?? null,
-          genres: animedata?.genres?.join(",") ?? null,
+          genres:
+            animedata?.genres?.length > 0 ? animedata?.genres?.join(",") : "",
           aired: animedata?.aired ?? null,
           ImageUrl: animedata?.image,
           EpisodesDataId: animedata?.dataId,
@@ -89,7 +102,7 @@ async function downloadAnimeSingle(
         Title: Title,
         SubDub: `${animeid.endsWith("dub") ? "dub" : "sub"}`,
         config: {
-          Animeprovider: config?.Animeprovider,
+          Animeprovider: Animeprovider?.provider_name,
           quality: config?.quality,
           mergeSubtitles: config?.mergeSubtitles,
           subtitleFormat: config?.subtitleFormat,
@@ -113,7 +126,12 @@ async function downloadAnimeSingle(
 }
 
 // Handles Multiple Chapters Download
-async function downloadMangaMulti(mangaid, Chapters = [], Title) {
+async function downloadMangaMulti(
+  provider = null,
+  mangaid,
+  Chapters = [],
+  Title
+) {
   if (Chapters?.length <= 0)
     return {
       error: false,
@@ -130,6 +148,7 @@ async function downloadMangaMulti(mangaid, Chapters = [], Title) {
   for (let i = 0; i < Chapters.length; i++) {
     let Chapter = Chapters[i];
     let data = await downloadMangaSingle(
+      provider,
       mangaid,
       Chapter.id,
       Chapter.number,
@@ -149,6 +168,7 @@ async function downloadMangaMulti(mangaid, Chapters = [], Title) {
 
 // Handles Single Manga Download
 async function downloadMangaSingle(
+  provider = null,
   mangaid,
   chapterid,
   number,
@@ -157,15 +177,15 @@ async function downloadMangaSingle(
 ) {
   try {
     const config = await settingfetch();
-    const provider = await providerFetch("Manga");
+    const Mangaprovider = await providerFetch("Manga", provider);
 
     if (saveinfo) {
-      let mangainfo = await MangaInfo(provider, mangaid);
+      let mangainfo = await MangaInfo(Mangaprovider, mangaid);
       if (mangainfo) {
         MetadataAdd("Manga", {
           id: mangaid,
           title: Title,
-          provider: provider.provider_name,
+          provider: Mangaprovider.provider_name,
           description: mangainfo.description ?? null,
           genres: mangainfo?.genres?.join(",") ?? null,
           type: mangainfo.type ?? null,
@@ -190,7 +210,7 @@ async function downloadMangaSingle(
         id: mangaid,
         Title: Title,
         config: {
-          Mangaprovider: config?.Mangaprovider,
+          Mangaprovider: Mangaprovider.provider_name,
           CustomDownloadLocation: config?.CustomDownloadLocation,
         },
         ChapterTitle: `Chapter ${number}`,

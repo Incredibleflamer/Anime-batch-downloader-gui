@@ -98,7 +98,7 @@ function updateTableSchema(tableName, expectedColumns) {
 }
 
 // Add metadata
-async function MetadataAdd(type, valuesToAdd, Updating = false) {
+async function MetadataAdd(type, valuesToAdd) {
   if (!tables[type] || !valuesToAdd?.id) {
     throw new Error(`Invalid args!`);
   }
@@ -112,7 +112,7 @@ async function MetadataAdd(type, valuesToAdd, Updating = false) {
       let Imageurl = valuesToAdd?.ImageUrl?.trim();
 
       if (Imageurl.startsWith("/proxy")) {
-        Imageurl = `https://localhost:${global.PORT}${Imageurl}`;
+        Imageurl = `http://localhost:${global.PORT}${Imageurl}`;
       }
 
       try {
@@ -533,12 +533,12 @@ async function FindMapping(type, AnimeMangaid, malid, dir) {
           delete Downloads[0].EpisodesDataId;
 
           data = {
-            ...data,
             ...Downloads[0],
             DownloadedEpisodes: {
               sub: [],
               dub: [],
             },
+            ...data,
           };
 
           for (const SubDub of Downloads) {

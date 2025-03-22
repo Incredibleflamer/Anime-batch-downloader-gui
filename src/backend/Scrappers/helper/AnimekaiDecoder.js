@@ -1,4 +1,6 @@
-class AnimekaiDecoder {
+// Taken From : https://github.com/Dungeon69/Junk && https://github.com/consumet/consumet.ts
+
+class AnimeKaiDecoder {
   #reverseIt = (n) => {
     return n.split("").reverse().join("");
   };
@@ -11,15 +13,16 @@ class AnimekaiDecoder {
     const map = Object.fromEntries(
       keys.split("").map((key, i) => [key, values[i] || ""])
     );
-    return input
+    const a = input
       .split("")
       .map((char) => map[char] || char)
       .join("");
+    return a;
   };
 
   #transform = (n, t) => {
-    let v = Array.from({ length: 256 }, (_, i) => i),
-      c = 0,
+    const v = Array.from({ length: 256 }, (_, i) => i);
+    let c = 0,
       f = "";
 
     for (let w = 0; w < 256; w++) {
@@ -121,43 +124,41 @@ class AnimekaiDecoder {
   };
 
   Decode = (n) => {
-    n = this.#reverseIt(
-      this.#substitute(
-        this.#transform(
-          "5ygxI8hjLiuDQ0",
-          this.#base64UrlDecode(
-            this.#transform(
-              "z9cWnXuoDtx",
-              this.#base64UrlDecode(
-                this.#substitute(
-                  this.#reverseIt(
-                    this.#substitute(
-                      this.#transform(
-                        "EZnfG1IL6DF",
-                        this.#base64UrlDecode(
-                          this.#reverseIt(this.#base64UrlDecode((n = `${n}`)))
-                        )
-                      ),
-                      "M2DCEbQmWOe",
-                      "bEDCeOQ2mWM"
-                    )
-                  ),
-                  "Lw7nfcTNz3FbWy",
-                  "TFf37zywcNWnLb"
+    n = this.#substitute(
+      this.#transform(
+        "fnxEj3tD4Bl0X",
+        this.#base64UrlDecode(
+          this.#reverseIt(
+            this.#reverseIt(
+              this.#transform(
+                "IjilzMV57GrnF",
+                this.#base64UrlDecode(
+                  this.#substitute(
+                    this.#reverseIt(
+                      this.#substitute(
+                        this.#transform(
+                          "PlzI69YVCtGwoa8",
+                          this.#base64UrlDecode(this.#base64UrlDecode(`${n}`))
+                        ),
+                        "c2IfHZwSX1mj",
+                        "mwfXcS2ZjI1H"
+                      )
+                    ),
+                    "82NkgQDYbIF",
+                    "82IQNkFgYbD"
+                  )
                 )
               )
             )
           )
-        ),
-        "HK0TOgYzU1C",
-        "T1CHYU0OKgz"
-      )
+        )
+      ),
+      "crwkth05iJR8",
+      "JRkt8rw0i5ch"
     );
 
     return decodeURIComponent(n);
   };
 }
 
-module.exports = AnimekaiDecoder;
-
-// Taken From : https://github.com/Dungeon69/Junk/blob/3a8d7ffdcfaec5d40a50fae272a2ded148c20924/Completed/animekai.to/clean/extractor.js
+module.exports = AnimeKaiDecoder;

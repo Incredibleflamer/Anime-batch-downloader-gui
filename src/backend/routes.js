@@ -195,19 +195,39 @@ router.post("/api/download/:AnimeManga/:singleMulti", async (req, res) => {
 
     if (AnimeManga === "Anime") {
       if (singleMulti === "Single") {
-        let { id, ep, Title, number } = req.body;
-        MessageData = await downloadAnimeSingle(id, ep, number, Title, true);
+        let { id, ep, Title, number, provider } = req.body;
+        MessageData = await downloadAnimeSingle(
+          provider,
+          id,
+          ep,
+          number,
+          Title,
+          true
+        );
       } else if (singleMulti === "Multi") {
-        let { id, Episodes, Title } = req.body;
-        MessageData = await downloadAnimeMulti(id, Episodes, Title);
+        let { id, Episodes, Title, SubDub, provider } = req.body;
+        MessageData = await downloadAnimeMulti(
+          provider,
+          id,
+          Episodes,
+          Title,
+          SubDub
+        );
       }
     } else if (AnimeManga === "Manga") {
       if (singleMulti === "Single") {
-        let { id, ep, Title, number } = req.body;
-        MessageData = await downloadMangaSingle(id, ep, number, Title, true);
+        let { id, ep, Title, number, provider } = req.body;
+        MessageData = await downloadMangaSingle(
+          provider,
+          id,
+          ep,
+          number,
+          Title,
+          true
+        );
       } else if (singleMulti === "Multi") {
-        let { id, Chapters, Title } = req.body;
-        MessageData = await downloadMangaMulti(id, Chapters, Title);
+        let { id, Chapters, Title, provider } = req.body;
+        MessageData = await downloadMangaMulti(provider, id, Chapters, Title);
       }
     }
 
@@ -413,13 +433,13 @@ router.post("/downloads", async (req, res) => {
   let queue = (await getQueue()) ?? [];
 
   if (queue.length > 0) {
-    let itemWithSegments = queue.find((item) => item.totalSegments > 0);
+    let itemWithSegments = queue.find((item) => item.currentSegments > 0);
     if (queue.length === 1) itemWithSegments = queue[0];
 
     if (itemWithSegments) {
       return res.json({
         caption: itemWithSegments.caption,
-        queue: queue,
+        queue: queue.filter((item) => item?.currentSegments),
         totalSegments: itemWithSegments.totalSegments,
         currentSegments: itemWithSegments.currentSegments,
       });
@@ -428,7 +448,7 @@ router.post("/downloads", async (req, res) => {
 
   return res.json({
     caption: caption,
-    queue: queue,
+    queue: queue.filter((item) => item?.currentSegments),
     totalSegments: 0,
     currentSegments: 0,
   });
@@ -493,12 +513,12 @@ router.get("/api/download/remove", async (req, res) => {
 
 // Play Video From m3u8 url
 router.post("/api/watch", async (req, res) => {
-  const { ep, epNum, Downloaded } = req.body;
+  const { ep, epNum, Downloaded, provider = null } = req.body;
   try {
     if (!Downloaded) {
       if (!ep) throw new Error("Episode ID Not Found");
-      const provider = await providerFetch("Anime");
-      const sourcesArray = await fetchEpisodeSources(provider, ep);
+      const Animeprovider = await providerFetch("Anime", provider);
+      const sourcesArray = await fetchEpisodeSources(Animeprovider, ep);
       res.status(200).json(sourcesArray);
     } else {
       if (!epNum) throw new Error("Episode Number Not Found");

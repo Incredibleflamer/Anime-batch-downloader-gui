@@ -2,7 +2,7 @@ const AnimekaiDecoder = require("./helper/AnimekaiDecoder");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const baseUrl = "https://animekai.to";
-const { GenerateToken, DecodeIframeData, Decode } = new AnimekaiDecoder();
+const AnimekaiDecoderObject = new AnimekaiDecoder();
 
 async function fetchRecentEpisodes(page = 1) {
   try {
@@ -100,6 +100,7 @@ async function AnimeInfo(id) {
       : id.endsWith("sub")
       ? "sub"
       : "both";
+
     let episodeId = id.replace(/-(dub|sub|both)$/, "");
 
     const { data } = await axios.get(`${baseUrl}/watch/${episodeId}`);
@@ -117,14 +118,17 @@ async function AnimeInfo(id) {
       : null;
     const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
     const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
-    subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
+
+    if (subOrDub === "both") {
+      subOrDub = dub > 0 && sub > 0 ? "both" : dub > 0 ? "dub" : "sub";
+    }
 
     return {
-      id: id?.endsWith("dub") ? `${episodeId}-${subOrDub}` : id,
+      id: `${episodeId}-${subOrDub}`,
       malid: watchSection.attr("data-mal-id") || null,
       image: image,
       title: mainEntity.find("div.title").text().trim() || "Unknown",
-      subOrDub: id?.endsWith("dub") ? subOrDub : id,
+      subOrDub: subOrDub,
       type: dubsub.find("span > b").text().trim() || "Unknown",
       status: details.find("div:contains('Status:') > span").text() || "Unkown",
       genres: details
@@ -146,7 +150,7 @@ async function AnimeInfo(id) {
 async function fetchEpisode(dataId) {
   try {
     let { data } = await axios.get(
-      `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${GenerateToken(
+      `https://animekai.to/ajax/episodes/list?ani_id=${dataId}&_=${AnimekaiDecoderObject.GenerateToken(
         dataId
       )}`
     );
@@ -159,7 +163,8 @@ async function fetchEpisode(dataId) {
       const slug = el.attribs["slug"] || null;
       const title = $(el).find("span").text().trim() || "Unknown Title";
       const token = el.attribs["token"] || null;
-      const lang = el.attribs["langs"];
+      const lang = Number(el.attribs["langs"]);
+
       if (!num || !slug || !token) return;
       episodes.push({
         number: num,
@@ -175,6 +180,7 @@ async function fetchEpisode(dataId) {
       total: episodes.length,
       episodes: episodes?.length > 0 ? episodes.reverse() : [],
       currentPage: 1,
+      hasNextPage: false,
     };
   } catch (err) {
     return {
@@ -182,6 +188,7 @@ async function fetchEpisode(dataId) {
       total: 0,
       episodes: [],
       currentPage: 1,
+      hasNextPage: false,
     };
   }
 }
@@ -193,10 +200,11 @@ async function fetchEpisodeSources(episodeId) {
     episodeId = episodeId.replace(/-(dub|sub|both)$/, "");
 
     const { data } = await axios.get(
-      `https://animekai.to/ajax/links/list?token=${episodeId}&_=${GenerateToken(
+      `https://animekai.to/ajax/links/list?token=${episodeId}&_=${AnimekaiDecoderObject.GenerateToken(
         episodeId
       )}`
     );
+
     const $ = cheerio.load(data.result);
     const servers = $(".server-items")
       .map((_, el) => {
@@ -229,9 +237,10 @@ async function fetchEpisodeSources(episodeId) {
       for (let server of serverGroup.servers) {
         if (!isBoth && SourceResult.length > 0) break;
         try {
+          let serverdata = await getSources(server.id);
           SourceResult.push({
             type: serverGroup.type,
-            data: await getSources(server.id),
+            data: serverdata,
           });
         } catch (error) {
           //  ignore
@@ -255,41 +264,55 @@ async function fetchEpisodeSources(episodeId) {
 async function getSources(id) {
   try {
     const { data } = await axios.get(
-      `https://animekai.to/ajax/links/view?id=${id}&_=${GenerateToken(id)}`
+      `https://animekai.to/ajax/links/view?id=${id}&_=${AnimekaiDecoderObject.GenerateToken(
+        id
+      )}`
     );
-    let { url } = JSON.parse(DecodeIframeData(data.result).replace(/\\/gm, ""));
+    let { url } = JSON.parse(
+      AnimekaiDecoderObject.DecodeIframeData(data.result).replace(/\\/gm, "")
+    );
 
     url = url.replace(/\/(e|e2)\//, "/media/");
     const sources = await axios.get(url);
+
     const Results = { sources: [] };
+
     const decodedSources = JSON.parse(
-      Decode(sources?.data?.result).replace(/\\/g, "")
+      AnimekaiDecoderObject.Decode(sources?.data?.result).replace(/\\/g, "")
     ).sources;
+
     const videoUrlPromises = decodedSources.map(async (s) => {
       const videoUrls = await getVideoUrls(s.file);
       return videoUrls;
     });
+
     const videoUrlsArray = await Promise.all(videoUrlPromises);
     Results.sources = videoUrlsArray.flat();
     return Results;
   } catch (err) {
+    console.log(err);
     throw new Error(err);
   }
 }
 
 async function getVideoUrls(url) {
   const quality = ["1080", "720", "360"];
+  let videoUrls = [];
+
+  videoUrls.push({
+    quality: "default",
+    url: `${url}`,
+  });
+
   try {
-    const response = await axios.get(url);
-    const text = response.data;
+    const response = await axios.get(url, {
+      responseType: "arraybuffer",
+    });
+
+    const text = Buffer.from(response.data).toString("utf-8");
+
     const lines = text.split("\n");
     const baseUrl = url.split("/").slice(0, -1).join("/");
-    const videoUrls = [];
-
-    videoUrls.push({
-      quality: "default",
-      url: `${url}`,
-    });
 
     lines.forEach((line, index) => {
       const qualityMatch = quality.find((q) => line.endsWith(q));

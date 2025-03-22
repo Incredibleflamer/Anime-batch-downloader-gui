@@ -37,6 +37,8 @@ class downloader {
       headers: {
         Connection: "keep-alive",
       },
+      httpAgent: new (require("http").Agent)({ keepAlive: true }),
+      httpsAgent: new (require("https").Agent)({ keepAlive: true }),
     });
   }
 
@@ -320,7 +322,7 @@ class downloader {
         stalledTimeout = setTimeout(() => {
           hasAborted = true;
           controller.abort();
-        }, 10000);
+        }, 30000);
       };
 
       resetTimeout();
