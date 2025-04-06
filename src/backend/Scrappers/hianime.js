@@ -4,7 +4,7 @@ const axios = require("axios");
 const { getSources } = require("./helper/rabbit");
 
 // varibles
-const baseUrl = "https://hianime.to";
+const baseUrl = "https://hianime.bz";
 
 async function SearchAnime(query, page = 1) {
   return scrapeCardPage(

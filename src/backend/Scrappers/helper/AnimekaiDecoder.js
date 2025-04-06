@@ -1,5 +1,3 @@
-// Taken From : https://github.com/Dungeon69/Junk && https://github.com/consumet/consumet.ts
-
 class AnimeKaiDecoder {
   #reverseIt = (n) => {
     return n.split("").reverse().join("");
@@ -124,40 +122,40 @@ class AnimeKaiDecoder {
   };
 
   Decode = (n) => {
-    n = this.#substitute(
-      this.#transform(
-        "fnxEj3tD4Bl0X",
-        this.#base64UrlDecode(
-          this.#reverseIt(
-            this.#reverseIt(
+    return decodeURIComponent(
+      this.#reverseIt(
+        this.#transform(
+          "hI8JxsWF9G",
+          this.#base64UrlDecode(
+            this.#substitute(
               this.#transform(
-                "IjilzMV57GrnF",
+                "HzdLUrxnhcS",
                 this.#base64UrlDecode(
                   this.#substitute(
                     this.#reverseIt(
-                      this.#substitute(
-                        this.#transform(
-                          "PlzI69YVCtGwoa8",
-                          this.#base64UrlDecode(this.#base64UrlDecode(`${n}`))
-                        ),
-                        "c2IfHZwSX1mj",
-                        "mwfXcS2ZjI1H"
+                      this.#reverseIt(
+                        this.#substitute(
+                          this.#transform(
+                            "Zd5yYckQ38h",
+                            this.#base64UrlDecode(this.#base64UrlDecode(n))
+                          ),
+                          "RuFt8YWnQA",
+                          "RQunFW8AYt"
+                        )
                       )
                     ),
-                    "82NkgQDYbIF",
-                    "82IQNkFgYbD"
+                    "GJRdPQgXn34ul",
+                    "JGQ34nPlRudgX"
                   )
                 )
-              )
+              ),
+              "9mz6PhsUQVNS",
+              "mN9sQhVUPSz6"
             )
           )
         )
-      ),
-      "crwkth05iJR8",
-      "JRkt8rw0i5ch"
+      )
     );
-
-    return decodeURIComponent(n);
   };
 }
 
