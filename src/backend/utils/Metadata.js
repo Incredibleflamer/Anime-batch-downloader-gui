@@ -55,6 +55,7 @@ const tables = {
     status: "TEXT",
     sortOrder: "INTEGER",
     updated_at: "TEXT",
+    NextEpisodeIn: "TEXT",
   },
   last_ran_Mapping: {
     id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -747,7 +748,11 @@ async function processAndSortMyAnimeList() {
     });
 
     animeData.sort((a, b) => {
+      if (a.hasUnwatchedReleased !== b.hasUnwatchedReleased)
+        return Number(b.hasUnwatchedReleased) - Number(a.hasUnwatchedReleased);
+
       if (a.hasNext !== b.hasNext) return Number(b.hasNext) - Number(a.hasNext);
+
       if (a.watchedLast !== b.watchedLast)
         return Number(b.watchedLast) - Number(a.watchedLast);
 
@@ -759,10 +764,6 @@ async function processAndSortMyAnimeList() {
           return Number(isWithin14DaysB) - Number(isWithin14DaysA);
 
         return a.daysLeft - b.daysLeft;
-      } else if (a.lastDate) {
-        return -1;
-      } else if (b.lastDate) {
-        return 1;
       }
 
       if (a.isCompleted !== b.isCompleted)
@@ -773,7 +774,7 @@ async function processAndSortMyAnimeList() {
 
     let updateQuery = db.prepare(`
       UPDATE MyAnimeList 
-      SET title = ?, image = ?, totalEpisodes = ?, watched = ?, sortOrder = ? 
+      SET title = ?, image = ?, totalEpisodes = ?, watched = ?, sortOrder = ?, NextEpisodeIn = ? 
       WHERE id = ?
     `);
 
@@ -788,6 +789,7 @@ async function processAndSortMyAnimeList() {
           : 0,
         entry.watched,
         index,
+        entry?.lastDate ? String(entry.lastDate) : null,
         entry.id
       );
     });

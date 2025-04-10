@@ -78,6 +78,21 @@ body {
   background-color: rgba(0, 0, 0, 0.6);
 }
 
+.episodes-right {
+  position: absolute;
+  top: 0;
+  right: 1;
+  color: white;
+  display: flex;
+  align-items: center;
+  margin-top: 0.3rem;
+  margin-left: 0.3rem;
+  justify-content: space-between;
+  border-radius: 0.2rem;
+  padding: 0.1rem;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
 .anime-item .episodes .downloaded,
 .anime-item .episodes .total {
   flex: 1;

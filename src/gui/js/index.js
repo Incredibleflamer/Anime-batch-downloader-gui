@@ -102,6 +102,13 @@ async function addchild(data) {
                         </div>
                       </div>`
                     : ""
+                }
+                ${
+                  result?.NextEpisodeIn
+                    ? `<div class="episodes-right">
+                        <div>${formatRelativeTime(result.NextEpisodeIn)}</div>
+                      </div>`
+                    : ""
                 }                
               <div class="overlay">${result.title}</div>
             </div>
@@ -123,6 +130,27 @@ async function addchild(data) {
         img.src = "./images/image404.png";
       };
     });
+  }
+}
+
+function formatRelativeTime(timestamp) {
+  const diff = timestamp - Date.now();
+
+  const absDiff = Math.abs(diff);
+  const minutes = Math.floor(absDiff / (1000 * 60));
+  const hours = Math.floor(absDiff / (1000 * 60 * 60));
+  const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+
+  if (absDiff < 60 * 1000) {
+    return diff >= 0 ? `in a few secs` : `a few secs ago`;
+  } else if (absDiff < 60 * 60 * 1000) {
+    return diff >= 0
+      ? `in ${minutes} min${minutes !== 1 ? "s" : ""}`
+      : `${minutes} min${minutes !== 1 ? "s" : ""} ago`;
+  } else if (absDiff < 24 * 60 * 60 * 1000) {
+    return diff >= 0 ? `in ${hours}h` : `${hours}h ago`;
+  } else {
+    return diff >= 0 ? `in ${days}d` : `${days}d ago`;
   }
 }
 
