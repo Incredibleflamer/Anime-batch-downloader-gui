@@ -108,17 +108,17 @@ const createWindow = () => {
     }
   });
 
-  // global.win.webContents.on("context-menu", (event) => {
-  //   event.preventDefault();
-  // });
+  global.win.webContents.on("context-menu", (event) => {
+    event.preventDefault();
+  });
 
-  // global.win.webContents.on("before-input-event", (event, input) => {
-  //   if (input.control && input.key.toLowerCase() === "i") {
-  //     event.preventDefault();
-  //   }
-  // });
-  // const menu = Menu.buildFromTemplate([]);
-  // Menu.setApplicationMenu(menu);
+  global.win.webContents.on("before-input-event", (event, input) => {
+    if (input.control && input.key.toLowerCase() === "i") {
+      event.preventDefault();
+    }
+  });
+  const menu = Menu.buildFromTemplate([]);
+  Menu.setApplicationMenu(menu);
 
   // max priority
   exec(

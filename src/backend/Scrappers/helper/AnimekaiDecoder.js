@@ -123,37 +123,37 @@ class AnimeKaiDecoder {
 
   Decode = (n) => {
     return decodeURIComponent(
-      this.#reverseIt(
+      this.#substitute(
         this.#transform(
-          "hI8JxsWF9G",
+          "XvxVdt4eTSnCyG",
           this.#base64UrlDecode(
-            this.#substitute(
+            this.#reverseIt(
               this.#transform(
-                "HzdLUrxnhcS",
+                "ENZqBfw54cgsJ",
                 this.#base64UrlDecode(
-                  this.#substitute(
-                    this.#reverseIt(
-                      this.#reverseIt(
-                        this.#substitute(
-                          this.#transform(
-                            "Zd5yYckQ38h",
-                            this.#base64UrlDecode(this.#base64UrlDecode(n))
-                          ),
-                          "RuFt8YWnQA",
-                          "RQunFW8AYt"
+                  this.#reverseIt(
+                    this.#substitute(
+                      this.#transform(
+                        "HCcYA9gQqxUD",
+                        this.#base64UrlDecode(
+                          this.#substitute(
+                            this.#reverseIt(this.#base64UrlDecode(n)),
+                            "OdilCbZWmrtUeYg",
+                            "YirdmeZblOtgCWU"
+                          )
                         )
-                      )
-                    ),
-                    "GJRdPQgXn34ul",
-                    "JGQ34nPlRudgX"
+                      ),
+                      "K9lQq2SsnjkObe",
+                      "l9j2sSnekQOqKb"
+                    )
                   )
                 )
-              ),
-              "9mz6PhsUQVNS",
-              "mN9sQhVUPSz6"
+              )
             )
           )
-        )
+        ),
+        "nMW7qCTpe6SQhco",
+        "nqce7WMQC6pSTho"
       )
     );
   };

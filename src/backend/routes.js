@@ -157,10 +157,7 @@ router.post("/api/settings", async (req, res) => {
 router.post("/api/logger", async (req, res) => {
   const { caption, totalSegments, currentSegments, epid } = req.body;
   try {
-    let queue = await updateQueue(epid, totalSegments, currentSegments);
-    queue = queue.filter(
-      (item) => !item?.totalSegments || item?.totalSegments <= 0
-    );
+    let queue = (await updateQueue(epid, totalSegments, currentSegments)) ?? [];
 
     if (totalSegments !== currentSegments) {
       global.win.webContents.send("download-logger", {
@@ -168,7 +165,7 @@ router.post("/api/logger", async (req, res) => {
         totalSegments,
         currentSegments,
         epid,
-        queue,
+        queue: queue.filter((item) => item?.currentSegments === 0),
       });
     } else {
       global.win.webContents.send("download-logger", {
@@ -429,29 +426,25 @@ router.post("/api/chapters", async (req, res) => {
 });
 
 router.post("/downloads", async (req, res) => {
-  let caption = "Nothing in progress";
   let queue = (await getQueue()) ?? [];
 
-  if (queue.length > 0) {
-    let itemWithSegments = queue.find((item) => item.currentSegments > 0);
-    if (queue.length === 1) itemWithSegments = queue[0];
+  let Response = {
+    caption: "Nothing in progress",
+    queue,
+  };
 
-    if (itemWithSegments) {
-      return res.json({
-        caption: itemWithSegments.caption,
-        queue: queue.filter((item) => item?.currentSegments),
-        totalSegments: itemWithSegments.totalSegments,
-        currentSegments: itemWithSegments.currentSegments,
-      });
-    }
+  let itemWithSegments = queue.find((item) => item.currentSegments > 0);
+
+  if (itemWithSegments) {
+    Response.caption = itemWithSegments.caption;
+    Response.totalSegments = itemWithSegments.totalSegments;
+    Response.currentSegments = itemWithSegments.currentSegments;
+    Response.queue = queue.filter(
+      (item) => item?.epid !== itemWithSegments?.epid
+    );
   }
 
-  return res.json({
-    caption: caption,
-    queue: queue.filter((item) => item?.currentSegments),
-    totalSegments: 0,
-    currentSegments: 0,
-  });
+  return res.json(Response);
 });
 
 // remove from queue or remove all
@@ -462,7 +455,7 @@ router.get("/api/download/remove", async (req, res) => {
     if (AnimeEpId) {
       let queue = await removeQueue(AnimeEpId);
 
-      if (queue.length > 0) {
+      if (queue?.length > 0) {
         const itemWithSegments = queue.find((item) => item.totalSegments > 0);
         if (itemWithSegments) {
           global.win.webContents.send("download-logger", {

@@ -1,8 +1,8 @@
 const { spawn } = require("child_process");
 const { logger } = require("./AppLogger");
 const ffmpeg = require("ffmpeg-static");
-const axios = require("axios");
 const path = require("path");
+const got = require("got");
 const fs = require("fs");
 
 const ffmpegPath = ffmpeg.replace("app.asar", "app.asar.unpacked");
@@ -18,7 +18,6 @@ class downloader {
     MergeSubtitles = false,
     ChangeTosrt = false,
   }) {
-    this.concurrency = 1;
     this.directory = directory;
     if (streamUrl?.url) {
       this.streamUrl = streamUrl.url;
@@ -29,17 +28,13 @@ class downloader {
     this.Epnum = parseInt(Epnum);
     this.caption = caption;
     this.EpID = EpID;
-    this.subtitles = subtitles ?? [];
+    this.subtitles =
+      subtitles?.length > 0
+        ? subtitles?.filter(({ lang }) => lang !== "Thumbnails") ?? []
+        : [];
     this.MergeSubtitles = MergeSubtitles ?? false;
     this.ChangeTosrt = ChangeTosrt ?? false;
     this.downloadedPaths = [];
-    this.httpClient = axios.create({
-      headers: {
-        Connection: "keep-alive",
-      },
-      httpAgent: new (require("http").Agent)({ keepAlive: true }),
-      httpsAgent: new (require("https").Agent)({ keepAlive: true }),
-    });
   }
 
   // Additional Checks
@@ -59,21 +54,23 @@ class downloader {
       throw new Error("No Ep id found!");
     }
 
-    await this.CreateFolderAndFiles(this.directory, this.Epnum);
+    this.mp4 = path.join(this.directory, `${this.Epnum}Ep.mp4`);
+    this.SegmentsFile = path.join(this.directory, `${this.Epnum}Ep.ts`);
 
     if (!this.streamUrl || this.streamUrl.length <= 0) {
       throw new Error("No Stream Url Provided");
     } else {
-      let Playlist = await this.httpClient.get(this.streamUrl, {
+      let Playlist = await got(this.streamUrl, {
         headers: this.headers ?? {},
-      });
-      if (!Playlist || !Playlist.data) throw new Error("No Stream Found!");
-      let Segments = Playlist.data
-        .split("\n")
+      }).text();
+
+      if (!Playlist) throw new Error("No Stream Found!");
+      let Segments = Playlist.split("\n")
         .map((line) => line.trim())
         .filter((line) => line.startsWith("https://"));
 
       if (Segments.length <= 0) throw new Error("No Segments Found!");
+
       this.Segments = Segments;
       this.totalSegments = Segments.length;
       this.currentSegments = 0;
@@ -81,64 +78,82 @@ class downloader {
       if (this.subtitles && this.subtitles.length > 0) {
         this.totalSegments += this.subtitles.length;
       }
+
+      this.logProgress();
+    }
+  }
+
+  async CheckFileFolderExists(FileDir) {
+    if (!FileDir) return false;
+    try {
+      await fs.promises.access(FileDir);
+      return true;
+    } catch (err) {
+      return false;
     }
   }
 
   async DownloadStart() {
     try {
+      let FailedSegments = 0;
+      this.writer = fs.createWriteStream(this.SegmentsFile, {
+        flags: "a",
+        encoding: null,
+      });
+      this.writer.on("error", (err) => {
+        throw err;
+      });
+
       while (this.Segments.length > 0) {
-        let LastBatchConcurrency = this.concurrency;
-        this.SegmentsBatchSizeInKB = 0;
-        let startTime = Date.now();
-
-        let batch = this.Segments.map((segment, index) => ({ segment, index }))
-          .filter(({ segment }) => segment.startsWith("https://"))
-          .slice(0, this.concurrency);
-
-        if (batch.length <= 0) break;
-
-        await Promise.all(
-          batch.map(({ segment, index }) =>
-            this.DownloadSegment(segment, index)
-          )
-        );
-
-        let endTime = Date.now();
-        const speedKBps =
-          this.SegmentsBatchSizeInKB / ((endTime - startTime) / 1000);
-
-        // Increase concurrency
-        if (speedKBps > 5120) {
-          this.concurrency += 1;
-        }
-        // Decrease concurrency
-        else if (speedKBps < 4096) {
-          this.concurrency -= 1;
-        }
-
-        this.concurrency = Math.min(
-          Math.max(parseInt(this.concurrency), 1),
-          100
-        );
-
-        if (LastBatchConcurrency !== this.concurrency) {
-          logger.info(
-            `Current concurrency : ${this.concurrency} | Speed : ${speedKBps}/KBps`
-          );
+        try {
+          let Segment = this.Segments[0];
+          if (!Segment) throw new Error("[ STOPPING ] Segment Missing!");
+          await this.appendSegment(Segment);
+          this.Segments.shift();
+          this.currentSegments++;
+          await this.logProgress();
+        } catch (err) {
+          if (FailedSegments > 3)
+            throw new Error(
+              "[ STOPPING ] '3' Times Segment Failed To Download!"
+            );
+          FailedSegments++;
+          this.logProgress(`Failed To Download Segment! ( Continuing in 5s )`);
+          console.log(err);
+          await new Promise((res) => setTimeout(res, 5000)); // 5s delay
         }
       }
+
+      await new Promise((resolve) => {
+        this.writer.end(resolve);
+      });
     } catch (err) {
       throw new Error(err);
     }
   }
 
-  async CheckSubtitles() {
-    if (this.subtitles.length > 0) {
-      await this.downloadSubtitles();
+  async appendSegment(segmentUrl) {
+    try {
+      const response = await got(segmentUrl, {
+        headers: this.headers ?? {},
+        responseType: "buffer",
+      });
+
+      await new Promise((resolve, reject) => {
+        this.writer.write(response.body, (err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+    } catch (err) {
+      throw err;
     }
   }
 
-  async downloadSubtitles() {
+  // Check Subtitles & download
+  async CheckSubtitles() {
+    if (this.subtitles.length === 0) return;
+
     try {
       const episodeDir = path.join(this.directory, `subtitles_${this.Epnum}`);
 
@@ -146,38 +161,30 @@ class downloader {
         fs.mkdirSync(episodeDir, { recursive: true });
       }
 
-      const downloadPromises = this.subtitles
-        .filter(({ lang }) => lang !== "Thumbnails")
-        .map(async ({ url, lang }) => {
-          let subtitlePath = path.join(
-            episodeDir,
-            `${this.Epnum}_${lang}.${url.split(".").pop()}`
-          );
+      const downloadPromises = this.subtitles.map(async ({ url, lang }) => {
+        let subtitlePath = path.join(episodeDir, `${this.Epnum}_${lang}.`);
 
-          if (
-            this.ChangeTosrt &&
-            subtitlePath.endsWith(".ttv") &&
-            !this.MergeSubtitles
-          ) {
-            subtitlePath = subtitlePath.replace(".ttv", ".srt");
-          }
+        let subtitleData = await got(url).text();
 
-          try {
-            const response = await axios.get(url, { responseType: "text" });
-            let subtitleData = response.data;
+        if (
+          (url.split(".").pop() === "vtt" && this.ChangeTosrt) ||
+          this.MergeSubtitles
+        ) {
+          subtitlePath += "srt";
+          subtitleData = this.convertToSRT(subtitleData);
+        } else {
+          subtitlePath += `${url.split(".").pop()}`;
+        }
 
-            if (this.ChangeTosrt && !this.MergeSubtitles) {
-              subtitleData = this.convertToSRT(subtitleData);
-            }
-
-            await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
-            this.downloadedPaths.push(subtitlePath);
-          } catch (err) {
-            logger.error(`Failed to download subtitle (${lang})`);
-            logger.error(`Error message: ${err.message}`);
-            logger.error(`Stack trace: ${err.stack}`);
-          }
-        });
+        try {
+          await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
+          this.downloadedPaths.push(subtitlePath);
+        } catch (err) {
+          logger.error(`Failed to download subtitle (${lang})`);
+          logger.error(`Error message: ${err.message}`);
+          logger.error(`Stack trace: ${err.stack}`);
+        }
+      });
       await Promise.all(downloadPromises);
       this.currentSegments += this.subtitles.length;
     } catch (err) {
@@ -187,6 +194,7 @@ class downloader {
     }
   }
 
+  // Convert To Srt
   convertToSRT(content) {
     try {
       const lines = content.split("\n");
@@ -217,218 +225,63 @@ class downloader {
       return srtLines.join("\n");
     } catch (err) {
       logger.info(`Failed to convert subtitle: ${err.message}`);
-      console.error(`Failed to convert subtitles: ${err.message}`);
       return content;
     }
   }
 
+  // Merge .ts & subtitles to mp4
   async MergeSegments() {
     try {
-      // Save all segment paths to a txt file
-      const segmentPaths = this.Segments.map((file) => `file '${file}'`).join(
-        "\n"
-      );
+      const ffmpegArgs = ["-y", "-i", this.SegmentsFile];
 
-      const fileListPath = path.join(this.SegmentsFolder, "filelist.txt");
-      await fs.promises.writeFile(fileListPath, segmentPaths);
-
-      // FFmpeg arguments
-      let ffmpegArgs = ["-f", "concat", "-safe", "0", "-i", fileListPath];
-
-      // Merge Subtitles if downloaded
       if (this.MergeSubtitles && this.downloadedPaths.length > 0) {
         this.downloadedPaths.forEach((filePath) => {
-          ffmpegArgs.push("-i", filePath.replace(")}", ""));
+          const cleanPath = filePath.replace(/[)\}]+$/, "");
+          ffmpegArgs.push("-i", cleanPath);
         });
-      }
 
-      ffmpegArgs.push(
-        "-map",
-        "0:v",
-        "-map",
-        "0:a",
-        "-c:v",
-        "copy",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "128k"
-      );
+        ffmpegArgs.push("-map", "0:v", "-map", "0:a");
 
-      if (this.MergeSubtitles && this.downloadedPaths.length > 0) {
+        this.downloadedPaths.forEach((_, index) => {
+          ffmpegArgs.push("-map", `${index + 1}`);
+        });
+
+        ffmpegArgs.push("-bsf:a", "aac_adtstoasc");
+
+        ffmpegArgs.push("-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text");
+
         this.downloadedPaths.forEach((filePath, index) => {
-          ffmpegArgs.push(
-            "-map",
-            `${index + 1}:s`,
-            "-c:s",
-            "mov_text",
-            "-metadata:s:s:" + index,
-            `language=${path.basename(filePath).split("_")[1] || "und"}`
-          );
+          const lang = this.getLangCodeFromFilename(filePath);
+          ffmpegArgs.push(`-metadata:s:s:${index}`, `language=${lang}`);
         });
       }
 
-      ffmpegArgs.push(this.mp4, "-y");
+      ffmpegArgs.push(this.mp4);
 
       await new Promise((resolve, reject) => {
         const child = spawn(ffmpegPath, ffmpegArgs);
-
         child.on("close", (code) => {
-          if (code !== 0) {
-            return reject(new Error(`FFmpeg Merge Failed with code ${code}`));
-          }
+          if (code !== 0)
+            return reject(new Error(`FFmpeg exited with code ${code}`));
           resolve();
         });
       });
 
       this.currentSegments++;
       await this.logProgress();
-
-      // Cleanup
-      await this.DeleteSegmentsFolder();
+      await this.CleanEverything();
     } catch (err) {
-      await this.DeleteSegmentsFolder();
+      await this.CleanEverything(true);
       throw err;
     }
   }
 
-  async DownloadSegment(SegmentUrl, index) {
-    try {
-      let SegmentFileName = path.join(
-        this.SegmentsFolder,
-        SegmentUrl.split("/").pop()
-      );
-      await this.AxiosGetSegments(SegmentUrl, SegmentFileName);
-      this.Segments[index] = SegmentFileName;
-    } catch (err) {
-      this.concurrency -= 1;
-      logger.info(
-        `Failed To Download Segment! [ Re-downloading in next batch ] Continuing in 5s`
-      );
-      this.logProgress("<br> Retrying After 5s");
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      this.logProgress("<br> Retrying Now");
-    }
-  }
-
-  async AxiosGetSegments(SegmentUrl, SegmentFileName) {
-    try {
-      const controller = new AbortController();
-      let stalledTimeout;
-      let hasAborted = false;
-
-      const resetTimeout = () => {
-        clearTimeout(stalledTimeout);
-        stalledTimeout = setTimeout(() => {
-          hasAborted = true;
-          controller.abort();
-        }, 30000);
-      };
-
-      resetTimeout();
-
-      let response = await this.httpClient({
-        method: "get",
-        url: SegmentUrl,
-        responseType: "stream",
-        signal: controller.signal,
-        headers: this.headers ?? {},
-      });
-
-      const writer = fs.createWriteStream(SegmentFileName);
-
-      response.data.on("data", () => {
-        resetTimeout();
-      });
-
-      response.data.on("error", (err) => {
-        clearTimeout(stalledTimeout);
-        writer.destroy(err);
-      });
-
-      response.data.pipe(writer);
-
-      await new Promise((resolve, reject) => {
-        writer.on("finish", () => {
-          clearTimeout(stalledTimeout);
-          if (hasAborted) {
-            reject(
-              new Error(`Download aborted due to stalling: ${SegmentUrl}`)
-            );
-          } else {
-            resolve();
-          }
-        });
-        writer.on("error", (err) => {
-          clearTimeout(stalledTimeout);
-          reject(err);
-        });
-      });
-
-      this.SegmentsBatchSizeInKB +=
-        (await fs.promises.stat(SegmentFileName)).size / 1024;
-      this.currentSegments++;
-      this.logProgress();
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async CheckFileFolderExists(FileDir) {
-    if (!FileDir) return false;
-    try {
-      await fs.promises.access(FileDir);
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-
-  async CreateFolderAndFiles() {
-    const mp4 = path.join(this.directory, `${this.Epnum}Ep.mp4`);
-    const SegmentsFolder = path.join(this.directory, `Temp_${this.Epnum}`);
-
-    try {
-      await fs.promises.access(SegmentsFolder);
-    } catch (error) {
-      await fs.promises.mkdir(SegmentsFolder, { recursive: true });
-    }
-
-    this.mp4 = mp4;
-    this.SegmentsFolder = SegmentsFolder;
-  }
-
-  async DeleteSegmentsFolder() {
-    try {
-      const segmentFiles = await fs.promises.readdir(this.SegmentsFolder);
-      for (const file of segmentFiles) {
-        await fs.promises.unlink(path.join(this.SegmentsFolder, file));
-      }
-      await fs.promises.rmdir(this.SegmentsFolder);
-
-      if (
-        this.downloadedPaths &&
-        this.downloadedPaths.length > 0 &&
-        this.MergeSubtitles
-      ) {
-        const subtitlesFolder = path.join(
-          this.directory,
-          `subtitles_${this.Epnum}`
-        );
-
-        if (fs.existsSync(subtitlesFolder)) {
-          const subtitleFiles = await fs.promises.readdir(subtitlesFolder);
-          for (const file of subtitleFiles) {
-            await fs.promises.unlink(path.join(subtitlesFolder, file));
-          }
-          await fs.promises.rmdir(subtitlesFolder);
-        }
-      }
-    } catch (err) {
-      logger.error("Failed to delete SegmentsFolder or Subtitles folder");
-      logger.error(`Error message: ${err.message}`);
-      logger.error(`Stack trace: ${err.stack}`);
-    }
+  getLangCodeFromFilename(filePath) {
+    let FileName = path?.basename(filePath)?.split("_")?.[1];
+    if (!FileName) return "und";
+    FileName =
+      FileName?.split(".srt")?.[0]?.slice(0, 3)?.toLocaleLowerCase() ?? "und";
+    return FileName;
   }
 
   async logProgress(ExtraMessage) {
@@ -456,6 +309,29 @@ class downloader {
       logger.error(`Stack trace: ${err.stack}`);
     });
   }
+
+  async CleanEverything(everything = false) {
+    // remove ts file
+    await fs.promises.unlink(this.SegmentsFile).catch(() => {});
+
+    // remove mp4 ( only on error )
+    if (everything) {
+      await fs.promises.unlink(this.mp4).catch(() => {});
+    }
+
+    // remove all subtitles ( error / MergeSubtitles )
+    if (
+      (everything || this.MergeSubtitles) &&
+      this.downloadedPaths?.length > 0
+    ) {
+      await fs.promises
+        .rm(path.join(this.directory, `subtitles_${this.Epnum}`), {
+          recursive: true,
+          force: true,
+        })
+        .catch(() => {});
+    }
+  }
 }
 
 async function download(args) {
@@ -466,7 +342,7 @@ async function download(args) {
     await obj.CheckSubtitles();
     await obj.MergeSegments();
   } catch (err) {
-    obj.DeleteSegmentsFolder();
+    await obj.CleanEverything();
     console.log(err);
     logger.error(err);
     throw new Error(err);

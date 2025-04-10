@@ -61,6 +61,7 @@
     "express": "^4.19.1",
     "ffmpeg-static": "^5.2.0",
     "fs-extra": "^10.0.0",
+    "got": "^11.8.6",
     "image-pixels": "^2.2.2",
     "jszip": "^3.10.1",
     "node-cache": "^5.1.2",

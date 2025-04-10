@@ -86,7 +86,7 @@ async function continuousExecution() {
       }
 
       AnimeQueue = await getQueue();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (err) {
     console.error("Error in continuous execution:", err);

@@ -60,7 +60,7 @@ async function updateQueue(epid, totalSegments, currentSegments) {
       Tosave = true;
     }
 
-    if (currentSegments === totalSegments) {
+    if (currentSegments >= totalSegments) {
       AnimeQueue.splice(indexToUpdate, 1);
       Tosave = true;
     }
