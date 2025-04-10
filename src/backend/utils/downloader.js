@@ -240,10 +240,10 @@ class downloader {
           ffmpegArgs.push("-i", cleanPath);
         });
 
-        ffmpegArgs.push("-map", "0:v", "-map", "0:a");
+        ffmpegArgs.push("-map", "0:v?", "-map", "0:a?");
 
         this.downloadedPaths.forEach((_, index) => {
-          ffmpegArgs.push("-map", `${index + 1}`);
+          ffmpegArgs.push("-map", `${index + 1}:s?`);
         });
 
         ffmpegArgs.push("-bsf:a", "aac_adtstoasc");
@@ -254,16 +254,24 @@ class downloader {
           const lang = this.getLangCodeFromFilename(filePath);
           ffmpegArgs.push(`-metadata:s:s:${index}`, `language=${lang}`);
         });
+      } else {
+        ffmpegArgs.push("-c", "copy");
       }
 
       ffmpegArgs.push(this.mp4);
 
       await new Promise((resolve, reject) => {
         const child = spawn(ffmpegPath, ffmpegArgs);
+
         child.on("close", (code) => {
-          if (code !== 0)
+          if (code !== 0) {
             return reject(new Error(`FFmpeg exited with code ${code}`));
+          }
           resolve();
+        });
+
+        child.on("error", (err) => {
+          reject(new Error(`Failed to start FFmpeg: ${err.message}`));
         });
       });
 
