@@ -519,14 +519,29 @@ async function HandleEpisodes(data) {
   }
 
   // Downloaded Episodes
-  if (downloaded?.sub?.length > 0) {
+  if (downloaded?.sub?.length > 0 || downloaded?.dub.length > 0) {
     let downloadsEpsdiv = document.getElementById("downloaded-episodes-info");
     downloadsEpsdiv.style.display = "block";
-    downloadsEpsdiv.innerHTML = `<p>⚠️ ${downloaded?.sub?.length} Episode${
-      downloaded?.sub?.length > 1
-        ? "s Are Hidden As They Are"
-        : " is Hidden As Its"
-    } Already Downloaded! ( sub )</p>`;
+    let DownloadedText = "";
+    // subs
+    if (downloaded?.sub?.length > 0) {
+      DownloadedText = `<p>⚠️ ${downloaded?.sub?.length} Episode${
+        downloaded?.sub?.length > 1
+          ? "s Are Hidden As They Are"
+          : " is Hidden As Its"
+      } Already Downloaded! ( sub )</p>`;
+    }
+
+    // dubs
+    if (downloaded?.dub?.length > 0) {
+      DownloadedText = `<p>⚠️ ${downloaded?.dub?.length} Episode${
+        downloaded?.dub?.length > 1
+          ? "s Are Hidden As They Are"
+          : " is Hidden As Its"
+      } Already Downloaded! ( dub )</p>`;
+    }
+
+    if (DownloadedText?.length > 0) downloadsEpsdiv.innerHTML = DownloadedText;
   }
 
   // sub dub tongle

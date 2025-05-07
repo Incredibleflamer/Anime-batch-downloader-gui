@@ -197,3 +197,45 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Filters */
+#anime-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  background-color: #1c1c1c;
+  border-radius: 8px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  background-color: #2c2c2c;
+  padding: 10px;
+  border-radius: 6px;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.filter-group label {
+  color: #ccc;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.filter-group select {
+  padding: 6px;
+  font-size: 0.9rem;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  appearance: none;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #888;
+  background-color: #444;
+}

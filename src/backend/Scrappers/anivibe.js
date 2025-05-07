@@ -3,7 +3,11 @@ const cheerio = require("cheerio");
 
 const baseurl = "https://anivibe.net";
 
-async function fetchRecentEpisodes(page = 1) {
+async function fetchRecentEpisodes(
+  filters = {
+    page: 1,
+  }
+) {
   const res = {
     currentPage: page,
     hasNextPage: false,
@@ -33,7 +37,7 @@ async function fetchRecentEpisodes(page = 1) {
   }
 }
 
-async function SearchAnime(query, page = 1) {
+async function SearchAnime(query, { page = 1 }) {
   const res = {
     currentPage: page,
     hasNextPage: false,

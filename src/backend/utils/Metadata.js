@@ -104,9 +104,9 @@ async function MetadataAdd(type, valuesToAdd) {
     throw new Error(`Invalid args!`);
   }
 
-  const existingRecord = db
-    .prepare(`SELECT * FROM ${type} WHERE id = ?`)
-    .get(valuesToAdd?.id);
+  let existingRecord = db
+    .prepare(`SELECT * FROM ${type} WHERE id = ? OR title = ?`)
+    .get(valuesToAdd?.id, valuesToAdd?.title);
 
   if (!existingRecord) {
     if (valuesToAdd?.ImageUrl) {

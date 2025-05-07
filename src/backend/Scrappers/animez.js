@@ -3,7 +3,7 @@ const axios = require("axios");
 
 const baseurl = "https://animez.org";
 
-async function SearchAnime(query, page = 1) {
+async function SearchAnime(query, { page = 1 }) {
   try {
     const res = await axios.get(
       `${baseurl}/?act=search&f[status]=all&f[sortby]=lastest-chap&f[keyword]=${encodeURIComponent(
@@ -59,7 +59,11 @@ async function AnimeInfo(id) {
   }
 }
 
-async function fetchRecentEpisodes(page = 1) {
+async function fetchRecentEpisodes(
+  filters = {
+    page: 1,
+  }
+) {
   try {
     const res = await axios.get(
       `${baseurl}/?act=search&f[status]=all&f[sortby]=lastest-chap&&pageNum=${page}`

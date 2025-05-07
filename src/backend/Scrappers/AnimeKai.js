@@ -4,7 +4,11 @@ const cheerio = require("cheerio");
 const baseUrl = "https://animekai.to";
 const AnimekaiDecoderObject = new AnimekaiDecoder();
 
-async function fetchRecentEpisodes(page = 1) {
+async function fetchRecentEpisodes(
+  filters = {
+    page: 1,
+  }
+) {
   try {
     const { data } = await axios.get(`${baseUrl}/updates?page=${page}`);
     const $ = cheerio.load(data);
@@ -15,7 +19,7 @@ async function fetchRecentEpisodes(page = 1) {
   }
 }
 
-async function SearchAnime(query, page = 1) {
+async function SearchAnime(query, { page = 1 }) {
   try {
     const { data } = await axios.get(
       `${baseUrl}/browser?keyword=${decodeURIComponent(query)}&page=${page}`

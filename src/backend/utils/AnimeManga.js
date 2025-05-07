@@ -1,6 +1,7 @@
 const { FindMapping } = require("./Metadata");
 const NodeCache = require("node-cache");
 const HLSLogger = require("./logger");
+const crypto = require("crypto");
 const JSZip = require("jszip");
 const axios = require("axios");
 const fs = require("fs");
@@ -9,35 +10,38 @@ const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 
 //====================================== Anime ================================
 // find popular anime
-async function latestAnime(provider, page = 1) {
-  const cacheKey = `latestanime_${provider.provider_name}_${page}`;
+async function latestAnime(provider, filters) {
+  const cacheKey = CreateHashKey(
+    `latestanime_${provider.provider_name}_${JSON.stringify(filters)}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
     return cachedData;
   }
 
-  const data = await provider.provider.fetchRecentEpisodes(page);
+  const data = await provider.provider.fetchRecentEpisodes(filters);
   cache.set(cacheKey, data, 60);
   return data;
 }
 
 // search anime
-async function animesearch(provider, Anime_NAME, page = 1) {
+async function animesearch(provider, Anime_NAME, filters) {
   let dataarray = { results: [] };
   const formattedAnimeName = Anime_NAME.replace(/\w\S*/g, (word) => {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   });
   let datafirst;
   try {
-    datafirst = await findanime(provider, formattedAnimeName, page);
+    datafirst = await findanime(provider, formattedAnimeName, filters);
     if (
       !datafirst ||
       !datafirst?.data ||
       !datafirst?.data?.length ||
       datafirst?.data?.length <= 0
     ) {
-      datafirst = await findanime(provider, Anime_NAME, page);
+      datafirst = await findanime(provider, Anime_NAME, filters);
     }
 
     if (datafirst) {
@@ -65,15 +69,20 @@ async function animesearch(provider, Anime_NAME, page = 1) {
 }
 
 // find more anime
-async function findanime(provider, Anime_NAME, page = 1) {
-  const cacheKey = `animesearch_${provider.provider_name}_${Anime_NAME}_${page}`;
+async function findanime(provider, Anime_NAME, filters) {
+  const cacheKey = CreateHashKey(
+    `animesearch_${provider.provider_name}_${Anime_NAME}__${JSON.stringify(
+      filters
+    )}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
     return cachedData;
   }
 
-  const data = await provider.provider.SearchAnime(Anime_NAME, page);
+  const data = await provider.provider.SearchAnime(Anime_NAME, filters);
 
   if (data.results.length <= 0) {
     throw new Error(`No Anime Found With This Name`);
@@ -98,7 +107,10 @@ async function findanime(provider, Anime_NAME, page = 1) {
 
 // anime info
 async function animeinfo(provider, dir, animeId, MalFetch = true) {
-  const cacheKey = `animeinfo_${provider.provider_name}_${animeId}`;
+  const cacheKey = CreateHashKey(
+    `animeinfo_${provider.provider_name}_${animeId}`
+  );
+
   let cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -150,7 +162,10 @@ async function animeinfo(provider, dir, animeId, MalFetch = true) {
 // anime fetch ep list
 async function fetchEpisode(provider, id, page = 1) {
   try {
-    const cacheKey = `animeeplist_${provider.provider_name}_${id}_${page}`;
+    const cacheKey = CreateHashKey(
+      `animeplaylist_${provider.provider_name}_${id}_${page}`
+    );
+
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
       return cachedData;
@@ -165,7 +180,10 @@ async function fetchEpisode(provider, id, page = 1) {
 
 // fetch m3u8 links
 async function fetchEpisodeSources(provider, episodeId) {
-  const cacheKey = `animeepisodesources_${provider.provider_name}_${episodeId}`;
+  const cacheKey = CreateHashKey(
+    `animeepisodesources_${provider.provider_name}_${episodeId}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -181,7 +199,10 @@ async function fetchEpisodeSources(provider, episodeId) {
 
 // Latest Manga
 async function latestMangas(provider, Page = 1) {
-  const cacheKey = `latestmanga_${provider.provider_name}_${Page}`;
+  const cacheKey = CreateHashKey(
+    `latestmanga_${provider.provider_name}_${Page}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -196,7 +217,10 @@ async function latestMangas(provider, Page = 1) {
 // Manga Search
 async function MangaSearch(provider, MANGA_NAME, PAGE = 1) {
   try {
-    const cacheKey = `mangasearch_${provider.provider_name}_${MANGA_NAME}_${PAGE}`;
+    const cacheKey = CreateHashKey(
+      `mangasearch_${provider.provider_name}_${MANGA_NAME}_${PAGE}`
+    );
+
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
@@ -213,7 +237,10 @@ async function MangaSearch(provider, MANGA_NAME, PAGE = 1) {
 
 // Manga Info
 async function MangaInfo(provider, MANGA_ID) {
-  const cacheKey = `mangainfo${provider.provider_name}_${MANGA_ID}`;
+  const cacheKey = CreateHashKey(
+    `mangainfo${provider.provider_name}_${MANGA_ID}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -227,7 +254,10 @@ async function MangaInfo(provider, MANGA_ID) {
 
 // Manga
 async function fetchChapters(provider, MANGA_ID) {
-  const cacheKey = `mangachapters${provider.provider_name}_${MANGA_ID}`;
+  const cacheKey = CreateHashKey(
+    `mangachapters${provider.provider_name}_${MANGA_ID}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -241,7 +271,10 @@ async function fetchChapters(provider, MANGA_ID) {
 
 // Chapters Fetch
 async function MangaChapterFetch(provider, MangaChapterID) {
-  const cacheKey = `mangachapterfetch_${provider.provider_name}_${MangaChapterID}`;
+  const cacheKey = CreateHashKey(
+    `mangachapterfetch_${provider.provider_name}_${MangaChapterID}`
+  );
+
   const cachedData = cache.get(cacheKey);
 
   if (cachedData) {
@@ -315,6 +348,10 @@ async function downloadImage(url) {
     return Buffer.from(response.data, "binary");
   }
   return null;
+}
+
+function CreateHashKey(text) {
+  return crypto.createHash("md5").update(text).digest("hex");
 }
 
 module.exports = {

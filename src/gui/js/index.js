@@ -7,16 +7,87 @@ let hasNextPage = true;
 let api = null;
 let infoapi = null;
 
+let SiteFilters = {
+  hianime: {
+    type: {
+      All: null,
+      Movie: 1,
+      Tv: 2,
+      OVA: 3,
+      ONA: 4,
+      Special: 5,
+      Music: 6,
+    },
+    status: {
+      All: null,
+      "Finished Airing": 1,
+      "Currently Airing": 2,
+      "Not Yet Aired": 3,
+    },
+    rated: {
+      All: null,
+      G: 1,
+      PG: 2,
+      "PG-13": 3,
+      R: 4,
+      "R+": 5,
+      Rx: 6,
+    },
+    score: {
+      All: null,
+      "(1) Appalling": 1,
+      "(2) Horrible": 2,
+      "(3) Very Bad": 3,
+      "(4) Bad": 4,
+      "(5) Average": 5,
+      "(6) Fine": 6,
+      "(7) Good": 7,
+      "(8) Very Good": 8,
+      "(9) Great": 9,
+      "(10) Masterpiece": 10,
+    },
+    season: {
+      All: null,
+      Spring: 1,
+      Summer: 2,
+      Fall: 3,
+      Winter: 4,
+    },
+    language: {
+      All: null,
+      SUB: 1,
+      DUB: 2,
+    },
+    sort: {
+      "Recently Updated": "recently_updated",
+      "Recently Added": "recently_added",
+      Score: "score",
+      "Name AZ": "name_az",
+      "released date": "released_date",
+      "most watched": "most_watched",
+    },
+  },
+  animekai: {},
+};
+let Applied_Filters = {};
+let Filter_Added = false;
+
 async function fetchPageData(page, init = false) {
   try {
     if (isFetching || (page > 1 && !hasNextPage) || allDataFetched) return;
     isFetching = true;
 
-    const response = await fetch(`${api}${page}`, {
+    const response = await fetch(`${api}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        filters: {
+          ...Applied_Filters,
+          page: page,
+        },
+      }),
     });
 
     if (!response.ok) {
@@ -43,6 +114,57 @@ async function fetchPageData(page, init = false) {
 
     if (data && data.results && data.results.length > 0) {
       await addchild(data);
+      if (data?.site && !Filter_Added) {
+        Filter_Added = true;
+        let SelectedFilters = SiteFilters[data?.site];
+        if (SelectedFilters) {
+          const AnimeFiltersDiv = document.getElementById("anime-filters");
+
+          Object.entries(SelectedFilters).forEach(([category, options]) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "filter-group";
+
+            const label = document.createElement("label");
+            label.textContent =
+              category.charAt(0).toUpperCase() + category.slice(1);
+            wrapper.appendChild(label);
+
+            const select = document.createElement("select");
+            select.name = category;
+
+            Object.entries(options).forEach(([label, value]) => {
+              const option = document.createElement("option");
+              option.value = value ?? "";
+              option.textContent = label;
+              select.appendChild(option);
+            });
+
+            select.addEventListener("change", async (e) => {
+              const val = e.target.value;
+
+              console.log(val === "null" || val === "");
+
+              if (val === "null" || val === "") {
+                delete Applied_Filters[category];
+              } else {
+                Applied_Filters[category] = val;
+              }
+
+              allDataFetched = false;
+              hasNextPage = true;
+              currentPage = 1;
+
+              const animeGrid = document.getElementById("anime-grid");
+              animeGrid.innerHTML = "";
+
+              return await fetchPageData(currentPage);
+            });
+
+            wrapper.appendChild(select);
+            AnimeFiltersDiv.appendChild(wrapper);
+          });
+        }
+      }
     } else {
       allDataFetched = true;
     }

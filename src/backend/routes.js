@@ -41,6 +41,7 @@ const {
   getSourceById,
   MalPage,
 } = require("./utils/Metadata");
+const { stringify } = require("querystring");
 
 // ===================== API routes =====================
 // Handles Mal Login
@@ -251,8 +252,18 @@ router.post("/api/download/:AnimeManga/:singleMulti", async (req, res) => {
 // Fetchs Lists : Latest , Local , Search Anime & Manga
 router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
   const { AnimeManga, provider } = req.params;
-  let { page } = req.query;
-  page = parseInt(page) || 1;
+
+  let filters = {};
+
+  if (req?.body?.filters && typeof req.body.filters === "object") {
+    for (const [key, value] of Object.entries(req.body.filters)) {
+      if (value != null && value !== "") {
+        const num = Number(value);
+        filters[key] = !isNaN(num) ? num : value;
+      }
+    }
+  }
+
   try {
     if (!AnimeManga || !provider) {
       return res.status(400).json({ error: "Missing parameters" });
@@ -266,37 +277,41 @@ router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
         data = await getAllMetadata(
           "Anime",
           config?.CustomDownloadLocation,
-          page
+          filters?.page
         );
       } else if (provider === "mal") {
-        data = await MalPage(config.Animeprovider, page);
+        data = await MalPage(config.Animeprovider, filters?.page);
       } else if (provider === "provider") {
         const provider = await providerFetch("Anime");
-        data = await latestAnime(provider, page);
+        data = await latestAnime(provider, filters);
+        data = { ...data, site: config.Animeprovider };
       } else if (provider === "search") {
         const provider = await providerFetch("Anime");
-        data = await animesearch(provider, req?.query?.query);
+        data = await animesearch(provider, req?.query?.query, filters);
+        data = { ...data, site: config.Animeprovider };
       }
     } else if (AnimeManga === "Manga") {
       if (provider === "local") {
         data = await getAllMetadata(
           "Manga",
           config?.CustomDownloadLocation,
-          page
+          filters?.page
         );
       } else if (provider === "provider") {
         const provider = await providerFetch("Manga");
-        data = await latestMangas(provider, page);
+        data = await latestMangas(provider, filters?.page);
       } else if (provider === "search") {
         const provider = await providerFetch("Manga");
-        data = await MangaSearch(provider, req?.query?.query);
+        data = await MangaSearch(provider, req?.query?.query, filters?.page);
       }
     }
 
     if (!data) throw new Error(`No ${AnimeManga} Found in ${provider}`);
     return res.json(data);
   } catch (err) {
-    logger.error(`Failed To Fetch ${provider} ${AnimeManga} page ${page}`);
+    logger.error(
+      `Failed To Fetch ${provider} ${AnimeManga} page ${filters?.page}`
+    );
     logger.error(`Error message: ${err.message}`);
     logger.error(`Stack trace: ${err.stack}`);
     res.json({

@@ -26,7 +26,7 @@ if (fs.existsSync(cookieFilePath)) {
 const client = wrapper(axios.create({ jar }));
 
 // Anime Search
-async function SearchAnime(query) {
+async function SearchAnime(query, {}) {
   try {
     const { data } = await ddosGuardRequest(
       `${baseUrl}/api?m=search&q=${encodeURIComponent(query)}`
@@ -50,7 +50,11 @@ async function SearchAnime(query) {
 }
 
 // Recent Episodes
-async function fetchRecentEpisodes(page = 1) {
+async function fetchRecentEpisodes(
+  filters = {
+    page: 1,
+  }
+) {
   try {
     const { data } = await ddosGuardRequest(
       `${baseUrl}/api?m=airing&page=${page}`

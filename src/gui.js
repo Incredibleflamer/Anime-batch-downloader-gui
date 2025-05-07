@@ -117,6 +117,7 @@ const createWindow = () => {
       event.preventDefault();
     }
   });
+
   const menu = Menu.buildFromTemplate([]);
   Menu.setApplicationMenu(menu);
 
