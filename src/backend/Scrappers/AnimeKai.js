@@ -4,29 +4,48 @@ const cheerio = require("cheerio");
 const baseUrl = "https://animekai.to";
 const AnimekaiDecoderObject = new AnimekaiDecoder();
 
-async function fetchRecentEpisodes(
-  filters = {
-    page: 1,
-  }
-) {
+async function fetchRecentEpisodes(filters = {}) {
   try {
-    const { data } = await axios.get(`${baseUrl}/updates?page=${page}`);
-    const $ = cheerio.load(data);
+    let PreParams = "";
 
-    return await scrapeCards($, page);
+    Object.entries(filters).forEach(([key, value]) => {
+      if (typeof value === "object" && value !== null) {
+        PreParams += value.map((val) => `${key}[]=${val}`);
+        delete filters[key];
+      }
+    });
+
+    const { data } = await axios.get(
+      `${baseUrl}/browser?${
+        PreParams && PreParams !== "" ? `${PreParams}&` : ""
+      }${new URLSearchParams(filters).toString()}`
+    );
+    const $ = cheerio.load(data);
+    return await scrapeCards($, filters?.page);
   } catch (err) {
     throw new Error(err.message);
   }
 }
 
-async function SearchAnime(query, { page = 1 }) {
+async function SearchAnime(query, filters = {}) {
   try {
+    let PreParams = "";
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (typeof value === "object" && value !== null) {
+        PreParams += value.map((val) => `${key}[]=${val}`);
+        delete filters[key];
+      }
+    });
+
     const { data } = await axios.get(
-      `${baseUrl}/browser?keyword=${decodeURIComponent(query)}&page=${page}`
+      `${baseUrl}/browser?keyword=${encodeURIComponent(query)}&${
+        PreParams && PreParams !== "" ? `${PreParams}&` : ""
+      }${new URLSearchParams(filters).toString()}`
     );
     const $ = cheerio.load(data);
 
-    return await scrapeCards($, page);
+    return await scrapeCards($, filters?.page);
   } catch (err) {
     throw new Error(err.message);
   }

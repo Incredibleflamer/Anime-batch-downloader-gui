@@ -183,6 +183,10 @@ body {
   font-size: 0.9rem;
 }
 
+.active:hover {
+  cursor: not-allowed;
+}
+
 #pagination-controls button {
   min-width: 40px;
 }
@@ -238,4 +242,22 @@ input[type="number"]::-webkit-outer-spin-button {
   outline: none;
   border-color: #888;
   background-color: #444;
+}
+
+.filter-group select[multiple] {
+  padding: 5px;
+  font-size: 14px;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 5px;
+  min-height: 100px;
+  resize: vertical;
+  outline: none;
+}
+
+.filter-group select[multiple] option {
+  padding: 5px;
+  background-color: #333;
+  color: #fff;
 }

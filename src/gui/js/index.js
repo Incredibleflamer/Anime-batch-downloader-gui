@@ -10,64 +10,177 @@ let infoapi = null;
 let SiteFilters = {
   hianime: {
     type: {
-      All: null,
-      Movie: 1,
-      Tv: 2,
-      OVA: 3,
-      ONA: 4,
-      Special: 5,
-      Music: 6,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        Movie: 1,
+        Tv: 2,
+        OVA: 3,
+        ONA: 4,
+        Special: 5,
+        Music: 6,
+      },
     },
     status: {
-      All: null,
-      "Finished Airing": 1,
-      "Currently Airing": 2,
-      "Not Yet Aired": 3,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        "Finished Airing": 1,
+        "Currently Airing": 2,
+        "Not Yet Aired": 3,
+      },
     },
     rated: {
-      All: null,
-      G: 1,
-      PG: 2,
-      "PG-13": 3,
-      R: 4,
-      "R+": 5,
-      Rx: 6,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        G: 1,
+        PG: 2,
+        "PG-13": 3,
+        R: 4,
+        "R+": 5,
+        Rx: 6,
+      },
     },
     score: {
-      All: null,
-      "(1) Appalling": 1,
-      "(2) Horrible": 2,
-      "(3) Very Bad": 3,
-      "(4) Bad": 4,
-      "(5) Average": 5,
-      "(6) Fine": 6,
-      "(7) Good": 7,
-      "(8) Very Good": 8,
-      "(9) Great": 9,
-      "(10) Masterpiece": 10,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        "(1) Appalling": 1,
+        "(2) Horrible": 2,
+        "(3) Very Bad": 3,
+        "(4) Bad": 4,
+        "(5) Average": 5,
+        "(6) Fine": 6,
+        "(7) Good": 7,
+        "(8) Very Good": 8,
+        "(9) Great": 9,
+        "(10) Masterpiece": 10,
+      },
     },
     season: {
-      All: null,
-      Spring: 1,
-      Summer: 2,
-      Fall: 3,
-      Winter: 4,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        Spring: 1,
+        Summer: 2,
+        Fall: 3,
+        Winter: 4,
+      },
     },
     language: {
-      All: null,
-      SUB: 1,
-      DUB: 2,
+      config: {
+        select_type: 1,
+      },
+      options: {
+        All: null,
+        SUB: 1,
+        DUB: 2,
+      },
     },
     sort: {
-      "Recently Updated": "recently_updated",
-      "Recently Added": "recently_added",
-      Score: "score",
-      "Name AZ": "name_az",
-      "released date": "released_date",
-      "most watched": "most_watched",
+      config: {
+        select_type: 1,
+      },
+      options: {
+        "Recently Updated": "recently_updated",
+        "Recently Added": "recently_added",
+        Score: "score",
+        "Name A-Z": "name_az",
+        "released date": "released_date",
+        "most watched": "most_watched",
+      },
     },
   },
-  animekai: {},
+  animekai: {
+    sort: {
+      config: {
+        select_type: 1,
+      },
+      options: {
+        "Updated Date": "updated_date",
+        "Released Date": "released_date",
+        "End Date": "end_date",
+        "Added Date": "added_date",
+        Trending: "trending",
+        "Name A-Z": "title_az",
+        "Average Score": "avg_score",
+        "MAL Score": "mal_score",
+        "Total Views": "total_views",
+        "Total Bookmarks": "total_bookmarks",
+        "Total Episodes": "total_episodes",
+      },
+    },
+    status: {
+      config: {
+        select_type: 2,
+      },
+      options: {
+        "Not Yet Aired": "info",
+        Releasing: "releasing",
+        Completed: "completed",
+      },
+    },
+    type: {
+      config: {
+        select_type: 2,
+      },
+      options: {
+        Movie: "movie",
+        Tv: "tv",
+        OVA: "ova",
+        ONA: "ona",
+        Special: "special",
+        Music: "music",
+      },
+    },
+    season: {
+      config: {
+        select_type: 2,
+      },
+      options: {
+        Fall: "fall",
+        Summer: "summer",
+        Spring: "spring",
+        Winter: "winter",
+        Unknown: "unknown",
+      },
+    },
+    rating: {
+      config: {
+        select_type: 2,
+      },
+      options: {
+        G: "g",
+        PG: "pg",
+        "PG 13": "pg_13",
+        R: "r",
+        "R+": "r+",
+        RX: "rx",
+      },
+    },
+    language: {
+      config: {
+        select_type: 2,
+      },
+      options: {
+        "Soft Sub": "softsub",
+        Sub: "sub",
+        Dub: "dub",
+        "Sub & Dub": "subdub",
+      },
+    },
+  },
 };
 let Applied_Filters = {};
 let Filter_Added = false;
@@ -114,55 +227,82 @@ async function fetchPageData(page, init = false) {
 
     if (data && data.results && data.results.length > 0) {
       await addchild(data);
+
       if (data?.site && !Filter_Added) {
         Filter_Added = true;
         let SelectedFilters = SiteFilters[data?.site];
+
         if (SelectedFilters) {
           const AnimeFiltersDiv = document.getElementById("anime-filters");
 
-          Object.entries(SelectedFilters).forEach(([category, options]) => {
-            const wrapper = document.createElement("div");
-            wrapper.className = "filter-group";
+          Object.entries(SelectedFilters).forEach(
+            ([category, catagorie_data]) => {
+              const wrapper = document.createElement("div");
+              wrapper.className = "filter-group";
 
-            const label = document.createElement("label");
-            label.textContent =
-              category.charAt(0).toUpperCase() + category.slice(1);
-            wrapper.appendChild(label);
+              const label = document.createElement("label");
+              label.textContent =
+                category.charAt(0).toUpperCase() + category.slice(1);
+              wrapper.appendChild(label);
 
-            const select = document.createElement("select");
-            select.name = category;
+              const select = document.createElement("select");
+              select.name = category;
+              select.classList.add("slim-select");
 
-            Object.entries(options).forEach(([label, value]) => {
-              const option = document.createElement("option");
-              option.value = value ?? "";
-              option.textContent = label;
-              select.appendChild(option);
-            });
-
-            select.addEventListener("change", async (e) => {
-              const val = e.target.value;
-
-              console.log(val === "null" || val === "");
-
-              if (val === "null" || val === "") {
-                delete Applied_Filters[category];
+              if (catagorie_data?.config?.select_type === 2) {
+                select.multiple = true;
+                select.dataset.placeholder = "Select multiple...";
               } else {
-                Applied_Filters[category] = val;
+                select.dataset.placeholder = "Select one...";
               }
 
-              allDataFetched = false;
-              hasNextPage = true;
-              currentPage = 1;
+              Object.entries(catagorie_data?.options).forEach(
+                ([label, value]) => {
+                  const option = document.createElement("option");
+                  option.value = value ?? "";
+                  option.textContent = label;
+                  select.appendChild(option);
+                }
+              );
 
-              const animeGrid = document.getElementById("anime-grid");
-              animeGrid.innerHTML = "";
+              wrapper.appendChild(select);
+              AnimeFiltersDiv.appendChild(wrapper);
 
-              return await fetchPageData(currentPage);
-            });
+              new SlimSelect({
+                select: select,
+                settings: {
+                  placeholderText: select.dataset.placeholder,
+                  closeOnSelect: !select.multiple,
+                  showSearch: false,
+                },
+              });
 
-            wrapper.appendChild(select);
-            AnimeFiltersDiv.appendChild(wrapper);
-          });
+              select.addEventListener("change", async (e) => {
+                const selected = Array.from(e.target.selectedOptions).map(
+                  (opt) => opt.value
+                );
+
+                if (!selected.length || selected.includes("")) {
+                  delete Applied_Filters[category];
+                } else {
+                  Applied_Filters[category] =
+                    catagorie_data?.config?.select_type === 2
+                      ? selected
+                      : selected[0];
+                }
+
+                isFetching = false;
+                allDataFetched = false;
+                hasNextPage = true;
+                currentPage = 1;
+
+                const animeGrid = document.getElementById("anime-grid");
+                animeGrid.innerHTML = "";
+
+                return await fetchPageData(currentPage);
+              });
+            }
+          );
         }
       }
     } else {
@@ -325,13 +465,13 @@ function addPaginationControls() {
   } else {
     paginationContainer.innerHTML = `
   <div class="pagination-wrapper">
-    <button class="pagination-btn page-number" id="prevPage" ${
-      currentPage <= 1 ? "disabled" : ""
-    }>&lt;</button>
+    <button class="pagination-btn page-number ${
+      currentPage <= 1 ? "active" : ""
+    }" id="prevPage" ${currentPage <= 1 ? "disabled" : ""}>&lt;</button>
     ${inputField}
-    <button class="pagination-btn page-number" id="nextPage" ${
-      hasNextPage ? "" : "disabled"
-    }>&gt;</button>
+    <button class="pagination-btn page-number ${
+      hasNextPage ? "" : "active"
+    }" id="nextPage" ${hasNextPage ? "" : "disabled"}>&gt;</button>
   </div>`;
   }
 

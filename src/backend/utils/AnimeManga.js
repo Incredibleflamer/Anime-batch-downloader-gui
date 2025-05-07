@@ -27,7 +27,7 @@ async function latestAnime(provider, filters) {
 }
 
 // search anime
-async function animesearch(provider, Anime_NAME, filters) {
+async function animesearch(provider, Anime_NAME, filters = {}) {
   let dataarray = { results: [] };
   const formattedAnimeName = Anime_NAME.replace(/\w\S*/g, (word) => {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -59,7 +59,7 @@ async function animesearch(provider, Anime_NAME, filters) {
       if (datafirst?.currentPage) {
         dataarray.currentPage = datafirst.currentPage;
       } else {
-        dataarray.currentPage = page + 1;
+        dataarray.currentPage = filters?.page + 1;
       }
     }
   } catch (err) {

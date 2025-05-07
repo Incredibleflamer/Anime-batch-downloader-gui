@@ -7,15 +7,12 @@ const { getSources } = require("./helper/rabbit");
 const baseUrl = "https://hianime.bz";
 
 async function SearchAnime(query, filters = {}) {
-  console.log(filters);
-
-  url = `${baseUrl}/search?${new URLSearchParams({
-    keyword: query,
-    ...filters,
-  }).toString()}`;
-  console.log(url);
-
-  return scrapeCardPage(url);
+  return scrapeCardPage(
+    `${baseUrl}/search?${new URLSearchParams({
+      keyword: query,
+      ...filters,
+    }).toString()}`
+  );
 }
 
 async function AnimeInfo(id) {
@@ -111,10 +108,9 @@ async function fetchEpisode(id) {
 }
 
 async function fetchRecentEpisodes(filters = {}) {
-  console.log(filters);
-  let url = `${baseUrl}/filter?${new URLSearchParams(filters).toString()}`;
-  console.log(url);
-  return scrapeCardPage(url);
+  return scrapeCardPage(
+    `${baseUrl}/filter?${new URLSearchParams(filters).toString()}`
+  );
 }
 
 async function fetchEpisodeSources(episodeId) {

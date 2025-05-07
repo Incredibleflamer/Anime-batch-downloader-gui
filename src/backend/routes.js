@@ -41,7 +41,6 @@ const {
   getSourceById,
   MalPage,
 } = require("./utils/Metadata");
-const { stringify } = require("querystring");
 
 // ===================== API routes =====================
 // Handles Mal Login
@@ -730,7 +729,7 @@ router.get(["/", "/local/anime"], async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Local Anime's",
-    api: "/api/list/Anime/local?page=",
+    api: "/api/list/Anime/local",
     infoapi: "/info/Anime/local?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -741,7 +740,7 @@ router.get("/local/manga", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Local Manga's",
-    api: "/api/list/Manga/local?page=",
+    api: "/api/list/Manga/local",
     infoapi: "/info/Manga/local?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -752,7 +751,7 @@ router.get("/anime", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Recent Anime's",
-    api: "/api/list/Anime/provider?page=",
+    api: "/api/list/Anime/provider",
     infoapi: "/info/Anime/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -763,7 +762,7 @@ router.get("/mal/anime", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "MyAnimelist Anime's",
-    api: "/api/list/Anime/mal?page=",
+    api: "/api/list/Anime/mal",
     infoapi: "/info/Anime/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -774,7 +773,7 @@ router.get("/manga", async (req, res) => {
   const config = await settingfetch();
   res.render("index.ejs", {
     catagorie: "Latest Manga's",
-    api: "/api/list/Manga/provider?page=",
+    api: "/api/list/Manga/provider",
     infoapi: "/info/Manga/provider?id=",
     Pagination: config?.Pagination || "off",
   });
@@ -790,7 +789,7 @@ router.get("/search", async (req, res) => {
     catagorie: `Results For ${anime ? anime : manga}`,
     api: `/api/list/${anime ? "Anime" : "Manga"}/search?query=${
       anime ? anime : manga
-    }&page=`,
+    }`,
     infoapi: `/info/${anime ? "Anime" : "Manga"}/provider?id=`,
     Pagination: config?.Pagination || "off",
   });
