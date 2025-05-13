@@ -95,6 +95,14 @@ Follow these steps to build application:
 2. **Download and install Git**:
    - [Git Download](https://git-scm.com/)
 
+3. **Download and install Python**
+   - [Python Download](https://www.python.org/downloads/)
+
+5. **Windows Build Tools (Windows only, required for node-gyp)**
+   ```bash
+   npm install --global windows-build-tools
+   ```
+
 ## Steps to Build
 
 1. Clone the repository:
