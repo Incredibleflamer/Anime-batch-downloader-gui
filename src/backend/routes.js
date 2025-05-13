@@ -406,12 +406,15 @@ router.post("/api/episodes", async (req, res) => {
     if (isNaN(page)) throw new Error(`invalid Page '${page}'`);
     if (!id) throw new Error("ID is Missing");
 
-    const Animeprovider = await providerFetch("Anime", provider ?? null);
+    if (provider !== "local source") {
+      const Animeprovider = await providerFetch("Anime", provider ?? null);
 
-    const data = await fetchEpisode(Animeprovider, id, page);
-    if (!data) throw new Error("No Episodes Found");
-
-    return res.json(data);
+      const data = await fetchEpisode(Animeprovider, id, page);
+      if (!data) throw new Error("No Episodes Found");
+      return res.json(data);
+    } else {
+      return res.json({});
+    }
   } catch (err) {
     logger.error(`Error Fetching '${id}' Episodes page : ${page}:`);
     logger.error(`Error message: ${err.message}`);

@@ -137,10 +137,12 @@ async function AddInfo(data) {
   }
 
   // Create Img tag;
-  if (data?.image) {
-    Image = data.image;
-    LeftSide.innerHTML += `<img class="anime-image" src="${data?.image}" alt="${data?.title}" id="anime-image" onerror="this.onerror=null; this.src='./images/image-404.png';">`;
-  }
+
+  LeftSide.innerHTML += `<img class="anime-image" src="${
+    data.image ?? "./images/image-404.png"
+  }" alt="${
+    data?.title
+  }" id="anime-image" onerror="this.onerror=null; this.src='./images/image-404.png';">`;
 
   // Creating Addition Info
   LeftSide.innerHTML += `<div id="additional-info">
@@ -406,7 +408,7 @@ async function EpisodeFetch(page = 1) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      id: AnimeMangaepid,
+      id: id,
       page: page,
       ...(window.LocalAnimeManga
         ? {
@@ -430,7 +432,7 @@ async function EpisodeFetch(page = 1) {
 
   EpisodesChapters[page] = { dubs: [], subs: [] };
 
-  data.episodes.forEach((item) => {
+  data?.episodes?.forEach((item) => {
     if (item.lang === "both") {
       if (!downloaded?.dub?.includes(item.number)) {
         EpisodesChapters[page].dubs.push({
@@ -548,7 +550,7 @@ async function HandleEpisodes(data) {
   if (data?.subs?.length > 0 && data?.dubs?.length > 0) {
     document.getElementById("toggleDownloadOptions").style.display = "block";
   } else {
-    let SelectSubOrDub = data?.subs?.length > 0 ? "sub" : "dub";
+    let SelectSubOrDub = data?.dubs?.length > 0 ? "dub" : "sub";
 
     document.getElementById("toggleDownloadOptions").style.display = "none";
     toggleDownloadOptions(SelectSubOrDub);

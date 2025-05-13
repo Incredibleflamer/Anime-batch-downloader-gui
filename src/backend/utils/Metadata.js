@@ -194,94 +194,122 @@ async function getAllMetadata(type, baseDir, page = 1) {
 
   try {
     const typeDir = path.join(baseDir, type);
-    let folders = [];
 
     const directories = await fs.promises.readdir(typeDir, {
       withFileTypes: true,
     });
 
-    folders = directories
+    const folders = directories
       .filter((dir) => dir.isDirectory())
       .map((dir) => dir.name);
 
-    const storedMetadata = db
-      .prepare(`SELECT * FROM ${type} ORDER BY last_updated DESC`)
-      .all();
-
-    const missingFolders = storedMetadata
-      .filter((entry) => !folders.includes(entry.folder_name))
-      .map((entry) => entry.folder_name);
-
-    missingFolders.forEach((folder) => {
-      db.exec(`DELETE FROM ${type} WHERE folder_name = '${folder}'`);
-    });
-
-    // Pagination logic
-    const limit = 15;
-    const totalItems = storedMetadata.length;
-    const totalPages = Math.ceil(totalItems / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedMetadata = storedMetadata.slice(
-      startIndex,
-      startIndex + limit
-    );
-    const hasNextPage = page < totalPages;
-
-    const updatedMetadata = [];
-
-    for (const metadata of paginatedMetadata) {
-      const folderPath = path.join(baseDir, type, metadata.folder_name);
-
-      if (!fs.existsSync(folderPath)) {
-        db.exec(`DELETE FROM ${type} WHERE id = '${metadata.id}'`);
-        continue;
+    if (folders?.length > 0) {
+      let storedMetadata = [];
+      try {
+        storedMetadata = db
+          .prepare(`SELECT * FROM ${type} ORDER BY last_updated DESC`)
+          .all();
+      } catch (err) {
+        // ignore
       }
 
-      let content = [];
-      const filesAndFolders = await fs.promises.readdir(folderPath, {
-        withFileTypes: true,
+      const missingFolders = storedMetadata
+        .filter((entry) => !folders.includes(entry.folder_name))
+        .map((entry) => entry.folder_name);
+
+      missingFolders.forEach((folder) => {
+        db.exec(`DELETE FROM ${type} WHERE folder_name = '${folder}'`);
       });
 
-      if (type === "Anime") {
-        content = filesAndFolders
-          .filter(
-            (file) =>
-              file.isFile() &&
-              file.name.endsWith(".mp4") &&
-              file.name.toLowerCase().includes("ep")
+      folders.map((alltitles) => {
+        if (
+          storedMetadata.some(
+            (meta_data) => meta_data.folder_name === alltitles
           )
-          .map((file) => parseInt(file?.name?.toLowerCase()?.split("ep")?.[0]))
-          .filter(Boolean)
-          .sort((a, b) => a - b);
-      } else if (type === "Manga") {
-        content = filesAndFolders
-          .filter(
-            (file) =>
-              file.isFile() &&
-              file.name.endsWith(".cbz") &&
-              file.name.toLowerCase().includes("chapter")
-          )
-          .map((file) =>
-            parseInt(
-              file?.name?.toLowerCase()?.split("chapter")?.[1]?.split(".cbz")[0]
+        )
+          return;
+        storedMetadata.push({
+          title: alltitles.replaceAll("_", ""),
+          folder_name: alltitles,
+          id: alltitles,
+          type: type,
+          provider: "local source",
+        });
+      });
+
+      // Pagination logic
+      const limit = 15;
+      const totalPages = Math.ceil(storedMetadata?.length / limit);
+      const startIndex = (page - 1) * limit;
+      const paginatedMetadata = storedMetadata.slice(
+        startIndex,
+        startIndex + limit
+      );
+      const hasNextPage = page < totalPages;
+
+      const updatedMetadata = [];
+
+      for (const metadata of paginatedMetadata) {
+        const folderPath = path.join(baseDir, type, metadata.folder_name);
+
+        if (!fs.existsSync(folderPath)) {
+          db.exec(`DELETE FROM ${type} WHERE id = '${metadata.id}'`);
+          continue;
+        }
+
+        let content = [];
+        const filesAndFolders = await fs.promises.readdir(folderPath, {
+          withFileTypes: true,
+        });
+
+        if (type === "Anime") {
+          content = filesAndFolders
+            .filter(
+              (file) =>
+                file.isFile() &&
+                file.name.endsWith(".mp4") &&
+                file.name.toLowerCase().includes("ep")
             )
-          )
-          .filter(Boolean)
-          .sort((a, b) => a - b);
+            .map((file) =>
+              parseInt(file?.name?.toLowerCase()?.split("ep")?.[0])
+            )
+            .filter(Boolean)
+            .sort((a, b) => a - b);
+        } else if (type === "Manga") {
+          content = filesAndFolders
+            .filter(
+              (file) =>
+                file.isFile() &&
+                file.name.endsWith(".cbz") &&
+                file.name.toLowerCase().includes("chapter")
+            )
+            .map((file) =>
+              parseInt(
+                file?.name
+                  ?.toLowerCase()
+                  ?.split("chapter")?.[1]
+                  ?.split(".cbz")[0]
+              )
+            )
+            .filter(Boolean)
+            .sort((a, b) => a - b);
+        }
+
+        updatedMetadata.push({
+          ...metadata,
+          Downloaded: content,
+        });
       }
 
-      updatedMetadata.push({
-        ...metadata,
-        Downloaded: content,
-      });
+      return {
+        totalPages,
+        currentPage: page,
+        hasNextPage,
+        results: updatedMetadata,
+      };
     }
 
-    return {
-      totalPages,
-      currentPage: page,
-      hasNextPage,
-      results: updatedMetadata,
-    };
+    throw new Error("No Anime Found!");
   } catch (err) {
     throw new Error(`Error fetching metadata: ${err.message}`);
   }
@@ -324,13 +352,18 @@ async function getSourceById(type, baseDir, id, number) {
     throw new Error(`Invalid table: ${type}`);
   }
 
+  let folder_name = id;
   try {
     const metadata = db.prepare(`SELECT * FROM ${type} WHERE id = ?`).get(id);
-    if (!metadata) {
-      throw new Error(`No metadata found for ID: ${id}`);
+    if (metadata) {
+      folder_name = metadata.folder_name;
     }
+  } catch (err) {
+    // ignore
+  }
 
-    const folderPath = path.join(baseDir, type, metadata.folder_name);
+  try {
+    const folderPath = path.join(baseDir, type, folder_name);
     if (!fs.existsSync(folderPath)) {
       throw new Error(`Folder does not exist: ${folderPath}`);
     }
@@ -565,6 +598,37 @@ async function FindMapping(type, AnimeMangaid, malid, dir) {
                 .filter(Boolean)
                 .sort((a, b) => a - b);
             }
+          }
+        } else {
+          const folderPath = path.join(dir, "Anime", AnimeMangaid);
+
+          if (fs.existsSync(folderPath)) {
+            const filesAndFolders = await fs.promises.readdir(folderPath, {
+              withFileTypes: true,
+            });
+
+            data = {
+              title: AnimeMangaid.replaceAll("_", ""),
+              folder_name: AnimeMangaid,
+              id: AnimeMangaid,
+              type: "Anime",
+              provider: "local source",
+              DownloadedEpisodes: {
+                sub: [],
+                dub: [],
+              },
+            };
+
+            data.DownloadedEpisodes["sub"] = filesAndFolders
+              .filter(
+                (file) =>
+                  file.isFile() &&
+                  file.name.endsWith(".mp4") &&
+                  file.name.match(/\d+/)
+              )
+              .map((file) => parseInt(file.name.match(/\d+/)[0]))
+              .filter(Boolean)
+              .sort((a, b) => a - b);
           }
         }
       } catch (err) {

@@ -4,7 +4,7 @@ const axios = require("axios");
 const { getSources } = require("./helper/rabbit");
 
 // varibles
-const baseUrl = "https://hianime.bz";
+const baseUrl = "https://hianimez.to";
 
 async function SearchAnime(query, filters = {}) {
   return scrapeCardPage(
@@ -61,9 +61,17 @@ async function AnimeInfo(id) {
 
 async function fetchEpisode(id) {
   try {
+    let Newid = id.split("-").slice(0, -1)?.join("-");
     const episodesAjax = await axios.get(
-      `${baseUrl}/ajax/v2/episode/list/${id}`
+      `${baseUrl}/ajax/v2/episode/list/${Newid.split("-").pop()}`,
+      {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Referer: `${baseUrl}/watch/${Newid}`,
+        },
+      }
     );
+
     const $ = (0, cheerio.load)(episodesAjax.data.html);
     let episodes = [];
 
