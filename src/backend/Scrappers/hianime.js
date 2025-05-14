@@ -61,13 +61,14 @@ async function AnimeInfo(id) {
 
 async function fetchEpisode(id) {
   try {
-    let Newid = id.split("-").slice(0, -1)?.join("-");
+    let episodeId = id.replace(/-(dub|sub|both)$/, "");
+
     const episodesAjax = await axios.get(
-      `${baseUrl}/ajax/v2/episode/list/${Newid.split("-").pop()}`,
+      `${baseUrl}/ajax/v2/episode/list/${episodeId.split("-").pop()}`,
       {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
-          Referer: `${baseUrl}/watch/${Newid}`,
+          Referer: `${baseUrl}/watch/${episodeId}`,
         },
       }
     );
