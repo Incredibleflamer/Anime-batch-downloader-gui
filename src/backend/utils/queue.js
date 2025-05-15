@@ -97,6 +97,10 @@ async function checkEpisodeDownload(epid) {
   return found;
 }
 
+global.getQueueNumber = () => {
+  return AnimeQueue?.length ?? 0;
+};
+
 module.exports = {
   addToQueue,
   loadQueue,

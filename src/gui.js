@@ -11,12 +11,13 @@ const {
   ipcMain,
   protocol,
 } = require("electron");
-const net = require("net");
 const { autoUpdater } = require("electron-updater");
-const { exec } = require("child_process");
-const path = require("node:path");
-const express = require("express");
 const bodyParser = require("body-parser");
+const { exec } = require("child_process");
+const express = require("express");
+const path = require("node:path");
+const net = require("net");
+
 app.commandLine.appendSwitch("disable-http-cache");
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
 
@@ -32,6 +33,7 @@ const { SettingsLoad } = require("./backend/utils/settings");
 const { loadQueue } = require("./backend/utils/queue");
 const { continuousExecution } = require("./backend/database");
 const { fetchAndUpdateMappingDatabase } = require("./backend/utils/Metadata");
+const { StopDiscordRPC } = require("./backend/utils/discord");
 
 // Express Server
 const routes = require("./backend/routes");
@@ -55,13 +57,17 @@ getFreePort().then((PORT) => {
 });
 
 // create window / electron
+const { registerSharedStateHandlers } = require("./backend/sharedState");
+registerSharedStateHandlers();
+
 const createWindow = () => {
   global.win = new BrowserWindow({
     resizable: true,
     webPreferences: {
       nodeIntegration: true,
       backgroundThrottling: false,
-      contextIsolation: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, "backend", "preload.js"),
     },
     icon: path.join(__dirname, "./assets/luffy.ico"),
     minWidth: 1000,
@@ -118,8 +124,8 @@ const createWindow = () => {
     }
   });
 
-  const menu = Menu.buildFromTemplate([]);
-  Menu.setApplicationMenu(menu);
+  // const menu = Menu.buildFromTemplate([]);
+  // Menu.setApplicationMenu(menu);
 
   // max priority
   exec(
@@ -175,6 +181,11 @@ app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
+// Handle App Closing
+app.on("before-quit", () => {
+  StopDiscordRPC();
+});
+
 app.on("window-all-closed", () => {
   if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
     global.Miniwindow.close();
@@ -186,15 +197,15 @@ app.on("window-all-closed", () => {
   }
 });
 
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
+
 app.on("quit", () => {
   if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
     global.Miniwindow.close();
     global.Miniwindow = null;
   }
-});
-
-app.on("will-quit", () => {
-  globalShortcut.unregisterAll();
 });
 
 // AutoUpdater
@@ -248,6 +259,7 @@ autoUpdater.on("update-installed", () => {
   notification.show();
 });
 
+// Find Free Port
 async function getFreePort() {
   return new Promise((resolve, reject) => {
     const tryFindPort = () => {

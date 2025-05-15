@@ -106,6 +106,10 @@
   align-items: center;
   text-decoration: none;
   transition: 0.4s ease;
+  user-select: none;
+  cursor: pointer;
+  pointer-events: auto !important;
+  z-index: 999 !important;
 }
 
 .sidebar.collapsed .sidebar-nav .nav-link {

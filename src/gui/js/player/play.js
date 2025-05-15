@@ -56,6 +56,7 @@ async function Videoplay(id, EpisodeNumber, Downloaded = false) {
     updateSubDubButton();
     addSubtitleTracks();
     addSkipIntroButton();
+    DiscordRPC("Watching", `Ep ${ep}`);
   } catch (err) {
     console.error("Error loading video:", err);
   }

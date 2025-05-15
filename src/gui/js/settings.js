@@ -41,6 +41,8 @@ function submitSettings(event) {
       document.getElementById("auto-load-next-chapter-select")?.value || null,
     autotrack: autotrackElement ? autotrackElement.value : null,
     status: statusElement ? statusElement.value : null,
+    enableDiscordRPC:
+      document.getElementById("discord-rpc-status-select")?.value || null,
   };
 
   document.getElementById("save-settings").style.display = "none";
@@ -59,7 +61,7 @@ function submitSettings(event) {
         Swal.fire({
           icon: "success",
           title: "Updated Config",
-          text: responseData.message,
+          html: `<pre>${responseData.message}</pre>`,
         });
       } else {
         Swal.fire({

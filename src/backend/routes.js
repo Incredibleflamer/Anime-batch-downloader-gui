@@ -82,6 +82,7 @@ router.post("/api/settings", async (req, res) => {
     Pagination,
     subtitleFormat,
     autoLoadNextChapter,
+    enableDiscordRPC,
   } = req.body;
   try {
     if (
@@ -117,33 +118,34 @@ router.post("/api/settings", async (req, res) => {
       subtitleFormat: subtitleFormat,
       Pagination: Pagination,
       autoLoadNextChapter: autoLoadNextChapter,
+      enableDiscordRPC: enableDiscordRPC,
     });
 
     const data = await settingfetch();
 
-    // setting quality
-    message = `Quality: ${data.quality}`;
-
-    // mal on then add status and autotrack
-    if (data.mal_on_off === true) {
-      message += `<br>Auto Add To: ${data.status}<br>Auto Track Ep: ${data.autotrack}`;
-    }
-
-    // add download location
-    message += `<br>Download Location: ${data.CustomDownloadLocation}<br>Anime Provider : ${data.Animeprovider}`;
-
-    // if provider is hianime add mergeSubtitles
-    if (data.Animeprovider === "hianime") {
-      message += `<br>Merge Subtitles: ${data.mergeSubtitles}`;
-      if (data.mergeSubtitles === "off") {
-        message += `<br>Subtitle Format: ${data.subtitleFormat}`;
-      }
-    }
-
-    message += `<br>Manga Provider : ${data?.Mangaprovider}<br>Autoload Next Chapter : ${data?.autoLoadNextChapter}`;
-
-    // Pagination
-    message += `<br>Pagination : ${data.Pagination}`;
+    message = [
+      `Quality: ${data?.quality}`,
+      `${data?.mal_on_off ? `Auto Add To: ${data?.status}` : ""}`,
+      `${data?.mal_on_off ? `Auto Track Ep: ${data?.autotrack}` : ""}`,
+      `Download Location: ${data?.CustomDownloadLocation}`,
+      `Anime Provider : ${data?.Animeprovider}`,
+      `${
+        data?.Animeprovider === "hianime"
+          ? `Merge Subtitles: ${data?.mergeSubtitles}`
+          : ""
+      }`,
+      `${
+        data?.Animeprovider === "hianime" && data?.mergeSubtitles === "off"
+          ? `Subtitle Format: ${data?.subtitleFormat}`
+          : ""
+      }`,
+      `Manga Provider : ${data?.Mangaprovider}`,
+      `Autoload Next Chapter : ${data?.autoLoadNextChapter}`,
+      `Pagination : ${data?.Pagination}`,
+      `Discord RPC Enabled: ${data?.enableDiscordRPC}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     res.status(200).json({ message: message });
   } catch (err) {

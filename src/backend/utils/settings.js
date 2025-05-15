@@ -7,6 +7,7 @@ const {
   ensureDirectoryExists,
 } = require("./DirectoryMaker");
 const { MalRefreshTokenGen } = require("./mal.js");
+const { StartDiscordRPC } = require("./discord");
 const { logger } = require("./AppLogger.js");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
@@ -41,6 +42,7 @@ async function settingupdate({
   subtitleFormat = null,
   Pagination = null,
   autoLoadNextChapter = null,
+  enableDiscordRPC = null,
 }) {
   const currentSettings = settings.get("config");
 
@@ -87,6 +89,10 @@ async function settingupdate({
     subtitleFormat = currentSettings?.subtitleFormat || "ttv";
   }
 
+  if (enableDiscordRPC === null) {
+    enableDiscordRPC = currentSettings?.enableDiscordRPC || "off";
+  }
+
   config.quality = quality;
   config.mal_on_off = mal_on_off;
   config.status = status;
@@ -99,6 +105,18 @@ async function settingupdate({
   config.Pagination = Pagination;
   config.subtitleFormat = subtitleFormat;
   config.autoLoadNextChapter = autoLoadNextChapter;
+  config.enableDiscordRPC = enableDiscordRPC;
+
+  if (config.enableDiscordRPC === "on") {
+    try {
+      await StartDiscordRPC();
+      logger.info("Discord RPC Activated");
+    } catch (err) {
+      config.enableDiscordRPC = "off";
+      logger.error(err);
+      logger.info("Discord RPC DISABLED");
+    }
+  }
 
   await settingSave();
   return {
@@ -112,6 +130,7 @@ async function settingupdate({
     Pagination,
     subtitleFormat,
     autoLoadNextChapter,
+    enableDiscordRPC,
   };
 }
 
@@ -210,11 +229,20 @@ async function SettingsLoad() {
             mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
+            enableDiscordRPC: "off",
           };
 
     if (config.malToken != null) {
       let Tosave = await MalRefreshTokenGen(config.malToken);
       await settingupdate(Tosave);
+    }
+    if (config?.enableDiscordRPC === "on") {
+      try {
+        await StartDiscordRPC();
+        logger.info("Discord RPC Activated");
+      } catch (err) {
+        logger.error(err);
+      }
     }
     await settingSave();
   } catch (err) {

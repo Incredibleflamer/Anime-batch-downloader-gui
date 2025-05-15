@@ -24,7 +24,7 @@
         </div>
       </li>
       <li class="nav-item" id="back-button" style="display: none">
-        <a href="javascript:void(0);" class="nav-link">
+        <a class="nav-link">
           <span class="nav-icon material-symbols-rounded">arrow_back</span>
           <span class="nav-label">Back</span>
         </a>
@@ -164,16 +164,50 @@
     }
   }
 
-  const backButton = document.getElementById("back-button");
-  if (
-    document.referrer &&
-    document.referrer.startsWith(window.location.origin) &&
-    document.referrer !== window.location.href
-  ) {
-    backButton.style.display = "block";
-    backButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      window.history.back();
-    });
+  // Handle Back Button
+  async function HandelBackButtons() {
+    try {
+      let history = await window.sharedStateAPI.get();
+
+      // Handling Back Button Click
+      if (history?.length >= 1) {
+        const backButton = document.getElementById("back-button");
+        backButton.style.display = "block";
+
+        document.addEventListener("click", async (event) => {
+          const link = event.target.closest("#back-button .nav-link");
+          if (link) {
+            try {
+              let history = await window.sharedStateAPI.get();
+              const currentPage =
+                window.location.pathname + window.location.search;
+              if (history[history.length - 1] === currentPage) {
+                history.pop();
+              }
+              const previousPage = history.pop();
+              await window.sharedStateAPI.set(history);
+              if (previousPage) {
+                window.location.href = previousPage;
+              } else {
+                console.warn("No previous page in history.");
+              }
+            } catch (err) {
+              console.error("Error handling back button click:", err);
+            }
+          }
+        });
+      }
+
+      // Adding Current Page
+      const CurrentPage = window.location.pathname + window.location.search;
+      if (history[history.length - 1] !== CurrentPage) {
+        history.push(CurrentPage);
+      }
+      await window.sharedStateAPI.set(history);
+    } catch (err) {
+      console.log("Error while adding back button", err);
+    }
   }
+
+  HandelBackButtons();
 </script>

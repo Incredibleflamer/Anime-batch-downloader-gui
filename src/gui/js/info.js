@@ -865,6 +865,7 @@ async function LoadChapter(ChapterNum, Append = false) {
         text: `Couldnt Find Chapter : ${ChapterNum}`,
       });
     } else if (!Downloaded && Chapter?.fetched && Append) {
+      DiscordRPC("Reading", `Chp ${ChapterNum + 1}`);
       return scrollToElement(`mangapage-${ChapterNum}-0`);
     } else if (!Downloaded && Chapter && (!Chapter?.fetched || !Append)) {
       const response = await fetch("/api/read", {
@@ -879,6 +880,7 @@ async function LoadChapter(ChapterNum, Append = false) {
     } else {
       let Foundchapter = EpisodesChapters?.Chapters[ChapterNum + 1];
       if (Foundchapter && Foundchapter?.fetched && !Append) {
+        DiscordRPC("Reading", `Chp ${ChapterNum + 1}`);
         scrollToElement(`mangapage-${ChapterNum}-0`);
       } else {
         const response = await fetch("/api/read", {
@@ -898,6 +900,7 @@ async function LoadChapter(ChapterNum, Append = false) {
     }
 
     if (data) {
+      DiscordRPC("Reading", `Chp ${ChapterNum + 1}`);
       if (!Append) scrollToElement(`mangaContainer`);
 
       const mangaContainer = document.getElementById("mangaContainer");
@@ -1476,4 +1479,11 @@ function UpdateEpisodeButtons(currentEpisodes) {
       }
     });
   });
+}
+
+function DiscordRPC(Type, EpChapter) {
+  window.sharedStateAPI.discordrpc(
+    `${Type} ${document.title.split("|").slice(1).join(" ").trim()}`,
+    EpChapter ? `${EpChapter}` : "thinking..."
+  );
 }

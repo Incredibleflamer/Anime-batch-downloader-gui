@@ -89,6 +89,16 @@
                 placeholder="Enter your custom download path"
                 value="<%= settings.CustomDownloadLocation !== null ? settings.CustomDownloadLocation : '' %>"
               />
+
+              <div id="discord-rpc">
+                <label for="discord-rpc-status-select"
+                  >Enable Discord Rich Presence:</label
+                >
+                <select id="discord-rpc-status-select">
+                  <option value="on">ON</option>
+                  <option value="off">OFF</option>
+                </select>
+              </div>
             </div>
           </div>
 
