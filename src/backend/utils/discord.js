@@ -86,6 +86,8 @@ function StopDiscordRPC() {
 }
 
 function UpdateDiscordRPC(Title = null, Number = null) {
+  if (!rpcConnected) return;
+
   let InDownloads = global.getQueueNumber();
 
   let Activity = {
