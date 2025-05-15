@@ -20,7 +20,6 @@ let idle_messages = [
 ];
 
 let rpcClient = null;
-let monitorInterval = null;
 let rpcConnected = false;
 
 async function StartDiscordRPC() {

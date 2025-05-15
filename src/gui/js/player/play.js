@@ -4,8 +4,14 @@ let SelectedSource = "sub";
 let Isboth = false;
 let subtitles = [];
 let skipIntroTime = null;
+let markedWatched = false;
 
-async function Videoplay(id, EpisodeNumber, Downloaded = false) {
+async function Videoplay(
+  id,
+  EpisodeNumber,
+  Downloaded = false,
+  watched = false
+) {
   try {
     ep = parseInt(EpisodeNumber, 10) ?? 0;
     if (player) {
@@ -40,6 +46,7 @@ async function Videoplay(id, EpisodeNumber, Downloaded = false) {
     window.videoSources = sources;
     subtitles = data?.subtitles ?? data?.sub?.subtitles ?? [];
     skipIntroTime = data?.intro ?? data.sub?.intro ?? null;
+    markedWatched = watched;
 
     Isboth =
       sources?.sub?.sources?.length > 0 && sources?.dub?.sources?.length > 0;
@@ -57,6 +64,7 @@ async function Videoplay(id, EpisodeNumber, Downloaded = false) {
     addSubtitleTracks();
     addSkipIntroButton();
     DiscordRPC("Watching", `Ep ${ep}`);
+    AutoTracking();
   } catch (err) {
     console.error("Error loading video:", err);
   }
@@ -134,6 +142,8 @@ function initPlayer() {
       skipButtons: { forward: 5, backward: 5 },
       enableDocumentPictureInPicture: true,
       enableSmoothSeeking: true,
+      fluid: true,
+      responsive: true,
     },
     userActions: {
       hotkeys: function (event) {
@@ -143,32 +153,69 @@ function initPlayer() {
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.code === "Space") {
-      event.preventDefault();
-      player.paused() ? player.play() : player.pause();
-    }
-  });
+    if (!player) return;
 
-  player.ready(function () {
-    player.el().setAttribute("tabindex", "0");
-    player.el().addEventListener("keydown", function (event) {
-      handleHotkeys(event);
-    });
+    const active = document.activeElement;
+    if (
+      active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.isContentEditable)
+    ) {
+      return;
+    }
+
+    handleHotkeys(event);
   });
 }
 
 function handleHotkeys(event) {
-  if (event.which === 32) {
-    event.preventDefault();
-    player.paused() ? player.play() : player.pause();
-  }
-  if (event.which === 37) {
-    event.preventDefault();
-    player.currentTime(player.currentTime() - 5);
-  }
-  if (event.which === 39) {
-    event.preventDefault();
-    player.currentTime(player.currentTime() + 5);
+  switch (event.code) {
+    case "Space":
+      event.preventDefault();
+      player.paused() ? player.play() : player.pause();
+      break;
+    case "ArrowLeft":
+      event.preventDefault();
+      player.currentTime(player.currentTime() - 5);
+      break;
+    case "ArrowRight":
+      event.preventDefault();
+      player.currentTime(player.currentTime() + 5);
+      break;
+    case "ArrowUp":
+      event.preventDefault();
+      player.volume(Math.min(player.volume() + 0.1, 1));
+      break;
+    case "ArrowDown":
+      event.preventDefault();
+      player.volume(Math.max(player.volume() - 0.1, 0));
+      break;
+    case "KeyF":
+      event.preventDefault();
+      if (player.isFullscreen()) {
+        player.exitFullscreen();
+      } else {
+        player.requestFullscreen();
+      }
+      break;
+    case "KeyM":
+      event.preventDefault();
+      player.muted(!player.muted());
+      break;
+    case "KeyS":
+      event.preventDefault();
+      if (
+        skipIntroTime &&
+        skipIntroTime.start &&
+        skipIntroTime.end &&
+        player.currentTime() >= skipIntroTime.start &&
+        player.currentTime() <= skipIntroTime.end
+      ) {
+        player.currentTime(skipIntroTime.end);
+        skipButton.el().style.display = "none";
+      }
+      break;
   }
 }
 
@@ -254,39 +301,77 @@ function addSubtitleTracks() {
     }
   });
 
-  player.controlBar.addChild("SubsCapsButton");
+  if (!player.controlBar.getChild("SubsCapsButton")) {
+    player.controlBar.addChild("SubsCapsButton");
+  }
 }
 
 function addSkipIntroButton() {
   if (!skipIntroTime || !skipIntroTime.start || !skipIntroTime.end || !player)
     return;
 
-  let controlBar = document.querySelector(".vjs-control-bar");
-  let skipButton = document.getElementById("skipIntroButton");
+  videojs.registerComponent(
+    "CustomButton",
+    videojs.extend(videojs.getComponent("Button"), {
+      constructor: function (player, options) {
+        videojs.getComponent("Button").call(this, player, options);
+        this.controlText("Skip Intro");
+        this.el().innerHTML = "Skip Intro ( S Key )";
+      },
+      handleClick: function () {
+        player.currentTime(skipIntroTime.end);
+        this.hide();
+      },
+    })
+  );
 
-  if (!skipButton) {
-    skipButton = document.createElement("button");
-    skipButton.id = "skipIntroButton";
-    skipButton.classList.add("vjs-button");
-    skipButton.textContent = "Skip Intro";
-    skipButton.style.marginLeft = "10px";
-    skipButton.onclick = () => {
-      player.currentTime(skipIntroTime.end);
-      skipButton.remove(); // Remove button after skipping
-    };
-    controlBar.appendChild(skipButton);
-  }
+  const skipButton = player.addChild("CustomButton", {});
+  skipButton.addClass("vjs-custom-control");
+  player.el().appendChild(skipButton.el());
 
-  // Check the current time every second and toggle button visibility
+  Object.assign(skipButton.el().style, {
+    position: "absolute",
+    top: "1rem",
+    right: "1rem",
+    zIndex: "999",
+    padding: "6px 12px",
+    backgroundColor: "rgba(128,128,128,0.9)",
+    borderRadius: "20px",
+    color: "white",
+    fontSize: "14px",
+    cursor: "pointer",
+    display: "inline-block",
+    whiteSpace: "nowrap",
+    lineHeight: "normal",
+    height: "auto",
+    width: "auto",
+    display: "none",
+  });
+
   player.on("timeupdate", function () {
-    let currentTime = player.currentTime();
+    const currentTime = player.currentTime();
     if (
       currentTime >= skipIntroTime.start &&
       currentTime <= skipIntroTime.end
     ) {
-      skipButton.style.display = "block"; // Show button
+      skipButton.el().style.display = "inline-block";
     } else {
-      skipButton.style.display = "none"; // Hide button
+      skipButton.el().style.display = "none";
+    }
+  });
+}
+
+function AutoTracking() {
+  if (markedWatched) return;
+
+  player.on("timeupdate", function () {
+    const duration = player.duration();
+    const currentTime = player.currentTime();
+
+    if (!markedWatched && currentTime >= duration * 0.9) {
+      markedWatched = true;
+      let status = document.getElementById("mal-status").value ?? "watching";
+      MyAnimeListUpdate(status, ep);
     }
   });
 }

@@ -308,7 +308,7 @@ async function AddInfo(data) {
     `;
   }
 
-  if (data?.malid) {
+  if (malid) {
     let Mal = document.getElementById("mal-control");
     if (Mal) {
       WatchedEp = data?.watched;
@@ -316,7 +316,7 @@ async function AddInfo(data) {
     <h4>My Anime List</h4>
     
     <!-- Select Menu -->
-    <select id="mal-status" class="mal-select-menu" onchange="MyAnimeListUpdate()">
+    <select id="mal-status" class="mal-select-menu" onchange="HandleMalButtonClick()">
       <option value="" ${
         !data?.status ? "selected" : ""
       }>Select From Below</option>
@@ -379,7 +379,7 @@ function MalDecreaseEpisode() {
 
   if (currentEpisodes > 0) {
     episodeCount.innerText = currentEpisodes - 1;
-    MyAnimeListUpdate();
+    HandleMalButtonClick();
   }
 }
 
@@ -392,7 +392,7 @@ function MalIncreaseEpisode() {
 
   if (currentEpisodes < totalEpisodes) {
     episodeCount.innerText = currentEpisodes + 1;
-    MyAnimeListUpdate();
+    HandleMalButtonClick();
   }
 }
 
@@ -628,7 +628,9 @@ async function HandleEpisodes(data) {
           (ep) =>
             `<button class="episode ${
               WatchedEp >= ep ? "episode_active" : ""
-            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true)"> 
+            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true, ${
+              WatchedEp >= ep
+            })"> 
              Watch EP ${ep} (SUB)
            </button>`
         )
@@ -639,7 +641,9 @@ async function HandleEpisodes(data) {
           (ep) =>
             `<button class="episode${
               WatchedEp >= ep ? "episode_active" : ""
-            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true)"> 
+            }" epnum="${ep}" onclick="Videoplay('${id}', '${ep}', true, ${
+              WatchedEp >= ep
+            })"> 
              Watch EP ${ep} (DUB)
            </button>`
         )
@@ -683,7 +687,7 @@ async function HandleEpisodes(data) {
             WatchedEp >= ep.number ? "episode_active" : ""
           }" epnum="${ep.number}" onclick="Videoplay('${ep.id}', '${
             ep.number
-          }')">
+          }', false,  ${WatchedEp >= ep.number})">
           Watch EP ${ep.number}
        </button>`
       )
@@ -1426,10 +1430,15 @@ async function DownloadApi(body, SingleMulti) {
   }
 }
 
-async function MyAnimeListUpdate() {
+async function HandleMalButtonClick() {
   let status = document.getElementById("mal-status").value;
   let episodeCount = document.getElementById("mal-currently-watched");
   let currentEpisodes = parseInt(episodeCount.innerText, 10) || 0;
+  MyAnimeListUpdate(status, episodeCount, currentEpisodes);
+}
+
+async function MyAnimeListUpdate(status, currentEpisodes) {
+  if (!malid) return;
 
   if (status !== "") {
     let MalResponse = await fetch(`/api/mal/update`, {
