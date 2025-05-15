@@ -2,7 +2,7 @@ const { ipcMain } = require("electron");
 const { UpdateDiscordRPC } = require("./utils/discord");
 
 let PageHistory = [];
-let OldRpcStatus = "";
+let OldRpcStatus = null;
 
 function registerSharedStateHandlers() {
   ipcMain.handle("get-shared-state", () => {
@@ -11,6 +11,10 @@ function registerSharedStateHandlers() {
 
   ipcMain.handle("set-shared-state", (event, newPageHistory) => {
     PageHistory = newPageHistory;
+    if (OldRpcStatus) {
+      UpdateDiscordRPC();
+      OldRpcStatus = null;
+    }
     return PageHistory;
   });
 

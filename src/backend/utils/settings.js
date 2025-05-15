@@ -7,7 +7,7 @@ const {
   ensureDirectoryExists,
 } = require("./DirectoryMaker");
 const { MalRefreshTokenGen } = require("./mal.js");
-const { StartDiscordRPC } = require("./discord");
+const { StartDiscordRPC, StopDiscordRPC } = require("./discord");
 const { logger } = require("./AppLogger.js");
 
 // database create [ gets created in /user/your_name/AppData/Roaming ]
@@ -116,6 +116,9 @@ async function settingupdate({
       logger.error(err);
       logger.info("Discord RPC DISABLED");
     }
+  } else {
+    let stopped = await StopDiscordRPC();
+    if (stopped) logger.info("Discord RPC DISABLED");
   }
 
   await settingSave();

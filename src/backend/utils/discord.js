@@ -11,15 +11,12 @@ let idle_messages = [
   "Plotting the next binge watch...",
   "Waiting for the next episode drop 📺",
   "In a deep anime rabbit hole 🌀",
-  "Stretching my legs... brb!",
   "Dreaming of anime worlds ✨",
   "Catching up on all the latest manga 📚",
   "In anime zen mode 🧘",
   "Lost in thought (and anime) 🤔",
   "Currently AFK — send snacks! 🍩",
   "Daydreaming about the next arc...",
-  "Powering up for marathon mode 💪",
-  "Just vibing with the anime beats 🎶",
 ];
 
 let rpcClient = null;
@@ -67,22 +64,18 @@ function isDiscordRunning() {
   }
 }
 
-function StopDiscordRPC() {
-  if (monitorInterval) {
-    clearInterval(monitorInterval);
-    monitorInterval = null;
-  }
-
+async function StopDiscordRPC() {
   if (rpcClient) {
-    rpcClient
-      .destroy()
-      .catch(() => {})
-      .finally(() => {
-        rpcClient = null;
-        rpcConnected = false;
-        console.log("Rich Presence client destroyed.");
-      });
+    try {
+      await rpcClient.destroy();
+    } catch (err) {
+    } finally {
+      rpcClient = null;
+      rpcConnected = false;
+      return true;
+    }
   }
+  return false;
 }
 
 function UpdateDiscordRPC(Title = null, Number = null) {
