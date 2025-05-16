@@ -1,5 +1,3 @@
-const { ipcRenderer } = require("electron");
-
 var bar = new ldBar(".myBar", {
   max: 100,
   preset: "rainbow",
@@ -9,7 +7,7 @@ var bar = new ldBar(".myBar", {
 var barvar = document.getElementById("myBar");
 barvar.style.display = "none";
 
-ipcRenderer.on("download-logger", (event, data) => {
+window.sharedStateAPI.on("download-logger", (data) => {
   UpdateBar(data);
 });
 

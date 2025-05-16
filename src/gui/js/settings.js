@@ -1,6 +1,4 @@
-const { ipcRenderer } = require("electron");
-
-ipcRenderer.on("mal", (event, data) => {
+window.sharedStateAPI.on("mal", (data) => {
   let LoggedIn = data?.LoggedIn;
   document.getElementById("connectMal").hidden = LoggedIn;
   document.getElementById("myAnimeList-logout").hidden = !LoggedIn;

@@ -24,6 +24,7 @@ const tables = {
     aired: "TEXT",
     EpisodesDataId: "TEXT",
     image: "BLOB",
+    last_updated: "DATE",
   },
   Manga: {
     id: "TEXT PRIMARY KEY",
@@ -36,6 +37,7 @@ const tables = {
     author: "TEXT",
     released: "TEXT",
     image: "BLOB",
+    last_updated: "DATE",
   },
   Mapping: {
     id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -211,6 +213,7 @@ async function getAllMetadata(type, baseDir, page = 1) {
           .all();
       } catch (err) {
         // ignore
+        storedMetadata = [];
       }
 
       const missingFolders = storedMetadata
