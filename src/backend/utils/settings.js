@@ -93,6 +93,11 @@ async function settingupdate({
     enableDiscordRPC = currentSettings?.enableDiscordRPC || "off";
   }
 
+  if (CustomDownloadLocation === null) {
+    CustomDownloadLocation =
+      currentSettings?.CustomDownloadLocation || getDownloadsFolder();
+  }
+
   config.quality = quality;
   config.mal_on_off = mal_on_off;
   config.status = status;
@@ -152,6 +157,7 @@ async function settingfetch() {
       try {
         await ensureDirectoryExists(config?.CustomDownloadLocation);
       } catch (error) {
+        console.log(error);
         config.CustomDownloadLocation = getDownloadsFolder();
         changes = true;
       }
