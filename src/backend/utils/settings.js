@@ -20,7 +20,7 @@ let config = [];
 const Anime_providers = {
   hianime: require("../Scrappers/hianime"),
   pahe: require("../Scrappers/animepahe"),
-  animekai: require("../Scrappers/AnimeKai"),
+  // animekai: require("../Scrappers/AnimeKai"), // Disabled Untill Any Fix
   // anivibe: require("../Scrappers/anivibe"),
 };
 

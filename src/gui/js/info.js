@@ -408,7 +408,7 @@ async function EpisodeFetch(page = 1) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      id: id,
+      id: AnimeMangaepid,
       page: page,
       ...(window.LocalAnimeManga
         ? {
