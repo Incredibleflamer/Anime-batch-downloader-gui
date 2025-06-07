@@ -136,8 +136,8 @@ const createWindow = () => {
     }
   });
 
-  // const menu = Menu.buildFromTemplate([]);
-  // Menu.setApplicationMenu(menu);
+  const menu = Menu.buildFromTemplate([]);
+  Menu.setApplicationMenu(menu);
 
   // max priority
   exec(

@@ -10,7 +10,7 @@ const COOKIE_FILE = path.join(app.getPath("userData"), "cookies.json");
 // Create Scrapping Window
 function createScrapperWindow() {
   ScrapperWindow = new BrowserWindow({
-    show: true,
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
