@@ -35,7 +35,10 @@ const { loadQueue } = require("./backend/utils/queue");
 const { continuousExecution } = require("./backend/database");
 const { fetchAndUpdateMappingDatabase } = require("./backend/utils/Metadata");
 const { StopDiscordRPC } = require("./backend/utils/discord");
-const { createScrapperWindow } = require("./backend/utils/scrapper");
+const {
+  createScrapperWindow,
+  ExitScrapperWindow,
+} = require("./backend/utils/scrapper");
 
 // Express Server
 const routes = require("./backend/routes");
@@ -136,6 +139,21 @@ const createWindow = () => {
     }
   });
 
+  global.win.on("closed", async () => {
+    if (global.ScrapperWindow && !global.ScrapperWindow.isDestroyed()) {
+      await ExitScrapperWindow();
+    }
+
+    if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
+      global.Miniwindow.close();
+      global.Miniwindow = null;
+    }
+
+    await StopDiscordRPC();
+
+    app.quit();
+  });
+
   const menu = Menu.buildFromTemplate([]);
   Menu.setApplicationMenu(menu);
 
@@ -194,31 +212,8 @@ app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
-// Handle App Closing
-app.on("before-quit", () => {
-  StopDiscordRPC();
-});
-
-app.on("window-all-closed", () => {
-  if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
-    global.Miniwindow.close();
-    global.Miniwindow = null;
-  }
-
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
-
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
-});
-
-app.on("quit", () => {
-  if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
-    global.Miniwindow.close();
-    global.Miniwindow = null;
-  }
 });
 
 // AutoUpdater

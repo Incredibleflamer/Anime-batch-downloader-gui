@@ -2,14 +2,13 @@ const { app, BrowserWindow } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
-let ScrapperWindow;
 let isBusy = false;
 const queue = [];
 const COOKIE_FILE = path.join(app.getPath("userData"), "cookies.json");
 
 // Create Scrapping Window
 function createScrapperWindow() {
-  ScrapperWindow = new BrowserWindow({
+  global.ScrapperWindow = new BrowserWindow({
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -19,7 +18,7 @@ function createScrapperWindow() {
     },
   });
 
-  ScrapperWindow.webContents.session.webRequest.onBeforeRequest(
+  global.ScrapperWindow.webContents.session.webRequest.onBeforeRequest(
     { urls: ["*://*/*"] },
     (details, callback) => {
       if (
@@ -34,7 +33,7 @@ function createScrapperWindow() {
     }
   );
 
-  ScrapperWindow.webContents.on(
+  global.ScrapperWindow.webContents.on(
     "did-fail-load",
     (event, errorCode, errorDescription, validatedURL) => {
       console.error(
@@ -43,13 +42,13 @@ function createScrapperWindow() {
     }
   );
 
-  ScrapperWindow.on("closed", () => {
+  global.ScrapperWindow.on("closed", () => {
     ScrapperWindow = null;
   });
 
   loadCookies();
 
-  ScrapperWindow.webContents.session.cookies.on(
+  global.ScrapperWindow.webContents.session.cookies.on(
     "changed",
     (event, cookie, cause, removed) => {
       saveCookies();
@@ -59,9 +58,11 @@ function createScrapperWindow() {
 
 // Save Cookies to disk
 async function saveCookies() {
-  if (!ScrapperWindow) return;
+  if (!global.ScrapperWindow) return;
   try {
-    const cookies = await ScrapperWindow.webContents.session.cookies.get({});
+    const cookies = await global.ScrapperWindow.webContents.session.cookies.get(
+      {}
+    );
     fs.writeFileSync(COOKIE_FILE, JSON.stringify(cookies, null, 2));
   } catch (err) {
     // ignore errors
@@ -70,13 +71,13 @@ async function saveCookies() {
 
 // Load Cookies from disk
 async function loadCookies() {
-  if (!ScrapperWindow) return;
+  if (!global.ScrapperWindow) return;
   if (!fs.existsSync(COOKIE_FILE)) return;
 
   try {
     const cookies = JSON.parse(fs.readFileSync(COOKIE_FILE, "utf8"));
     for (const cookie of cookies) {
-      await ScrapperWindow.webContents.session.cookies.set(cookie);
+      await global.ScrapperWindow.webContents.session.cookies.set(cookie);
     }
   } catch (err) {
     // ignore
@@ -94,19 +95,19 @@ global.scrapeURL = async (url, type = null) => {
 async function processQueue() {
   if (isBusy || queue.length === 0 || !ScrapperWindow) return;
 
-  const { url, type, resolve, reject } = queue.shift();
+  const { url, resolve, reject } = queue.shift();
   isBusy = true;
 
   try {
-    await ScrapperWindow.loadURL(url);
+    await global.ScrapperWindow.loadURL(url);
 
     await new Promise((resolve) => {
-      ScrapperWindow.webContents.once("did-stop-loading", resolve);
+      global.ScrapperWindow.webContents.once("did-stop-loading", resolve);
     });
 
     await new Promise((r) => setTimeout(r, 1500));
 
-    const bodyText = await ScrapperWindow.webContents.executeJavaScript(
+    const bodyText = await global.ScrapperWindow.webContents.executeJavaScript(
       "document.body.innerText"
     );
 
@@ -114,7 +115,7 @@ async function processQueue() {
       const json = JSON.parse(bodyText);
       resolve(json);
     } catch {
-      const html = await ScrapperWindow.webContents.executeJavaScript(
+      const html = await global.ScrapperWindow.webContents.executeJavaScript(
         "document.documentElement.outerHTML"
       );
       resolve(html);
@@ -130,6 +131,15 @@ async function processQueue() {
   }
 }
 
+async function ExitScrapperWindow() {
+  if (global.ScrapperWindow && !global.ScrapperWindow.isDestroyed()) {
+    await saveCookies();
+    global.ScrapperWindow.close();
+    global.ScrapperWindow = null;
+  }
+}
+
 module.exports = {
   createScrapperWindow,
+  ExitScrapperWindow,
 };
