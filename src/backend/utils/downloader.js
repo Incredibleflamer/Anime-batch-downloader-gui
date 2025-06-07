@@ -236,15 +236,15 @@ class downloader {
           }
 
           let [start, end] = line.split(" --> ");
-          const startMs = toMs(start);
-          const endMs = toMs(end);
+          const startMs = this.toMs(start);
+          const endMs = this.toMs(end);
 
           const adjustedStart = Math.max(startMs, lastEnd + 1);
           if (endMs <= adjustedStart) continue;
 
           lastEnd = endMs;
 
-          buffer.push(`${toSRT(adjustedStart)} --> ${toSRT(endMs)}`);
+          buffer.push(`${this.toSRT(adjustedStart)} --> ${this.toSRT(endMs)}`);
         } else if (buffer.length) {
           buffer.push(line);
         }
