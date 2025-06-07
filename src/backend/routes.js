@@ -78,7 +78,6 @@ router.post("/api/settings", async (req, res) => {
     Animeprovider,
     Mangaprovider,
     Pagination,
-    subtitleFormat,
     autoLoadNextChapter,
     enableDiscordRPC,
   } = req.body;
@@ -112,7 +111,6 @@ router.post("/api/settings", async (req, res) => {
       CustomDownloadLocation: CustomDownloadLocation,
       Animeprovider: Animeprovider,
       Mangaprovider: Mangaprovider,
-      subtitleFormat: subtitleFormat,
       Pagination: Pagination,
       autoLoadNextChapter: autoLoadNextChapter,
       enableDiscordRPC: enableDiscordRPC,
@@ -126,11 +124,6 @@ router.post("/api/settings", async (req, res) => {
       `${data?.mal_on_off ? `Auto Track Ep: ${data?.autotrack}` : ""}`,
       `Download Location: ${data?.CustomDownloadLocation}`,
       `Anime Provider : ${data?.Animeprovider}`,
-      `${
-        data?.Animeprovider === "hianime" && data?.mergeSubtitles === "off"
-          ? `Subtitle Format: ${data?.subtitleFormat}`
-          : ""
-      }`,
       `Manga Provider : ${data?.Mangaprovider}`,
       `Autoload Next Chapter : ${data?.autoLoadNextChapter}`,
       `Pagination : ${data?.Pagination}`,

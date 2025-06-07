@@ -31,8 +31,6 @@ function submitSettings(event) {
     CustomDownloadLocation:
       document.getElementById("download-location")?.value || null,
     Pagination: document.getElementById("pagination")?.value || null,
-    subtitleFormat:
-      document.getElementById("subtitle-format-select")?.value || null,
     autoLoadNextChapter:
       document.getElementById("auto-load-next-chapter-select")?.value || null,
     autotrack: autotrackElement ? autotrackElement.value : null,
@@ -78,19 +76,6 @@ function submitSettings(event) {
     });
 }
 
-function handleProviderChange() {
-  const selectedProvider = document.getElementById("anime-provider")?.value;
-  const mergeSubtitlesValue = document.getElementById(
-    "merge-subtitles-select"
-  )?.value;
-  const SubtitlesFormat = document.getElementById("subtitle-format");
-
-  SubtitlesFormat.style.display =
-    selectedProvider === "hianime" && mergeSubtitlesValue === "on"
-      ? "block"
-      : "none";
-}
-
 function redirectToUrl(url) {
   window.location.href = url;
 }
@@ -122,10 +107,6 @@ function init(url, settings) {
   document.getElementById("quality-select").value =
     settings?.quality ?? "1080p";
 
-  // Anime Subtitle Format
-  document.getElementById("subtitle-format-select").value =
-    settings?.subtitleFormat ?? "ttv";
-
   // Manga Provider
   document.getElementById("manga-provider").value =
     settings?.Mangaprovider ?? "weebcentral";
@@ -145,5 +126,4 @@ function init(url, settings) {
   });
 
   showSection("utils");
-  handleProviderChange();
 }

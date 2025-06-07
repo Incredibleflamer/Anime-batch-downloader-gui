@@ -38,7 +38,6 @@ async function settingupdate({
   CustomDownloadLocation = null,
   Animeprovider = null,
   Mangaprovider = null,
-  subtitleFormat = null,
   Pagination = null,
   autoLoadNextChapter = null,
   enableDiscordRPC = null,
@@ -80,10 +79,6 @@ async function settingupdate({
     Pagination = currentSettings?.Pagination || "off";
   }
 
-  if (subtitleFormat === null) {
-    subtitleFormat = currentSettings?.subtitleFormat || "ttv";
-  }
-
   if (enableDiscordRPC === null) {
     enableDiscordRPC = currentSettings?.enableDiscordRPC || "off";
   }
@@ -102,7 +97,6 @@ async function settingupdate({
   config.Animeprovider = Animeprovider;
   config.Mangaprovider = Mangaprovider;
   config.Pagination = Pagination;
-  config.subtitleFormat = subtitleFormat;
   config.autoLoadNextChapter = autoLoadNextChapter;
   config.enableDiscordRPC = enableDiscordRPC;
 
@@ -129,7 +123,6 @@ async function settingupdate({
     Animeprovider,
     Mangaprovider,
     Pagination,
-    subtitleFormat,
     autoLoadNextChapter,
     enableDiscordRPC,
   };
@@ -173,15 +166,6 @@ async function settingfetch() {
       changes = true;
     }
 
-    // checking subtitle format
-    if (
-      !config?.subtitleFormat ||
-      !["ttv", "srt"].includes(config?.subtitleFormat)
-    ) {
-      config.subtitleFormat = "ttv";
-      changes = true;
-    }
-
     // checking Mangaprovider is valid
     if (
       !config?.Mangaprovider ||
@@ -219,7 +203,6 @@ async function SettingsLoad() {
             Animeprovider: "hianime",
             Mangaprovider: "weebcentral",
             autoLoadNextChapter: "on",
-            subtitleFormat: "ttv",
             Pagination: "off",
             enableDiscordRPC: "off",
           };
