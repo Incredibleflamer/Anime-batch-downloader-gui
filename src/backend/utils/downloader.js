@@ -1,6 +1,7 @@
 const { spawn } = require("child_process");
 const { logger } = require("./AppLogger");
 const ffmpeg = require("ffmpeg-static");
+const iso6391 = require("iso-639-1");
 const path = require("path");
 const got = require("got");
 const fs = require("fs");
@@ -155,36 +156,51 @@ class downloader {
     if (this.subtitles.length === 0) return;
 
     try {
-      const episodeDir = path.join(this.directory, `subtitles_${this.Epnum}`);
-
-      if (!fs.existsSync(episodeDir)) {
-        fs.mkdirSync(episodeDir, { recursive: true });
+      const SubTitleDir = path.join(this.directory, `subs`);
+      if (!fs.existsSync(SubTitleDir)) {
+        fs.mkdirSync(SubTitleDir, { recursive: true });
       }
 
       const downloadPromises = this.subtitles.map(async ({ url, lang }) => {
-        let subtitlePath = path.join(episodeDir, `${this.Epnum}_${lang}.`);
-
-        let subtitleData = await got(url).text();
-
-        if (
-          (url.split(".").pop() === "vtt" && this.ChangeTosrt) ||
-          this.MergeSubtitles
-        ) {
-          subtitlePath += "srt";
-          subtitleData = this.convertToSRT(subtitleData);
-        } else {
-          subtitlePath += `${url.split(".").pop()}`;
-        }
-
         try {
-          await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
-          this.downloadedPaths.push(subtitlePath);
+          const normalizedLang =
+            iso6391.getCode(lang) ||
+            (() => {
+              const cleaned = (lang ?? "")
+                .trim()
+                .replace(/[^a-z]/gi, "")
+                .toLowerCase();
+              return cleaned ? cleaned?.slice(0, 3) : "und";
+            })();
+
+          const urlObj = new URL(url);
+          const baseName = path.basename(urlObj.pathname);
+          const ext = path.extname(baseName).replace(".", "") || "srt";
+
+          let finalExt = ext;
+          let subtitleData = await got(url).text();
+
+          if (ext === "vtt") {
+            subtitleData = this.convertToSRT(subtitleData);
+            finalExt = "srt";
+          }
+
+          const subtitlePath = path.join(
+            SubTitleDir,
+            `${this.Epnum}Ep.${normalizedLang}.${finalExt}`
+          );
+
+          if (!fs.existsSync(subtitlePath)) {
+            await fs.promises.writeFile(subtitlePath, subtitleData, "utf8");
+            this.downloadedPaths.push(subtitlePath);
+          }
         } catch (err) {
-          logger.error(`Failed to download subtitle (${lang})`);
+          logger.error(`Failed to download subtitle : ${url} (${lang})`);
           logger.error(`Error message: ${err.message}`);
           logger.error(`Stack trace: ${err.stack}`);
         }
       });
+
       await Promise.all(downloadPromises);
       this.currentSegments += this.subtitles.length;
     } catch (err) {
@@ -197,68 +213,71 @@ class downloader {
   // Convert To Srt
   convertToSRT(content) {
     try {
-      const lines = content.split("\n");
+      const lines = content.split(/\r?\n/);
       const srtLines = [];
-      let counter = 1;
+      let index = 1;
+      let buffer = [];
+      let isCueBlock = false;
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+      for (let line of lines) {
+        line = line.trim();
 
         if (
-          /^\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}$/.test(line)
+          line === "" ||
+          line.startsWith("WEBVTT") ||
+          line.startsWith("STYLE") ||
+          line.startsWith("NOTE") ||
+          line.startsWith("REGION")
         ) {
-          srtLines.push(counter++);
-          const [startTime, endTime] = line.split(" --> ");
-          srtLines.push(
-            `${startTime.replace(".", ",")} --> ${endTime.replace(".", ",")}`
-          );
-        } else if (line) {
-          srtLines.push(line);
-        } else if (
-          srtLines.length > 0 &&
-          srtLines[srtLines.length - 1] !== ""
-        ) {
-          srtLines.push("");
+          continue;
         }
+
+        if (
+          /^(\d{2}:)?\d{2}:\d{2}\.\d{3} --> (\d{2}:)?\d{2}:\d{2}\.\d{3}/.test(
+            line
+          )
+        ) {
+          if (buffer.length) {
+            srtLines.push(String(index++));
+            srtLines.push(...buffer);
+            srtLines.push("");
+            buffer = [];
+          }
+
+          const [start, end] = line.split(" --> ");
+          buffer.push(
+            `${start.replace(".", ",")} --> ${end.replace(".", ",")}`
+          );
+          isCueBlock = true;
+        } else if (isCueBlock) {
+          buffer.push(line);
+        }
+      }
+
+      if (buffer.length) {
+        srtLines.push(String(index++));
+        srtLines.push(...buffer);
+        srtLines.push("");
       }
 
       return srtLines.join("\n");
     } catch (err) {
-      logger.info(`Failed to convert subtitle: ${err.message}`);
+      logger.warn(`Failed to convert subtitle: ${err.message}`);
       return content;
     }
   }
 
-  // Merge .ts & subtitles to mp4
+  // Merge .ts to mp4
   async MergeSegments() {
     try {
-      const ffmpegArgs = ["-y", "-i", this.SegmentsFile];
-
-      if (this.MergeSubtitles && this.downloadedPaths.length > 0) {
-        this.downloadedPaths.forEach((filePath) => {
-          const cleanPath = filePath.replace(/[)\}]+$/, "");
-          ffmpegArgs.push("-i", cleanPath);
-        });
-
-        ffmpegArgs.push("-map", "0:v?", "-map", "0:a?");
-
-        this.downloadedPaths.forEach((_, index) => {
-          ffmpegArgs.push("-map", `${index + 1}:s?`);
-        });
-
-        ffmpegArgs.push("-bsf:a", "aac_adtstoasc");
-
-        ffmpegArgs.push("-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text");
-
-        this.downloadedPaths.forEach((filePath, index) => {
-          const lang = this.getLangCodeFromFilename(filePath);
-          ffmpegArgs.push(`-metadata:s:s:${index}`, `language=${lang}`);
-        });
-      } else {
-        ffmpegArgs.push("-c", "copy");
-      }
-
-      ffmpegArgs.push(this.mp4);
+      const ffmpegArgs = [
+        "-y",
+        "-i",
+        this.SegmentsFile,
+        "-c",
+        "copy",
+        this.mp4,
+      ];
 
       await new Promise((resolve, reject) => {
         const child = spawn(ffmpegPath, ffmpegArgs);
@@ -325,19 +344,6 @@ class downloader {
     // remove mp4 ( only on error )
     if (everything) {
       await fs.promises.unlink(this.mp4).catch(() => {});
-    }
-
-    // remove all subtitles ( error / MergeSubtitles )
-    if (
-      (everything || this.MergeSubtitles) &&
-      this.downloadedPaths?.length > 0
-    ) {
-      await fs.promises
-        .rm(path.join(this.directory, `subtitles_${this.Epnum}`), {
-          recursive: true,
-          force: true,
-        })
-        .catch(() => {});
     }
   }
 }

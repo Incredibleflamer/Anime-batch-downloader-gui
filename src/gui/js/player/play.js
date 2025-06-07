@@ -106,7 +106,7 @@ function updateVideoSource() {
           }
           if (source?.url?.endsWith(".m3u8")) {
             return {
-              src: `/proxy?url=${encodeURIComponent(source?.url)}`,
+              src: source?.url,
               type: "application/x-mpegURL",
               label: source?.quality,
             };

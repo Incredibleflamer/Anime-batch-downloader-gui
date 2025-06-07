@@ -26,7 +26,6 @@ const {
   MangaChapterFetch,
   fetchChapters,
 } = require("./utils/AnimeManga");
-const { ddosGuardRequest } = require("./Scrappers/animepahe");
 const { logger, getLogs } = require("./utils/AppLogger");
 const {
   settingupdate,
@@ -78,7 +77,6 @@ router.post("/api/settings", async (req, res) => {
     CustomDownloadLocation,
     Animeprovider,
     Mangaprovider,
-    mergeSubtitles,
     Pagination,
     subtitleFormat,
     autoLoadNextChapter,
@@ -114,7 +112,6 @@ router.post("/api/settings", async (req, res) => {
       CustomDownloadLocation: CustomDownloadLocation,
       Animeprovider: Animeprovider,
       Mangaprovider: Mangaprovider,
-      mergeSubtitles: mergeSubtitles,
       subtitleFormat: subtitleFormat,
       Pagination: Pagination,
       autoLoadNextChapter: autoLoadNextChapter,
@@ -129,11 +126,6 @@ router.post("/api/settings", async (req, res) => {
       `${data?.mal_on_off ? `Auto Track Ep: ${data?.autotrack}` : ""}`,
       `Download Location: ${data?.CustomDownloadLocation}`,
       `Anime Provider : ${data?.Animeprovider}`,
-      `${
-        data?.Animeprovider === "hianime"
-          ? `Merge Subtitles: ${data?.mergeSubtitles}`
-          : ""
-      }`,
       `${
         data?.Animeprovider === "hianime" && data?.mergeSubtitles === "off"
           ? `Subtitle Format: ${data?.subtitleFormat}`
@@ -638,9 +630,8 @@ router.get("/subtitles", (req, res) => {
 
     const ext = path.extname(subtitlePath);
     const mimeType = ext === ".srt" ? "application/x-subrip" : "text/vtt";
-
     res.setHeader("Content-Type", mimeType);
-    res.sendFile(subtitlePath);
+    return res.sendFile(subtitlePath);
   } catch (err) {
     console.error("Error serving subtitle:", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -870,9 +861,7 @@ router.get("/proxy/image", async (req, res) => {
 
   try {
     if (PaheImageUrl) {
-      const response = await ddosGuardRequest(PaheImageUrl, {
-        responseType: "arraybuffer",
-      });
+      const response = await global.scrapeURL(PaheImageUrl, "arraybuffer");
       res.set("Content-Type", response.headers["content-type"]);
       return res.send(response.data);
     } else if (weebcentralUrl) {
@@ -904,9 +893,7 @@ router.get("/proxy/image", async (req, res) => {
 router.get("/proxy", async (req, res) => {
   try {
     if (req.query.url) {
-      const response = await ddosGuardRequest(req.query.url, {
-        responseType: "arraybuffer",
-      });
+      const response = await global.scrapeURL(req.query.url, "arraybuffer");
 
       const contentType = response.headers["content-type"];
       res.setHeader("Content-Type", contentType);

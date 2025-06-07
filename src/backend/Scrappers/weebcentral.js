@@ -225,9 +225,7 @@ async function fetchChapterPages(chapterId) {
     const pages = $("img")
       .map((index, img) => ({
         page: index + 1,
-        img: `/proxy/image?weebcentral=${encodeURIComponent(
-          $(img).attr("src")
-        )}`,
+        img: `${$(img).attr("src")}`,
       }))
       .get();
 

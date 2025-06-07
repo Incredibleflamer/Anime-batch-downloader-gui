@@ -1,6 +1,4 @@
 // imports
-const { wrapper } = require("axios-cookiejar-support");
-const { CookieJar } = require("tough-cookie");
 const { app } = require("electron");
 const cheerio = require("cheerio");
 const axios = require("axios");
@@ -8,27 +6,11 @@ const path = require("path");
 const fs = require("fs");
 // variables
 const baseUrl = "https://animepahe.ru";
-const userDataPath = app.getPath("userData");
-const cookieFilePath = path.join(userDataPath, "animepahe_cookies.json");
-
-let jar = new CookieJar();
-
-if (fs.existsSync(cookieFilePath)) {
-  const cookies = fs.readFileSync(cookieFilePath, "utf8");
-  try {
-    const cookiesObject = JSON.parse(cookies);
-    jar = CookieJar.deserializeSync(cookiesObject);
-  } catch (error) {
-    console.error("Error deserializing cookies:", error.message);
-  }
-}
-
-const client = wrapper(axios.create({ jar }));
 
 // Anime Search
 async function SearchAnime(query, {}) {
   try {
-    const { data } = await ddosGuardRequest(
+    const data = await global.scrapeURL(
       `${baseUrl}/api?m=search&q=${encodeURIComponent(query)}`
     );
     const res = {
@@ -38,9 +20,7 @@ async function SearchAnime(query, {}) {
       results: data.data.map((item) => ({
         id: `${item.session}`,
         title: item.title,
-        image: item?.poster
-          ? `/proxy/image?pahe=${encodeURIComponent(item?.poster)}`
-          : null,
+        image: item?.poster ? item?.poster : null,
       })),
     };
     return res;
@@ -50,25 +30,19 @@ async function SearchAnime(query, {}) {
 }
 
 // Recent Episodes
-async function fetchRecentEpisodes(
-  filters = {
-    page: 1,
-  }
-) {
+async function fetchRecentEpisodes(filters = {}) {
   try {
-    const { data } = await ddosGuardRequest(
-      `${baseUrl}/api?m=airing&page=${page}`
+    const data = await global.scrapeURL(
+      `${baseUrl}/api?m=airing&page=${filters.page}`
     );
     const res = {
-      currentPage: page,
+      currentPage: filters.page,
       hasNextPage: data?.next_page_url?.length > 0 ? true : false,
       totalPages: data?.last_page ?? 0,
       results: data.data.map((item) => ({
         id: `${item.anime_session}`,
         title: item.anime_title,
-        image: item?.snapshot
-          ? `/proxy/image?pahe=${encodeURIComponent(item?.snapshot)}`
-          : null,
+        image: item?.snapshot ? item?.snapshot : null,
       })),
     };
     return res;
@@ -88,8 +62,8 @@ async function AnimeInfo(id) {
   };
 
   try {
-    const response = await ddosGuardRequest(`${baseUrl}/anime/${id}`);
-    const $ = (0, cheerio.load)(response.data);
+    const data = await global.scrapeURL(`${baseUrl}/anime/${id}`);
+    const $ = (0, cheerio.load)(data);
 
     let MalId =
       parseInt($('meta[name="myanimelist"]').attr("content") ?? null) ?? null;
@@ -97,9 +71,7 @@ async function AnimeInfo(id) {
     animeInfo.malid = MalId;
     animeInfo.title = $("div.title-wrapper > h1 > span").first().text();
     let image = $("div.anime-poster a").attr("href") ?? null;
-    animeInfo.image = image
-      ? `/proxy/image?pahe=${encodeURIComponent(image)}`
-      : null;
+    animeInfo.image = image ? image : null;
     animeInfo.description = $("div.anime-summary").text();
     animeInfo.genres = $("div.anime-genre ul li")
       .map((i, el) => $(el).find("a").attr("title"))
@@ -144,9 +116,7 @@ async function fetchEpisode(id, page = 1) {
   try {
     let episodes = [];
 
-    let {
-      data: { last_page, data, total },
-    } = await ddosGuardRequest(
+    let { last_page, data, total } = await global.scrapeURL(
       `${baseUrl}/api?m=release&id=${id}&sort=episode_desc&page=${page}`
     );
 
@@ -180,12 +150,8 @@ async function fetchEpisodeSources(episodeId) {
 
     episodeId = episodeId.replace(/-(dub|sub|both)$/, "");
 
-    const response = await ddosGuardRequest(`${baseUrl}/play/${episodeId}`, {
-      headers: {
-        Referer: `${baseUrl}`,
-      },
-    });
-    const $ = (0, cheerio.load)(response.data);
+    const data = await global.scrapeURL(`${baseUrl}/play/${episodeId}`);
+    const $ = (0, cheerio.load)(data);
 
     const links = $("div#resolutionMenu > button").map((i, el) => ({
       url: $(el).attr("data-src"),
@@ -257,55 +223,10 @@ async function extract(videoUrl) {
   }
 }
 
-// for sending request & bypassing ddoss gaurd
-function saveCookies() {
-  try {
-    const serializedCookies = jar.serializeSync();
-    const cookiesString = JSON.stringify(serializedCookies);
-    fs.writeFileSync(cookieFilePath, cookiesString);
-  } catch (error) {
-    console.error("Error saving cookies:", error.message);
-  }
-}
-
-async function getNewCookie(url) {
-  try {
-    const jsResponse = await client.get(
-      "https://check.ddos-guard.net/check.js"
-    );
-    const jsContent = jsResponse.data;
-    const wellKnownPath = jsContent.match(/'([^']+)'/)[1];
-    if (!wellKnownPath) throw new Error("Failed to parse well-known path.");
-    const challengeUrl = `${url.protocol}//${url.host}${wellKnownPath}`;
-    const challengeResponse = await client.get(challengeUrl);
-    const setCookieHeader = challengeResponse.headers["set-cookie"];
-    if (!setCookieHeader) throw new Error("No set-cookie header found.");
-    setCookieHeader.forEach((cookie) => {
-      jar.setCookieSync(cookie, challengeUrl);
-    });
-    saveCookies();
-    return true;
-  } catch (error) {
-    console.error("Failed to solve DDos-GUARD challenge:", error.message);
-    return false;
-  }
-}
-
-async function ddosGuardRequest(url, options = {}) {
-  try {
-    return await client.get(url, { ...options, withCredentials: true });
-  } catch (error) {
-    const solved = await getNewCookie(new URL(url));
-    if (!solved) throw new Error("Failed to bypass DDos-GUARD.");
-    return await client.get(url, { ...options, withCredentials: true });
-  }
-}
-
 module.exports = {
   SearchAnime,
   AnimeInfo,
   fetchEpisodeSources,
   fetchRecentEpisodes,
-  ddosGuardRequest,
   fetchEpisode,
 };

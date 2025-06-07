@@ -114,10 +114,6 @@ async function MetadataAdd(type, valuesToAdd) {
     if (valuesToAdd?.ImageUrl) {
       let Imageurl = valuesToAdd?.ImageUrl?.trim();
 
-      if (Imageurl.startsWith("/proxy")) {
-        Imageurl = `http://localhost:${global.PORT}${Imageurl}`;
-      }
-
       try {
         const response = await axios.get(Imageurl, {
           responseType: "arraybuffer",
@@ -384,23 +380,23 @@ async function getSourceById(type, baseDir, id, number) {
       throw new Error(`File not found for ${type} ${number}`);
     }
 
-    const subtitlesDir = path.join(folderPath, `subtitles_${number}`);
+    const subtitlesDir = path.join(folderPath, `.subs`);
     let subtitleFiles = [];
 
     if (fs.existsSync(subtitlesDir)) {
       subtitleFiles = fs
         .readdirSync(subtitlesDir)
-        .filter((file) => file.endsWith(".srt") || file.endsWith(".vtt"))
+        .filter(
+          (file) =>
+            (file.endsWith(".srt") || file.endsWith(".vtt")) &&
+            file?.startsWith(`Ep${number}.`)
+        )
         .map((subtitle) => {
-          const parts = subtitle.split(".");
-          const nameWithoutExt = parts.slice(0, -1).join(".");
-          const lang = nameWithoutExt.split("_").slice(1).join("_");
-
           return {
             url: `/subtitles?file=${encodeURIComponent(
               path.join(subtitlesDir, subtitle)
             )}`,
-            lang: lang || "unknown",
+            lang: subtitle.split(".")[1],
           };
         });
     }

@@ -38,7 +38,6 @@ async function settingupdate({
   CustomDownloadLocation = null,
   Animeprovider = null,
   Mangaprovider = null,
-  mergeSubtitles = null,
   subtitleFormat = null,
   Pagination = null,
   autoLoadNextChapter = null,
@@ -77,10 +76,6 @@ async function settingupdate({
     autoLoadNextChapter = currentSettings?.autoLoadNextChapter || "on";
   }
 
-  if (mergeSubtitles === null) {
-    mergeSubtitles = currentSettings?.mergeSubtitles || "on";
-  }
-
   if (Pagination === null) {
     Pagination = currentSettings?.Pagination || "off";
   }
@@ -106,7 +101,6 @@ async function settingupdate({
   config.CustomDownloadLocation = CustomDownloadLocation;
   config.Animeprovider = Animeprovider;
   config.Mangaprovider = Mangaprovider;
-  config.mergeSubtitles = mergeSubtitles;
   config.Pagination = Pagination;
   config.subtitleFormat = subtitleFormat;
   config.autoLoadNextChapter = autoLoadNextChapter;
@@ -134,7 +128,6 @@ async function settingupdate({
     autotrack,
     Animeprovider,
     Mangaprovider,
-    mergeSubtitles,
     Pagination,
     subtitleFormat,
     autoLoadNextChapter,
@@ -177,15 +170,6 @@ async function settingfetch() {
       !["1080p", "720p", "360p"].includes(config?.quality)
     ) {
       config.quality = "1080p";
-      changes = true;
-    }
-
-    // checking mergeSubtitles
-    if (
-      !config?.mergeSubtitles ||
-      !["on", "off"].includes(config?.mergeSubtitles)
-    ) {
-      config.mergeSubtitles = "on";
       changes = true;
     }
 
@@ -235,7 +219,6 @@ async function SettingsLoad() {
             Animeprovider: "hianime",
             Mangaprovider: "weebcentral",
             autoLoadNextChapter: "on",
-            mergeSubtitles: "on",
             subtitleFormat: "ttv",
             Pagination: "off",
             enableDiscordRPC: "off",

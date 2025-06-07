@@ -182,7 +182,11 @@ let SiteFilters = {
     },
   },
 };
-let Applied_Filters = {};
+
+let Applied_Filters = {
+  sort: "recently_updated",
+};
+
 let Filter_Added = false;
 
 async function fetchPageData(page, init = false) {

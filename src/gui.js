@@ -24,9 +24,10 @@ app.commandLine.appendSwitch("disable-renderer-backgrounding");
 // global varibles
 autoUpdater.setFeedURL({
   provider: "github",
-  owner: "Incredibleflamer",
+  owner: "TheYogMehta",
   repo: "Anime-batch-downloader-gui",
 });
+
 //  functions
 const { logger } = require("./backend/utils/AppLogger");
 const { SettingsLoad } = require("./backend/utils/settings");
@@ -34,6 +35,7 @@ const { loadQueue } = require("./backend/utils/queue");
 const { continuousExecution } = require("./backend/database");
 const { fetchAndUpdateMappingDatabase } = require("./backend/utils/Metadata");
 const { StopDiscordRPC } = require("./backend/utils/discord");
+const { createScrapperWindow } = require("./backend/utils/scrapper");
 
 // Express Server
 const routes = require("./backend/routes");
@@ -67,6 +69,7 @@ const createWindow = () => {
       nodeIntegration: true,
       backgroundThrottling: false,
       contextIsolation: true,
+      webSecurity: false,
       preload: path.join(__dirname, "backend", "preload.js"),
     },
     icon: path.join(__dirname, "./assets/luffy.ico"),
@@ -78,6 +81,15 @@ const createWindow = () => {
   global.win.maximize();
   nativeTheme.themeSource = "dark";
   global.win.loadURL(`http://localhost:${global.PORT}`);
+
+  global.win.webContents.session.webRequest.onBeforeSendHeaders(
+    { urls: ["*://i.animepahe.ru/*"] },
+    (details, callback) => {
+      details.requestHeaders["Referer"] = "https://animepahe.ru/";
+      callback({ requestHeaders: details.requestHeaders });
+    }
+  );
+
   global.win.webContents.on("will-navigate", (event, url) => {
     event.preventDefault();
 
@@ -124,8 +136,8 @@ const createWindow = () => {
     }
   });
 
-  const menu = Menu.buildFromTemplate([]);
-  Menu.setApplicationMenu(menu);
+  // const menu = Menu.buildFromTemplate([]);
+  // Menu.setApplicationMenu(menu);
 
   // max priority
   exec(
@@ -158,6 +170,7 @@ try {
 
 app.whenReady().then(() => {
   createWindow();
+  createScrapperWindow();
   globalShortcut.register("CommandOrControl+Shift+I", () => {});
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

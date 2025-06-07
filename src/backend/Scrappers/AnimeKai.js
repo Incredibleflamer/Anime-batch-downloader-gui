@@ -87,9 +87,7 @@ async function scrapeCards($, page) {
       const title = Anime.find("a.title").text().trim() || null;
       const imageSrc =
         Anime.find("a.poster > div > img").attr("data-src") ?? null;
-      const image = imageSrc
-        ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
-        : null;
+      const image = imageSrc ? imageSrc : null;
 
       if (!baseId || !title || !image) return null;
 
@@ -136,9 +134,7 @@ async function AnimeInfo(id) {
     const details = mainEntity.find("div.detail");
     const dataId = main.find("div.rate-box").attr("data-id");
     const imageSrc = main.find("div.poster-wrap img").attr("src") ?? null;
-    const image = imageSrc
-      ? `/proxy/image?url=${encodeURIComponent(imageSrc)}`
-      : null;
+    const image = imageSrc ? imageSrc : null;
     const dub = parseInt(dubsub.find("span.dub").text().trim() || "0");
     const sub = parseInt(dubsub.find("span.sub").text().trim() || "0");
 

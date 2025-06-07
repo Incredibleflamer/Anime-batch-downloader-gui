@@ -4,7 +4,7 @@ const axios = require("axios");
 const { getSources } = require("./helper/rabbit");
 
 // varibles
-const baseUrl = "https://hianimez.to";
+const baseUrl = "https://hianime.bz";
 
 async function SearchAnime(query, filters = {}) {
   return scrapeCardPage(
@@ -355,7 +355,12 @@ async function getVideoUrls(url) {
 
     videoUrls.push({
       quality: "default",
-      url: `${url}`,
+      url: {
+        url: `${url}`,
+        headers: {
+          Referer: "https://megacloud.club/",
+        },
+      },
     });
 
     lines.map((line, index) => {

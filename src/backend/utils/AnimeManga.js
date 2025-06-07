@@ -334,7 +334,6 @@ async function DownloadChapters(
 
 // Download Chapter Images Utils
 async function downloadImage(url) {
-  url = url.split("/proxy/image?weebcentral=")[1];
   if (url) {
     url = decodeURIComponent(url);
     const response = await axios(url, {
