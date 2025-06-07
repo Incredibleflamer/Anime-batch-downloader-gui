@@ -217,26 +217,17 @@ class downloader {
       const srtLines = [];
       let index = 1;
       let buffer = [];
-      let isCueBlock = false;
+      let lastEnd = 0;
 
-      for (let line of lines) {
-        line = line.trim();
+      const timeRegex =
+        /^(\d{2}:)?\d{2}:\d{2}[\.,]\d{3} --> (\d{2}:)?\d{2}:\d{2}[\.,]\d{3}$/;
 
-        if (
-          line === "" ||
-          line.startsWith("WEBVTT") ||
-          line.startsWith("STYLE") ||
-          line.startsWith("NOTE") ||
-          line.startsWith("REGION")
-        ) {
-          continue;
-        }
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim().replace(/<[^>]+>/g, "");
 
-        if (
-          /^(\d{2}:)?\d{2}:\d{2}\.\d{3} --> (\d{2}:)?\d{2}:\d{2}\.\d{3}/.test(
-            line
-          )
-        ) {
+        if (!line || line.startsWith("WEBVTT")) continue;
+
+        if (timeRegex.test(line)) {
           if (buffer.length) {
             srtLines.push(String(index++));
             srtLines.push(...buffer);
@@ -244,12 +235,17 @@ class downloader {
             buffer = [];
           }
 
-          const [start, end] = line.split(" --> ");
-          buffer.push(
-            `${start.replace(".", ",")} --> ${end.replace(".", ",")}`
-          );
-          isCueBlock = true;
-        } else if (isCueBlock) {
+          let [start, end] = line.split(" --> ");
+          const startMs = toMs(start);
+          const endMs = toMs(end);
+
+          const adjustedStart = Math.max(startMs, lastEnd + 1);
+          if (endMs <= adjustedStart) continue;
+
+          lastEnd = endMs;
+
+          buffer.push(`${toSRT(adjustedStart)} --> ${toSRT(endMs)}`);
+        } else if (buffer.length) {
           buffer.push(line);
         }
       }
@@ -262,9 +258,28 @@ class downloader {
 
       return srtLines.join("\n");
     } catch (err) {
-      logger.warn(`Failed to convert subtitle: ${err.message}`);
+      console.warn("Subtitle conversion failed:", err.message);
       return content;
     }
+  }
+
+  toMs(timeStr) {
+    const clean = timeStr.replace(",", ".");
+    const parts = clean.split(":");
+    const [sec, ms] = parts[parts.length - 1].split(".");
+    const s = parseInt(sec);
+    const m = parseInt(parts[parts.length - 2]);
+    const h = parts.length === 3 ? parseInt(parts[0]) : 0;
+
+    return h * 3600000 + m * 60000 + s * 1000 + parseInt(ms);
+  }
+
+  toSRT(ms) {
+    const h = String(Math.floor(ms / 3600000)).padStart(2, "0");
+    const m = String(Math.floor((ms % 3600000) / 60000)).padStart(2, "0");
+    const s = String(Math.floor((ms % 60000) / 1000)).padStart(2, "0");
+    const msStr = String(ms % 1000).padStart(3, "0");
+    return `${h}:${m}:${s},${msStr}`;
   }
 
   // Merge .ts to mp4
