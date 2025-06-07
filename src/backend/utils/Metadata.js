@@ -380,7 +380,7 @@ async function getSourceById(type, baseDir, id, number) {
       throw new Error(`File not found for ${type} ${number}`);
     }
 
-    const subtitlesDir = path.join(folderPath, `.subs`);
+    const subtitlesDir = path.join(folderPath, `subs`);
     let subtitleFiles = [];
 
     if (fs.existsSync(subtitlesDir)) {
@@ -389,7 +389,7 @@ async function getSourceById(type, baseDir, id, number) {
         .filter(
           (file) =>
             (file.endsWith(".srt") || file.endsWith(".vtt")) &&
-            file?.startsWith(`Ep${number}.`)
+            file?.startsWith(`${number}Ep.`)
         )
         .map((subtitle) => {
           return {
