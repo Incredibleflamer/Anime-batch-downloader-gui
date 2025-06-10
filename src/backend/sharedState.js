@@ -1,5 +1,6 @@
 const { ipcMain } = require("electron");
 const { UpdateDiscordRPC } = require("./utils/discord");
+const { HandleExtensions } = require("./utils/settings");
 
 let PageHistory = [];
 let OldRpcStatus = null;
@@ -25,6 +26,13 @@ function registerSharedStateHandlers() {
       UpdateDiscordRPC(AnimeName, Episode);
     }
   });
+
+  ipcMain.handle(
+    "extensions",
+    async (event, TaskType, AnimeManga, ExtentionName) => {
+      return await HandleExtensions(TaskType, AnimeManga, ExtentionName);
+    }
+  );
 }
 
 module.exports = { registerSharedStateHandlers };

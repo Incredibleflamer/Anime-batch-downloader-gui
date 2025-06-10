@@ -5,11 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anime Downloader | Settings</title>
-    <link
+    <!-- <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
-      crossorigin="anonymous"
-    />
+    /> -->
     <link rel="stylesheet" href="/css/settings.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
   </head>
@@ -107,11 +106,7 @@
             <h2>Anime Settings</h2>
             <div class="settings-div">
               <label for="anime-provider">Provider:</label>
-              <select id="anime-provider">
-                <option value="hianime">hianime</option>
-                <option value="pahe">Pahe</option>
-                <!-- <option value="animekai">Animekai</option> disable untill any fix -->
-              </select>
+              <select id="anime-provider"></select>
 
               <div id="quality">
                 <label for="quality-select">Quality:</label>
@@ -122,6 +117,16 @@
                 </select>
               </div>
             </div>
+
+            <div>
+              <button
+                id="open-marketplace"
+                class="buttons"
+                onclick="window.sharedStateAPI.marketplace('Anime');"
+              >
+                Open Anime MarketPlace
+              </button>
+            </div>
           </div>
 
           <!-- Manga Settings -->
@@ -129,9 +134,7 @@
             <h2>Manga Settings</h2>
             <div class="settings-div">
               <label for="manga-provider">Provider:</label>
-              <select id="manga-provider">
-                <option value="weebcentral">weebcentral</option>
-              </select>
+              <select id="manga-provider"></select>
 
               <div id="auto-load-next-chapter">
                 <label for="auto-load-next-chapter-select"
@@ -141,6 +144,16 @@
                   <option value="on">ON</option>
                   <option value="off">OFF</option>
                 </select>
+              </div>
+
+              <div>
+                <button
+                  id="open-marketplace"
+                  class="buttons"
+                  onclick="window.sharedStateAPI.marketplace('Manga');"
+                >
+                  Open Manga MarketPlace
+                </button>
               </div>
             </div>
           </div>
@@ -187,6 +200,7 @@
 
       <div
         id="save-settings"
+        class="buttons"
         onclick="submitSettings(event)"
         style="display: none"
       >

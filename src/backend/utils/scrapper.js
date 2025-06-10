@@ -6,6 +6,9 @@ let isBusy = false;
 const queue = [];
 const COOKIE_FILE = path.join(app.getPath("userData"), "cookies.json");
 
+// Loading helpers
+require("./helpers/rabbit.js");
+
 // Create Scrapping Window
 function createScrapperWindow() {
   global.ScrapperWindow = new BrowserWindow({

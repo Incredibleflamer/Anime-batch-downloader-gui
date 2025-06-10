@@ -30,7 +30,11 @@ autoUpdater.setFeedURL({
 
 //  functions
 const { logger } = require("./backend/utils/AppLogger");
-const { SettingsLoad } = require("./backend/utils/settings");
+const {
+  SettingsLoad,
+  patchModulePaths,
+  loadAllScrapers,
+} = require("./backend/utils/settings");
 const { loadQueue } = require("./backend/utils/queue");
 const { continuousExecution } = require("./backend/database");
 const { fetchAndUpdateMappingDatabase } = require("./backend/utils/Metadata");
@@ -79,6 +83,7 @@ const createWindow = () => {
     minWidth: 1000,
     minHeight: 750,
   });
+
   app.commandLine.appendSwitch("disable-http-cache");
   app.commandLine.appendSwitch("disable-renderer-backgrounding");
   global.win.maximize();
@@ -86,9 +91,14 @@ const createWindow = () => {
   global.win.loadURL(`http://localhost:${global.PORT}`);
 
   global.win.webContents.session.webRequest.onBeforeSendHeaders(
-    { urls: ["*://i.animepahe.ru/*"] },
+    { urls: ["*://i.animepahe.ru/*", "*://temp.compsci88.com/cover/small/*"] },
     (details, callback) => {
-      details.requestHeaders["Referer"] = "https://animepahe.ru/";
+      const url = details.url;
+      if (url.startsWith("https://i.animepahe.ru/")) {
+        details.requestHeaders["Referer"] = "https://animepahe.ru/";
+      } else if (url.startsWith("https://temp.compsci88.com/")) {
+        details.requestHeaders["Referer"] = "https://weebcentral.com/";
+      }
       callback({ requestHeaders: details.requestHeaders });
     }
   );
@@ -139,6 +149,30 @@ const createWindow = () => {
     }
   });
 
+  ipcMain.on("marketplace", (event, AnimeManga) => {
+    if (global.marketplaceWin && !global.marketplaceWin.isDestroyed()) {
+      global.marketplaceWin.focus();
+      return;
+    }
+
+    global.marketplaceWin = new BrowserWindow({
+      width: 900,
+      height: 500,
+      parent: global.win,
+      modal: true,
+      title: "MarketPlace",
+      webPreferences: {
+        preload: path.join(__dirname, "backend", "preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    });
+
+    global.marketplaceWin.loadURL(
+      `http://localhost:${global.PORT}/marketplace?type=${AnimeManga}`
+    );
+  });
+
   global.win.on("closed", async () => {
     if (global.ScrapperWindow && !global.ScrapperWindow.isDestroyed()) {
       await ExitScrapperWindow();
@@ -147,6 +181,11 @@ const createWindow = () => {
     if (global.Miniwindow && !global.Miniwindow.isDestroyed()) {
       global.Miniwindow.close();
       global.Miniwindow = null;
+    }
+
+    if (global.marketplaceWin && !global.marketplaceWin.isDestroyed()) {
+      global.marketplaceWin.close();
+      global.marketplaceWin = null;
     }
 
     await StopDiscordRPC();
@@ -180,6 +219,8 @@ try {
   fetchAndUpdateMappingDatabase();
   loadQueue();
   SettingsLoad();
+  patchModulePaths();
+  loadAllScrapers();
   continuousExecution();
 } catch (err) {
   logger.error(`Error message: ${err.message}`);

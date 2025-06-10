@@ -213,6 +213,12 @@ async function fetchPageData(page, init = false) {
 
     const data = await response.json();
 
+    if (data?.extension_missing) {
+      window.location.href = `/error?message=${encodeURIComponent(
+        "Please Install Provider From Marketplace From 'Settings > Anime > MarketPlace' !"
+      )}`;
+    }
+
     currentPage = page;
 
     hasNextPage = data?.hasNextPage ?? false;

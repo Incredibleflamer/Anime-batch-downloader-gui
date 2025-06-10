@@ -1,4 +1,5 @@
 // Libs
+const { app } = require("electron");
 const express = require("express");
 const axios = require("axios");
 const JSZip = require("jszip");
@@ -308,6 +309,7 @@ router.post("/api/list/:AnimeManga/:provider/", async (req, res) => {
         totalItems: 0,
         results: [],
       },
+      extension_missing: err?.message?.includes("Missing Provider!"),
     });
   }
 });
@@ -369,7 +371,7 @@ router.post("/api/info/:AnimeManga/:LocalMalProvider", async (req, res) => {
         data = { ...data, ...(await MangaInfo(Mangaprovider, id)) };
       }
     } catch (err) {
-      // ignore err
+      throw err;
     }
 
     if (!data?.id) throw new Error(`No ${AnimeManga} Found with id '${id}'`);
@@ -793,7 +795,20 @@ router.get("/setting", async (req, res) => {
       const url = await MalCreateUrl();
       return res.render("settings.ejs", { settings: setting, url: url });
     }
-    res.render("settings.ejs", { settings: setting, url: url });
+    res.render("settings.ejs", {
+      settings: {
+        ...setting,
+        providers: {
+          Anime: global.Anime_providers
+            ? Object.keys(global.Anime_providers)
+            : [],
+          Manga: global.Manga_providers
+            ? Object.keys(global.Manga_providers)
+            : [],
+        },
+      },
+      url: url,
+    });
   } catch (err) {
     logger.error(err);
     res.render("error.ejs", {
@@ -842,68 +857,10 @@ router.get("/downloads", async (req, res) => {
   return res.render("downloads.ejs");
 });
 
-// proxy for images
-router.get("/proxy/image", async (req, res) => {
-  const PaheImageUrl = req?.query?.pahe
-    ? decodeURIComponent(req?.query?.pahe)
-    : null;
-  const weebcentralUrl = req?.query?.weebcentral
-    ? decodeURIComponent(req?.query?.weebcentral)
-    : null;
-  const imageUrl = req.query.url ? decodeURIComponent(req.query.url) : null;
-
-  try {
-    if (PaheImageUrl) {
-      const response = await global.scrapeURL(PaheImageUrl, "arraybuffer");
-      res.set("Content-Type", response.headers["content-type"]);
-      return res.send(response.data);
-    } else if (weebcentralUrl) {
-      const response = await axios.get(weebcentralUrl, {
-        responseType: "arraybuffer",
-        headers: {
-          Referer: "https://weebcentral.com/",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
-        },
-      });
-      res.set("Content-Type", response.headers["content-type"]);
-      return res.send(response.data);
-    } else if (imageUrl) {
-      const response = await axios.get(imageUrl, {
-        responseType: "arraybuffer",
-      });
-      res.set("Content-Type", response.headers["content-type"]);
-      return res.send(response.data);
-    }
-    throw new Error("Missing Url");
-  } catch (error) {
-    console.error("Error fetching image:", error);
-    res.status(500).send("Internal server error.");
-  }
-});
-
 // Proxy for m3u8
 router.get("/proxy", async (req, res) => {
   try {
-    if (req.query.url) {
-      const response = await global.scrapeURL(req.query.url, "arraybuffer");
-
-      const contentType = response.headers["content-type"];
-      res.setHeader("Content-Type", contentType);
-
-      if (contentType.includes("application/vnd.apple.mpegurl")) {
-        let m3u8Data = response.data.toString("utf-8");
-
-        m3u8Data = m3u8Data.replace(
-          /^https?:\/\/.*$/gm,
-          (match) => `/proxy?url=${encodeURIComponent(match)}`
-        );
-
-        return res.send(m3u8Data);
-      }
-
-      return res.send(response.data);
-    } else if (req?.query?.hianime) {
+    if (req?.query?.hianime) {
       try {
         const response = await axios.get(
           decodeURIComponent(req.query.hianime),
@@ -948,9 +905,29 @@ router.get("/proxy", async (req, res) => {
   }
 });
 
+// Error Page
 router.get("/error", async (req, res) => {
   return res.render("error.ejs", {
     error: req?.query?.message ?? "Internal Error",
+  });
+});
+
+// MarketPlace
+router.get("/marketplace", async (req, res) => {
+  let AnimeManga = req.query.type?.trim() === "Anime" ? "Anime" : "Manga";
+  return res.render("marketplace.ejs", {
+    AppVersion: app.getVersion(),
+    AnimeManga: AnimeManga,
+    providers: {
+      Anime: Object.entries(global.Anime_providers || {}).map(([key, val]) => ({
+        name: key,
+        version: val.version,
+      })),
+      Manga: Object.entries(global.Manga_providers || {}).map(([key, val]) => ({
+        name: key,
+        version: val.version,
+      })),
+    },
   });
 });
 

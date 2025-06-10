@@ -362,7 +362,7 @@ function addSkipIntroButton() {
 }
 
 function AutoTracking() {
-  if (markedWatched) return;
+  if (markedWatched || !player) return;
 
   player.on("timeupdate", function () {
     const duration = player.duration();

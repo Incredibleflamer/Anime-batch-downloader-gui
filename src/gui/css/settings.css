@@ -90,10 +90,7 @@ select:focus {
   outline: none;
 }
 
-#save-settings {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+.buttons {
   background: #6200ea;
   color: white;
   padding: 10px 20px;
@@ -103,9 +100,20 @@ select:focus {
   transition: background 0.3s, transform 0.2s;
 }
 
-#save-settings:hover {
+.buttons:hover {
   background: #007bff;
   transform: scale(1.05);
+}
+#open-marketplace {
+  position: fixed;
+  bottom: 5rem;
+  right: 34%;
+}
+
+#save-settings {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
 }
 
 /* loading animations */

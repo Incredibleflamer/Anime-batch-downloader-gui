@@ -1,6 +1,6 @@
 {
   "name": "animedownloader",
-  "version": "3.2.1",
+  "version": "4.0.0",
   "description": "Download anime in batches & its fast :3",
   "main": "gui.js",
   "scripts": {

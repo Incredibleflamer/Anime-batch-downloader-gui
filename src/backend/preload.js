@@ -8,4 +8,7 @@ contextBridge.exposeInMainWorld("sharedStateAPI", {
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_event, data) => callback(data));
   },
+  marketplace: (AnimeManga) => ipcRenderer.send("marketplace", AnimeManga),
+  extensions: (TaskType, AnimeManga, ExtentionName) =>
+    ipcRenderer.invoke("extensions", TaskType, AnimeManga, ExtentionName),
 });

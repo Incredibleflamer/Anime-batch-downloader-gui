@@ -11,6 +11,11 @@ const cache = new NodeCache({ stdTTL: 60, checkperiod: 60 });
 //====================================== Anime ================================
 // find popular anime
 async function latestAnime(provider, filters) {
+  if (!provider?.provider)
+    throw new Error(
+      "Missing Provider! ( try downloading from settings > marketplace )"
+    );
+
   const cacheKey = CreateHashKey(
     `latestanime_${provider.provider_name}_${JSON.stringify(filters)}`
   );
@@ -28,6 +33,11 @@ async function latestAnime(provider, filters) {
 
 // search anime
 async function animesearch(provider, Anime_NAME, filters = {}) {
+  if (!provider?.provider)
+    throw new Error(
+      "Missing Provider! ( try downloading from settings > marketplace )"
+    );
+
   let dataarray = { results: [] };
   const formattedAnimeName = Anime_NAME.replace(/\w\S*/g, (word) => {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -107,6 +117,11 @@ async function findanime(provider, Anime_NAME, filters) {
 
 // anime info
 async function animeinfo(provider, dir, animeId, MalFetch = true) {
+  if (!provider?.provider)
+    throw new Error(
+      "Missing Provider! ( try downloading from settings > marketplace )"
+    );
+
   const cacheKey = CreateHashKey(
     `animeinfo_${provider.provider_name}_${animeId}`
   );
@@ -162,6 +177,11 @@ async function animeinfo(provider, dir, animeId, MalFetch = true) {
 // anime fetch ep list
 async function fetchEpisode(provider, id, page = 1) {
   try {
+    if (!provider?.provider)
+      throw new Error(
+        "Missing Provider! ( try downloading from settings > marketplace )"
+      );
+
     const cacheKey = CreateHashKey(
       `animeplaylist_${provider.provider_name}_${id}_${page}`
     );
@@ -180,6 +200,11 @@ async function fetchEpisode(provider, id, page = 1) {
 
 // fetch m3u8 links
 async function fetchEpisodeSources(provider, episodeId) {
+  if (!provider?.provider)
+    throw new Error(
+      "Missing Provider! ( try downloading from settings > marketplace )"
+    );
+
   const cacheKey = CreateHashKey(
     `animeepisodesources_${provider.provider_name}_${episodeId}`
   );

@@ -5,6 +5,26 @@ window.sharedStateAPI.on("mal", (data) => {
   document.getElementById("myAnimeList-config").hidden = !LoggedIn;
 });
 
+window.sharedStateAPI.on("extention-updated", (data) => {
+  // Anime Provider
+  if (data?.Anime.length > 0) {
+    document.getElementById("anime-provider").innerHTML = data?.Anime.map(
+      (name) => `<option value="${name.name}">${name.name}</option>`
+    ).join("");
+  } else {
+    document.getElementById("anime-provider").innerHTML = ``;
+  }
+
+  // Manga Provider
+  if (data?.Manga.length > 0) {
+    document.getElementById("manga-provider").innerHTML = data?.Manga.map(
+      (name) => `<option value="${name.name}">${name.name}</option>`
+    ).join("");
+  } else {
+    document.getElementById("manga-provider").innerHTML = ``;
+  }
+});
+
 function showSection(targetId) {
   document.querySelectorAll(".settings-section").forEach((section) => {
     section.style.display = section.id === targetId ? "block" : "none";
@@ -100,16 +120,30 @@ function init(url, settings) {
     settings?.malautotrack ?? "off";
 
   // Anime Provider
+  if (settings?.providers?.Anime.length > 0) {
+    document.getElementById("anime-provider").innerHTML =
+      settings?.providers?.Anime.map(
+        (name) => `<option value="${name}">${name}</option>`
+      ).join("");
+  }
+
   document.getElementById("anime-provider").value =
-    settings?.Animeprovider ?? "hianime";
+    settings?.Animeprovider ?? null;
 
   // Anime Quality
   document.getElementById("quality-select").value =
     settings?.quality ?? "1080p";
 
   // Manga Provider
+  if (settings?.providers?.Manga.length > 0) {
+    document.getElementById("manga-provider").innerHTML =
+      settings?.providers?.Manga.map(
+        (name) => `<option value="${name}">${name}</option>`
+      ).join("");
+  }
+
   document.getElementById("manga-provider").value =
-    settings?.Mangaprovider ?? "weebcentral";
+    settings?.Mangaprovider ?? null;
 
   // Manga AutoLoad Next Chapter
   document.getElementById("auto-load-next-chapter-select").value =
