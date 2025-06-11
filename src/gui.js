@@ -217,10 +217,6 @@ const createWindow = () => {
 
 try {
   fetchAndUpdateMappingDatabase();
-  loadQueue();
-  SettingsLoad();
-  patchModulePaths();
-  loadAllScrapers();
   continuousExecution();
 } catch (err) {
   logger.error(`Error message: ${err.message}`);
@@ -230,6 +226,10 @@ try {
 app.whenReady().then(() => {
   createWindow();
   createScrapperWindow();
+  loadQueue();
+  SettingsLoad();
+  patchModulePaths();
+  loadAllScrapers();
   globalShortcut.register("CommandOrControl+Shift+I", () => {});
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

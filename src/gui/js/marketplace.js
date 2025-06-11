@@ -43,9 +43,9 @@ function CreateButton(
   AppVersionNeeded
 ) {
   let ToRender = [];
-  let AppUpdatedAvailable = IsUpdateAvailable(AppVersion, AppVersionNeeded);
+  let AppIsOutdated = IsUpdateAvailable(AppVersion, AppVersionNeeded);
 
-  if (AppUpdatedAvailable) {
+  if (AppIsOutdated) {
     ToRender.push(
       `<button class="btn btn-app-update" disabled>Update App</button>`
     );
@@ -71,7 +71,7 @@ function CreateButton(
   }
 
   if (AppInstalled) {
-    if (!AppUpdatedAvailable && ProviderUpdate) {
+    if (!AppIsOutdated && ProviderUpdate) {
       ToRender.push(
         `<button class="btn btn-update" onclick='handleExtensionAction("${AnimeManga}","add", "${providerName}")'>Update</button>`
       );
@@ -79,7 +79,7 @@ function CreateButton(
     ToRender.push(
       `<button class="btn btn-remove" onclick='handleExtensionAction("${AnimeManga}","remove", "${providerName}")'>Remove</button>`
     );
-  } else if (!AppInstalled && !AppUpdatedAvailable) {
+  } else if (!AppInstalled && !AppIsOutdated) {
     ToRender.push(
       `<button class="btn btn-install" onclick='handleExtensionAction("${AnimeManga}","add", "${providerName}")'>Install</button>`
     );
@@ -95,6 +95,7 @@ function IsUpdateAvailable(currentVersion, requiredVersion) {
     const c = curr[i] || 0;
     const r = req[i] || 0;
     if (c < r) return true;
+    if (c > r) return false;
   }
   return false;
 }

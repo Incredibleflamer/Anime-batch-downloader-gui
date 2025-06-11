@@ -183,9 +183,7 @@ let SiteFilters = {
   },
 };
 
-let Applied_Filters = {
-  sort: "recently_updated",
-};
+let Applied_Filters = {};
 
 let Filter_Added = false;
 
@@ -548,6 +546,11 @@ async function handleScroll() {
 async function init(paginationInput, apiInput, infoapiInput) {
   pagination = paginationInput;
   api = apiInput;
+  if (!api?.includes("/search?query=")) {
+    Applied_Filters = {
+      sort: "recently_updated",
+    };
+  }
   infoapi = infoapiInput;
   await fetchPageData(1, true);
   document.getElementById("loading-container").hidden = true;
