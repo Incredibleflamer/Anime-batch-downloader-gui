@@ -93,8 +93,8 @@ function UpdateDiscordRPC(Title = null, Number = null) {
     instance: false,
     buttons: [
       {
-        label: "Download App",
-        url: "https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases/latest",
+        label: "Download StrawVerse App",
+        url: "https://github.com/TheYogMehta/StrawVerse/releases/latest",
       },
     ],
   };

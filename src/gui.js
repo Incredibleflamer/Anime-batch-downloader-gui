@@ -25,7 +25,7 @@ app.commandLine.appendSwitch("disable-renderer-backgrounding");
 autoUpdater.setFeedURL({
   provider: "github",
   owner: "TheYogMehta",
-  repo: "Anime-batch-downloader-gui",
+  repo: "StrawVerse",
 });
 
 //  functions
