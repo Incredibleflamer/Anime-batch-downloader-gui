@@ -39,25 +39,25 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 
 ## Installation
 
-1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/releases)
-2. Download `animedownloader.exe`
+1. Go to [Anime-Manga Batch Downloader Releases](https://github.com/TheYogMehta/StrawVerse/releases)
+2. Download `StrawVerse.exe`
 3. Run it and enjoy
 
 ## Usage
 
-1. Run `animedownloader.exe`.
+1. Run `StrawVerse.exe`.
 2. Search through the anime or manga list and download what you like.
 3. See progress in downloads.
-4. Anime episodes will be downloaded in the folder where you have stored `animedownloader.exe`.
+4. Anime episodes will be downloaded in the folder where you have stored `StrawVerse.exe`.
 5. Manga chapters will be saved as cbz files in the designated folder.
 
 ## Videos
 
-### How to download `animedownloader.exe`?
+### How to download `StrawVerse.exe`?
 
 [Download Guide Video](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/662413b3-cf34-49d1-a99d-4c5e42330d05)
 
-### How to download anime from `animedownloader.exe`?
+### How to download anime from `StrawVerse.exe`?
 
 [Anime Download Guide Video](https://github.com/Incredibleflamer/Anime-batch-downloader-gui/assets/84078595/24c68567-aaf5-4953-bda7-8fcec50e193c)
 
@@ -75,10 +75,10 @@ This is a Node.js-based anime & manga downloader that allows you to download ani
 To delete the application, navigate to the following directory:
 
 ```
-C:\Users\USERNAME\AppData\Local\Programs\animedownloader
+C:\Users\USERNAME\AppData\Local\Programs\StrawVerse
 ```
 
-Then, run `Uninstall animedownloader.exe`.
+Then, run `Uninstall StrawVerse.exe`.
 
 ---
 
@@ -93,12 +93,14 @@ Follow these steps to build application:
    - [Node.js Download](https://nodejs.org/)
 
 2. **Download and install Git**:
+
    - [Git Download](https://git-scm.com/)
 
 3. **Download and install Python**
+
    - [Python Download](https://www.python.org/downloads/)
 
-5. **Windows Build Tools (Windows only, required for node-gyp)**
+4. **Windows Build Tools (Windows only, required for node-gyp)**
    ```bash
    npm install --global windows-build-tools
    ```
@@ -108,13 +110,13 @@ Follow these steps to build application:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/Incredibleflamer/Anime-batch-downloader-gui.git
+   git clone https://github.com/TheYogMehta/StrawVerse.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd Anime-batch-downloader-gui/src
+   cd StrawVerse/src
    ```
 
 3. Install dependencies:

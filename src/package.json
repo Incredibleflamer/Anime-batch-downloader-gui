@@ -1,5 +1,5 @@
 {
-  "name": "animedownloader",
+  "name": "strawverse",
   "version": "4.0.1",
   "description": "Download anime in batches & its fast :3",
   "main": "gui.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheYogMehta/Anime-batch-downloader-gui.git"
+    "url": "https://github.com/TheYogMehta/StrawVerse.git"
   },
   "build": {
     "appId": "com.animebatchdownloader.gui",
@@ -19,13 +19,13 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "animedownloader.Setup.${version}.exe",
+      "artifactName": "StrawVerse.Setup.${version}.exe",
       "icon": "assets/luffy.ico"
     },
     "publish": {
       "provider": "github",
       "owner": "TheYogMehta",
-      "repo": "Anime-batch-downloader-gui",
+      "repo": "StrawVerse",
       "private": false
     },
     "nsis": {
@@ -40,8 +40,11 @@
   },
   "keywords": [
     "anime",
+    "manga",
+    "mangadownloader",
     "animedownloader",
-    "animebatchdownloader"
+    "animebatchdownloader",
+    "StrawVerse"
   ],
   "author": {
     "name": "TheYogMehta",

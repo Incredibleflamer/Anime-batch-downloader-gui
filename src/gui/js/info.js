@@ -133,7 +133,7 @@ async function AddInfo(data) {
 
   if (data?.title) {
     Title = data.title;
-    document.title = `Anime Downloader | ${Title}`;
+    document.title = `StrawVerse | ${Title}`;
   }
 
   // Create Img tag;

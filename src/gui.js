@@ -301,8 +301,8 @@ autoUpdater.on("update-installed", () => {
   const version = app.getVersion();
 
   const notification = new Notification({
-    title: "Anime Batch Downloader",
-    body: `AnimeDownloader ${version} has been successfully installed!`,
+    title: "StrawVerse",
+    body: `StrawVerse ${version} has been successfully installed!`,
   });
 
   notification.show();
