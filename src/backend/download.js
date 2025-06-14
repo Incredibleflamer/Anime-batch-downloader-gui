@@ -31,7 +31,7 @@ async function downloadAnimeMulti(
     let data = await downloadAnimeSingle(
       provider,
       animeid,
-      `${Episode.id}-${SubDub}`,
+      Episode.id,
       Episode.number,
       Title,
       i === 0
@@ -73,7 +73,9 @@ async function downloadAnimeSingle(
       if (animedata) {
         MetadataAdd("Anime", {
           id: animeid,
-          title: `${animedata.title} ${animedata?.subOrDub}`,
+          title: `${animedata?.title?.replace(/-(dub|sub|both)$/, ``)} ${
+            animedata?.subOrDub
+          }`,
           provider: Animeprovider.provider_name,
           subOrDub: animedata?.subOrDub ?? null,
           type: animedata.type ?? null,
